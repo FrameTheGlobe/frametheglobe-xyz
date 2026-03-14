@@ -3,10 +3,12 @@
 /**
  * MapView — Leaflet map for the Iran Theater feed
  *
- * Leaflet is loaded from CDN (not npm) so no server-side bundle issues.
+ * Leaflet is imported from npm (not CDN) and loaded dynamically inside
+ * useEffect so it never runs on the server.
  * Always use this component via next/dynamic with ssr: false.
  */
 
+import 'leaflet/dist/leaflet.css';
 import { useEffect, useRef, useMemo, useState, useCallback } from 'react';
 import type { Aircraft } from '@/lib/flights';
 import { headingToCompass, altToFL, SQUAWK_LABELS } from '@/lib/flights';
@@ -207,36 +209,18 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-// ── CDN helpers ───────────────────────────────────────────────────────────────
-// jsdelivr is more reliable than unpkg for production use
-const LEAFLET_VERSION = '1.9.4';
-const LEAFLET_CSS_URL = `https://cdn.jsdelivr.net/npm/leaflet@${LEAFLET_VERSION}/dist/leaflet.min.css`;
-const LEAFLET_JS_URL  = `https://cdn.jsdelivr.net/npm/leaflet@${LEAFLET_VERSION}/dist/leaflet.min.js`;
-
-// Returns a Promise so we can await stylesheet load before initializing the map
-function loadCSS(href: string): Promise<void> {
-  return new Promise(resolve => {
-    const existing = document.querySelector(`link[href="${href}"]`);
-    if (existing) { resolve(); return; }
-    const el   = document.createElement('link');
-    el.rel     = 'stylesheet';
-    el.href    = href;
-    el.onload  = () => resolve();
-    el.onerror = () => resolve(); // resolve anyway — map can still work
-    document.head.appendChild(el);
+// ── Leaflet loader — dynamic import keeps it out of the SSR bundle ────────────
+async function loadLeaflet() {
+  const L = (await import('leaflet')).default;
+  // Fix the default icon marker paths that webpack breaks
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  delete (L.Icon.Default.prototype as any)._getIconUrl;
+  L.Icon.Default.mergeOptions({
+    iconRetinaUrl: '/marker-icon-2x.png',
+    iconUrl:       '/marker-icon.png',
+    shadowUrl:     '/marker-shadow.png',
   });
-}
-
-function loadScript(src: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
-    const el    = document.createElement('script');
-    el.src      = src;
-    el.async    = true;
-    el.onload   = () => resolve();
-    el.onerror  = () => reject(new Error(`Failed to load ${src}`));
-    document.head.appendChild(el);
-  });
+  return L;
 }
 
 // ── Aircraft country → icon colour ───────────────────────────────────────────
@@ -337,14 +321,8 @@ export default function MapView({ items }: MapViewProps) {
     let cancelled = false;
 
     async function init() {
-      // Load CSS first — Leaflet needs its styles to compute tile sizes
-      await loadCSS(LEAFLET_CSS_URL);
-      await loadScript(LEAFLET_JS_URL);
+      const L = await loadLeaflet();
       if (cancelled || !containerRef.current || mapReadyRef.current) return;
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const L = (window as any).L as any;
-      if (!L) return;
 
       const map = L.map(containerRef.current, {
         center:          [27, 47],
@@ -384,24 +362,24 @@ export default function MapView({ items }: MapViewProps) {
   // ── Re-paint news markers when items change ───────────────────────────────
   useEffect(() => {
     if (!mapReadyRef.current || !mapRef.current) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const L = (window as any).L;
-    if (!L) return;
-    mapRef.current.invalidateSize();
-    paintMarkers(L, mapRef.current, items);
+    void loadLeaflet().then(L => {
+      if (!mapRef.current) return;
+      mapRef.current.invalidateSize();
+      paintMarkers(L, mapRef.current, items);
+    });
   }, [items]);
 
   // ── Re-paint flight layer when flights change ─────────────────────────────
   useEffect(() => {
     if (!mapReadyRef.current || !mapRef.current) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const L = (window as any).L;
-    if (!L) return;
-    if (flightsOn) {
-      paintFlights(L, mapRef.current, flights);
-    } else {
-      clearFlightLayer(mapRef.current);
-    }
+    void loadLeaflet().then(L => {
+      if (!mapRef.current) return;
+      if (flightsOn) {
+        paintFlights(L, mapRef.current, flights);
+      } else {
+        clearFlightLayer(mapRef.current);
+      }
+    });
   }, [flights, flightsOn]);
 
   // ── Cleanup on unmount ────────────────────────────────────────────────────
