@@ -8,3 +8,11 @@ yarn.lock
 pnpm-lock.yaml
 *.log
 
+# deploy artifacts
+deploy.env
+deploy.sh
+deploy-package.tar.gz
+
+# local env (never commit secrets)
+.env.local
+
