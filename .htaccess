@@ -1,11 +1,12 @@
 # FrameTheGlobe — Hostinger Apache config
-# Ensures Next.js static chunks are served with correct MIME types
-# and all requests are proxied through the Node.js process.
+# Sets correct MIME types for Next.js static chunks.
+# DO NOT add proxy/rewrite rules here — Hostinger manages the
+# Node.js proxy from hPanel and adding one here breaks everything.
 
 Options -Indexes
 AddDefaultCharset UTF-8
 
-# ── Correct MIME types (Apache on some Hostinger plans defaults to text/plain) ─
+# ── MIME types (Hostinger Apache defaults unknown files to text/plain) ─────────
 AddType text/css                    .css
 AddType application/javascript      .js
 AddType application/json            .json
@@ -17,18 +18,6 @@ AddType image/webp                  .webp
 AddType font/woff2                  .woff2
 AddType font/woff                   .woff
 AddType application/manifest+json   .webmanifest
-
-# ── Proxy all requests to the Node.js process ─────────────────────────────────
-<IfModule mod_rewrite.c>
-  RewriteEngine On
-
-  # Don't rewrite if the file physically exists (shouldn't happen for _next/)
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
-
-  # Proxy everything to Node.js (Hostinger sets PORT env var)
-  RewriteRule ^(.*)$ http://localhost:%{ENV:PORT}/$1 [P,L]
-</IfModule>
 
 # ── Cache headers for immutable Next.js static assets ─────────────────────────
 <IfModule mod_headers.c>
