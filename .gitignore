@@ -1,0 +1,10 @@
+node_modules
+.next
+.DS_Store
+dist
+coverage
+npm-debug.log*
+yarn.lock
+pnpm-lock.yaml
+*.log
+

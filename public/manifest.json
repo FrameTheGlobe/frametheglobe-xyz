@@ -1,0 +1,35 @@
+{
+  "name": "FrameTheGlobe — Iran War Theater",
+  "short_name": "FrameTheGlobe",
+  "description": "Live multi-source news aggregator covering the Iran war theater.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0d0c0a",
+  "theme_color": "#b5351a",
+  "categories": ["news", "geopolitics"],
+  "lang": "en-US",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Stream View",
+      "short_name": "Stream",
+      "description": "Latest articles in stream view",
+      "url": "/?view=list"
+    },
+    {
+      "name": "Map View",
+      "short_name": "Map",
+      "description": "Articles plotted on map",
+      "url": "/?view=map"
+    }
+  ]
+}
