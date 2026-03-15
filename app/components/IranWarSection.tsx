@@ -7,7 +7,35 @@ import IranOilBoard from './IranOilBoard';
 
 // Dynamic import prevents SSR — IranWarCostBoard uses new Date() in state
 // which would cause a server/client hydration mismatch.
-const IranWarCostBoard = dynamic(() => import('./IranWarCostBoard'), { ssr: false });
+// The `loading` prop renders a compact skeleton while the JS chunk downloads
+// so there's no invisible blank area on first paint.
+const IranWarCostBoard = dynamic(() => import('./IranWarCostBoard'), {
+  ssr: false,
+  loading: () => (
+    <div style={{
+      background:   'var(--surface)',
+      border:       '1px solid var(--border-light)',
+      borderTop:    '2px solid #c93a20',
+      borderRadius: '0 0 3px 3px',
+      marginBottom: 12,
+      padding:      '14px 16px',
+      display:      'flex',
+      flexDirection:'column',
+      gap:          10,
+    }}>
+      <div className="skeleton" style={{ height: 10, width: '55%', borderRadius: 2 }} />
+      <div className="skeleton" style={{ height: 38, width: '80%', borderRadius: 2 }} />
+      <div className="skeleton" style={{ height: 10, width: '40%', borderRadius: 2 }} />
+      <div style={{ display: 'flex', gap: 8 }}>
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} style={{ flex: 1 }}>
+            <div className="skeleton" style={{ height: 28, borderRadius: 3 }} />
+          </div>
+        ))}
+      </div>
+    </div>
+  ),
+});
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type FeedItem = {
@@ -416,14 +444,14 @@ export default function IranWarSection({ items, sourceCountMap }: Props) {
           {/* ── Source Grid ─────────────────────────────────────────────── */}
           <div>
             <div style={sectionLabel}>Sources</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 7, overflow: 'hidden', minWidth: 0 }}>
               {IRAN_SOURCE_GROUPS.map(group => {
                 const groupSources = group.ids
                   .map(id => SOURCES.find(s => s.id === id))
                   .filter(Boolean) as typeof SOURCES;
 
                 return (
-                  <div key={group.label} style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+                  <div key={group.label} style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap', minWidth: 0, overflow: 'hidden' }}>
                     <span style={{
                       fontFamily:    'var(--font-mono)',
                       fontSize:      9,
@@ -435,7 +463,7 @@ export default function IranWarSection({ items, sourceCountMap }: Props) {
                     }}>
                       {group.label}
                     </span>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, minWidth: 0, flexShrink: 1 }}>
                       {groupSources.map(src => {
                         const count = sourceCountMap[src.id] || 0;
                         return (
@@ -600,9 +628,9 @@ export default function IranWarSection({ items, sourceCountMap }: Props) {
                         </a>
                       </div>
 
-                      {/* Summary */}
+                      {/* Summary — hidden on mobile via .ftg-article-summary */}
                       {item.summary && (
-                        <p style={{
+                        <p className="ftg-article-summary" style={{
                           fontFamily: 'var(--font-body)',
                           fontSize:   12,
                           color:      'var(--text-secondary)',

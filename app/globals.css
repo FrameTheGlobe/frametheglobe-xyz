@@ -89,6 +89,12 @@ html {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   transition: background 0.2s, color 0.2s;
+  /* Prevent any single wide element from causing horizontal page scroll */
+  overflow-x: clip;
+}
+
+body {
+  overflow-x: clip;
 }
 
 /* ══════════════════════════════════════════════════════
@@ -257,6 +263,10 @@ html {
 .ftg-main {
   display: flex;
   flex-direction: column;
+  /* Prevent flex children from stretching beyond viewport width */
+  min-width: 0;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 /* Hide on mobile */
