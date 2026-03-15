@@ -9,6 +9,7 @@ export type FeedItem = {
   sourceName: string;
   region: string;
   sourceColor: string;
+  imageUrl?: string;
 };
 
 export type SourceHealth = {
@@ -167,16 +168,30 @@ export async function fetchFeed(source: {
 
     const items: FeedItem[] = filtered
       .slice(0, 15)
-      .map(item => ({
-        title:       item.title || 'No title',
-        link:        item.link || '#',
-        pubDate:     item.pubDate || item.isoDate || new Date().toISOString(),
-        summary:     (item.contentSnippet || item.summary || '').replace(/<[^>]*>/g, '').trim(),
-        sourceId:    source.id,
-        sourceName:  source.name,
-        region:      source.region,
-        sourceColor: source.color,
-      }));
+      .map(item => {
+        // Simple heuristic to extract images from RSS standard enclosures or media content
+        let imageUrl = undefined;
+        if (item.enclosure && item.enclosure.url && item.enclosure.type && item.enclosure.type.startsWith('image/')) {
+          imageUrl = item.enclosure.url;
+        } else if (item['media:content'] && item['media:content'].$) {
+          const media = item['media:content'].$;
+          if (media.url && (media.type?.startsWith('image/') || media.medium === 'image')) {
+            imageUrl = media.url;
+          }
+        }
+
+        return {
+          title:       item.title || 'No title',
+          link:        item.link || '#',
+          pubDate:     item.pubDate || item.isoDate || new Date().toISOString(),
+          summary:     (item.contentSnippet || item.summary || '').replace(/<[^>]*>/g, '').trim(),
+          sourceId:    source.id,
+          sourceName:  source.name,
+          region:      source.region,
+          sourceColor: source.color,
+          imageUrl,
+        };
+      });
 
     SOURCE_CACHE[cacheKey] = { items, timestamp: now };
 

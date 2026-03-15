@@ -19,6 +19,7 @@ type FeedItem = {
   sourceId: string;
   sourceName: string;
   region: string;
+  imageUrl?: string;
   sourceColor: string;
 };
 
@@ -1285,64 +1286,80 @@ export default function Home() {
                     }}
                     onMouseEnter={() => setFocusedIdx(i)}
                   >
-                    {/* Title row */}
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7, marginBottom: 5 }}>
-                      {badge === 'breaking' && (
-                        <span style={{
-                          fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: '0.1em',
-                          textTransform: 'uppercase', flexShrink: 0, marginTop: 2,
-                          color: 'var(--badge-brk-color)', background: 'var(--badge-brk-bg)',
-                          border: '1px solid var(--badge-brk-border)', padding: '1px 5px', borderRadius: 2,
-                        }}>
-                          Breaking
-                        </span>
-                      )}
-                      {badge === 'new' && (
-                        <span style={{
-                          fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: '0.1em',
-                          textTransform: 'uppercase', flexShrink: 0, marginTop: 2,
-                          color: 'var(--badge-new-color)', background: 'var(--badge-new-bg)',
-                          border: '1px solid var(--badge-new-border)', padding: '1px 5px', borderRadius: 2,
-                        }}>
-                          New
-                        </span>
-                      )}
-                      <a
-                        href={item.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        data-article-idx={i}
-                        style={{
-                          fontFamily: 'var(--font-display)',
-                          fontSize: 16,
-                          fontWeight: 700,
-                          color: 'var(--text-primary)',
-                          textDecoration: 'none',
-                          lineHeight: 1.35,
-                          flex: 1,
-                          textWrap: 'balance',
-                          transition: 'color 0.15s',
-                        }}
-                        onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
-                        onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-primary)')}
-                      >
-                        {item.title}
-                      </a>
-                    </div>
+                      <div style={{ display: 'flex', gap: 14 }}>
+                        {item.imageUrl && (
+                          <div style={{
+                            width: 100, height: 75, flexShrink: 0,
+                            borderRadius: 4, overflow: 'hidden',
+                            background: 'var(--border-light)'
+                          }}>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={item.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          </div>
+                        )}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          {/* Title row */}
+                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7, marginBottom: 5 }}>
+                            {badge === 'breaking' && (
+                              <span style={{
+                                fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: '0.1em',
+                                textTransform: 'uppercase', flexShrink: 0, marginTop: 2,
+                                color: 'var(--badge-brk-color)', background: 'var(--badge-brk-bg)',
+                                border: '1px solid var(--badge-brk-border)', padding: '1px 5px', borderRadius: 2,
+                                display: 'inline-flex', alignItems: 'center', gap: 4
+                              }}>
+                                <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--badge-brk-color)', animation: 'pulse-dot 1s infinite' }} />
+                                Breaking
+                              </span>
+                            )}
+                            {badge === 'new' && (
+                              <span style={{
+                                fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: '0.1em',
+                                textTransform: 'uppercase', flexShrink: 0, marginTop: 2,
+                                color: 'var(--badge-new-color)', background: 'var(--badge-new-bg)',
+                                border: '1px solid var(--badge-new-border)', padding: '1px 5px', borderRadius: 2,
+                              }}>
+                                New
+                              </span>
+                            )}
+                            <a
+                              href={item.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              data-article-idx={i}
+                              style={{
+                                fontFamily: 'var(--font-display)',
+                                fontSize: 16,
+                                fontWeight: 700,
+                                color: 'var(--text-primary)',
+                                textDecoration: 'none',
+                                lineHeight: 1.35,
+                                flex: 1,
+                                textWrap: 'balance',
+                                transition: 'color 0.15s',
+                              }}
+                              onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
+                              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+                            >
+                              {item.title}
+                            </a>
+                          </div>
 
-                    {/* Summary */}
-                    {item.summary && (
-                      <p style={{
-                        fontFamily: 'var(--font-body)',
-                        fontSize: 13,
-                        color: 'var(--text-secondary)',
-                        lineHeight: 1.55,
-                        fontWeight: 400,
-                        marginBottom: 8,
-                      }}>
-                        {truncate(item.summary)}
-                      </p>
-                    )}
+                          {/* Summary */}
+                          {item.summary && (
+                            <p style={{
+                              fontFamily: 'var(--font-body)',
+                              fontSize: 13,
+                              color: 'var(--text-secondary)',
+                              lineHeight: 1.55,
+                              fontWeight: 400,
+                              marginBottom: 8,
+                            }}>
+                              {truncate(item.summary)}
+                            </p>
+                          )}
+                        </div>
+                      </div>
 
                     {/* Meta row */}
                     <div style={{
