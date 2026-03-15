@@ -7,6 +7,7 @@ import TopStorylines   from './components/TopStorylines';
 import LensPulse       from './components/LensPulse';
 import BreakingTicker  from './components/BreakingTicker';
 import LiveVideoWidget from './components/LiveVideoWidget';
+import RapidResponse   from './components/RapidResponse';
 
 // MapView uses Leaflet (browser-only) — load with no SSR
 const MapView = dynamic(() => import('./components/MapView'), { ssr: false });
@@ -27,7 +28,8 @@ type FeedItem = {
 type LensId =
   | 'all' | 'gaza' | 'lebanon' | 'afghanistan' | 'pakistan'
   | 'nuclear' | 'naval' | 'proxy' | 'domestic'
-  | 'oil' | 'commodities' | 'finance' | 'shipping' | 'supply';
+  | 'oil' | 'commodities' | 'finance' | 'shipping' | 'supply'
+  | 'trump';
 
 type Theme = 'light' | 'dark';
 type ViewMode = 'list' | 'clusters' | 'map';
@@ -56,7 +58,7 @@ const LENSES: { id: LensId; label: string; hint: string; keywords: string[] }[] 
   { id: 'commodities', label: 'Commodities',       hint: 'Metals, food, LNG, and broader commodity impacts.',        keywords: ['commodity','commodities','wheat','grain','gas','lng','metals','fertilizer','natural gas'] },
   { id: 'finance',     label: 'Markets / Finance', hint: 'Stocks, bonds, FX, risk premiums, sanctions.',             keywords: ['market','markets','stocks','equities','bonds','yields','currency','fx','rally','selloff','sanctions','war premium'] },
   { id: 'shipping',    label: 'Shipping',          hint: 'Tankers, freight rates, insurance, chokepoints.',          keywords: ['tanker','freight','shipping','vessel','container','bulk carrier','insurance','suez','red sea','bab el-mandeb'] },
-  { id: 'supply',      label: 'Supply Chains',     hint: 'Ports, logistics, delays, rerouting.',                     keywords: ['supply chain','logistics','port','backlog','delays','rerouted','diverted','shipping lane','chokepoint'] },
+  { id: 'trump',       label: 'Rapid 47',          hint: 'Trump administration, White House response, policy shifts.', keywords: ['trump','white house','rapid 47','vance','maga','administration','executive order','mar-a-lago'] },
 ];
 
 // ── Region colours ─────────────────────────────────────────────────────────────
@@ -887,6 +889,35 @@ export default function Home() {
                     {liveStatus === 'live' ? 'Live' : liveStatus === 'connecting' ? 'Connecting…' : 'Polling'}
                   </span>
                 </div>
+
+                {/* Trump / Rapid 47 indicator */}
+                {(() => {
+                  const tCount = items.filter(i => itemMatchesLens(i, new Set(['trump']))).length;
+                  return tCount > 0 ? (
+                    <div 
+                      onClick={() => setActiveLenses(new Set(['trump']))}
+                      style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: 4, 
+                        background: 'var(--accent)', 
+                        color: '#fff', 
+                        padding: '1px 5px', 
+                        borderRadius: 3, 
+                        cursor: 'pointer',
+                        fontSize: 9,
+                        fontFamily: 'var(--font-mono)',
+                        fontWeight: 900,
+                        letterSpacing: '0.05em'
+                      }}
+                      title={`${tCount} Rapid 47 Response updates`}
+                    >
+                      <span>47</span>
+                      <span style={{ opacity: 0.8, fontSize: 8 }}>•</span>
+                      <span>{tCount}</span>
+                    </div>
+                  ) : null;
+                })()}
               </div>
 
               {/* Stats tiles */}
@@ -1029,8 +1060,13 @@ export default function Home() {
         <main>
           {/* ── Widgets row ──────────────────────────────────────── */}
           {!loading && items.length > 0 && (
-            <div className="widgets-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 5fr) minmax(0, 4fr)', gap: 14, marginBottom: 14 }}>
+            <div className="widgets-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 14 }}>
               <TopStorylines clusters={clusters} limit={4} />
+              <RapidResponse 
+                items={items} 
+                limit={4} 
+                onViewAll={() => setActiveLenses(new Set(['trump']))}
+              />
               <LensPulse items={items} lenses={LENSES} limit={5} />
             </div>
           )}
