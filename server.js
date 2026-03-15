@@ -2,54 +2,27 @@
 /**
  * server.js — Hostinger startup file for FrameTheGlobe
  *
- * Hostinger hPanel → Node.js → Startup file: server.js
- * Hostinger hPanel → Node.js → Node version: 20.x
+ * hPanel → Node.js → Startup file : server.js
+ * hPanel → Node.js → Node version : 20.x
  *
- * This file:
- *  1. Builds the Next.js app if the build output is missing
- *  2. Starts the Next.js production server on the Hostinger-assigned PORT
+ * The build (npm run build) is handled by GitHub Actions before this
+ * file runs — do NOT put build logic here as it gets killed on Hostinger.
  */
 
 const { createServer } = require('http');
 const { parse }        = require('url');
 const next             = require('next');
-const { execSync }     = require('child_process');
-const fs               = require('fs');
 const path             = require('path');
+const fs               = require('fs');
 
 const port     = parseInt(process.env.PORT, 10) || 3000;
 const hostname = '0.0.0.0';
 
-// ── Build if not already built ────────────────────────────────────────────────
-const buildIdPath = path.join(__dirname, '.next', 'BUILD_ID');
-if (!fs.existsSync(buildIdPath)) {
-  console.log('[FTG] .next not found — running npm run build...');
-  try {
-    execSync('npm run build', { cwd: __dirname, stdio: 'inherit' });
-    console.log('[FTG] Build complete.');
-  } catch (err) {
-    console.error('[FTG] Build failed:', err.message);
-    process.exit(1);
-  }
-}
-
-// ── Hostinger Static File Fix ────────────────────────────────────────────────
-// On Hostinger LiteSpeed + Node.js, static file requests to /_next/static/...
-// are usually intercepted by the web server (avoiding the Node.js proxy).
-// Since the web server looks for an actual folder matching the URL in the
-// Document Root, and refusing to serve hidden dot-directories like `.next`,
-// explicitly copying `.next/static` to `_next/static` solves the 404 issue.
-try {
-  const nextStatic = path.join(__dirname, '.next', 'static');
-  const underscoreNextStatic = path.join(__dirname, '_next', 'static');
-  if (fs.existsSync(nextStatic)) {
-    console.log('[FTG] Exporting static chunks to ./_next/static for LiteSpeed...');
-    execSync(`rm -rf "${path.join(__dirname, '_next')}"`);
-    fs.mkdirSync(path.join(__dirname, '_next'), { recursive: true });
-    execSync(`cp -r "${nextStatic}" "${underscoreNextStatic}"`);
-  }
-} catch (err) {
-  console.error('[FTG] Note: Failed to export _next static files:', err.message);
+// Bail early with a clear message if the build hasn't run yet
+if (!fs.existsSync(path.join(__dirname, '.next', 'BUILD_ID'))) {
+  console.error('[FTG] ERROR: .next not found. Run "npm run build" first.');
+  console.error('[FTG] GitHub Actions should have done this — check the Actions log.');
+  process.exit(1);
 }
 
 // ── Start Next.js production server ──────────────────────────────────────────
