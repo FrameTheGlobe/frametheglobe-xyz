@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     siteName: 'FrameTheGlobe',
     locale: 'en_US',
     images: [{
-      url:    '/img/social-card.png',
+      url:    'https://frametheglobe.xyz/img/social-card.png',
       width:  1200,
       height: 630,
       type:   'image/png',
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     card:        'summary_large_image',
     title:       'FrameTheGlobe — Iran War Theater',
     description: 'Live news aggregator covering the Iran war theater from 40+ sources.',
-    images:      ['/img/social-card.png'],
+    images:      ['https://frametheglobe.xyz/img/social-card.png'],
   },
   robots: { index: true, follow: true },
   alternates: {
