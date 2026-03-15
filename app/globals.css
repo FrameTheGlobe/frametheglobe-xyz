@@ -1,8 +1,11 @@
-/* Leaflet — imported here (not in the component) so it lands in the main
-   CSS bundle and is linked in <head>, not in a lazy chunk that can 404. */
-@import 'leaflet/dist/leaflet.css';
-
+/* Google Fonts — must come first before any other @import or rules */
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
+
+/* Leaflet — imported here (not in the component) so it lands in the main
+   CSS bundle and is linked in <head>, not in a lazy chunk that can 404.
+   Must come after any url() @imports so Turbopack's inlining doesn't
+   push the Google Fonts import below Leaflet's rules (CSS parse error). */
+@import 'leaflet/dist/leaflet.css';
 
 /* ══════════════════════════════════════════════════════
    LIGHT THEME  (default)
