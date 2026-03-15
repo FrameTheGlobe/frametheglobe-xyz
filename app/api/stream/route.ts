@@ -2,7 +2,7 @@
  * /api/stream — Server-Sent Events endpoint
  *
  * Clients connect once and receive news updates in real time as the
- * server refreshes RSS/GDELT feeds (every 2 minutes). The connection
+ * server refreshes RSS/GDELT feeds (every 10 minutes). The connection
  * is kept alive with periodic heartbeat comments.
  *
  * Works on any persistent Node.js host (no serverless / edge needed).
@@ -21,22 +21,16 @@ export async function GET(request: NextRequest) {
   const clientId = `sse-${++_clientSeq}-${Date.now()}`;
   const encoder  = new TextEncoder();
 
-  // Lazily trigger a refresh if the cache is stale (e.g. first visitor of the day)
+  // Lazily trigger a refresh if the cache is stale (e.g. first visitor of the day).
+  // fetchAllFeeds uses staggered batching — no burst of 100+ simultaneous requests.
   if (isCacheStale()) {
-    // Fire-and-forget — the store will broadcast the result when ready
     import('@/lib/news-store').then(async ({ setNewsCache, isCacheStale: isStill }) => {
       if (!isStill()) return; // another request already refreshed it
-      const { SOURCES }   = await import('@/lib/sources');
-      const { fetchFeed } = await import('@/lib/fetcher');
+      const { SOURCES }       = await import('@/lib/sources');
+      const { fetchAllFeeds } = await import('@/lib/fetcher');
 
-      const results = await Promise.allSettled(SOURCES.map(s => fetchFeed(s)));
-
-      const items: import('@/lib/fetcher').FeedItem[] = [];
-      let failed = 0;
-      results.forEach(r => {
-        if (r.status === 'fulfilled') { items.push(...r.value.items); if (!r.value.health.ok) failed++; }
-        else failed++;
-      });
+      const { items, health } = await fetchAllFeeds(SOURCES);
+      const failed = health.filter(h => !h.ok).length;
 
       items.sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
 

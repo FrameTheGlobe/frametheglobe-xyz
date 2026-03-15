@@ -24,19 +24,31 @@ export type SourceHealth = {
 type CacheEntry = {
   items: FeedItem[];
   timestamp: number;
+  etag?: string;
+  lastModified?: string;
 };
 
 const SOURCE_CACHE: Record<string, CacheEntry> = {};
-const CACHE_TTL_MS = 3 * 60 * 1000; // 3 minutes
 
-const parser = new Parser({
-  timeout: 10000,
-  headers: {
-    'User-Agent': 'Mozilla/5.0 (compatible; FrameTheGlobe/3.1.3; +https://frametheglobe.xyz)',
-    'Accept': 'application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
-    'Accept-Language': 'en-US,en;q=0.9',
-  },
-});
+/**
+ * Per-source TTL: 15 minutes.
+ *
+ * Rationale: most news RSS feeds update every 10-60 minutes. Polling faster
+ * than 15 min offers no benefit for readers and risks being flagged as
+ * abusive by feed providers. Conditional GET (ETag / If-Modified-Since)
+ * further reduces bandwidth on unchanged feeds.
+ */
+export const CACHE_TTL_MS = 15 * 60 * 1000;
+
+// rss-parser instance — used only for parseString() now; headers are on the
+// manual fetch() call so we can inject conditional-GET headers per request.
+const parser = new Parser({ timeout: 10000 });
+
+const BASE_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (compatible; FrameTheGlobe/3.1.4; +https://frametheglobe.xyz)',
+  'Accept':     'application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
+  'Accept-Language': 'en-US,en;q=0.9',
+} as const;
 
 // ── War Theater keywords ──────────────────────────────────────────────────────
 // Coverage: Iran · Gaza · Lebanon · Afghanistan · Pakistan — conflict, diplomacy, economics
@@ -145,10 +157,12 @@ export async function fetchFeed(source: {
       health: { id: source.id, name: source.name, ok: true, itemCount: 0, fromCache: false },
     };
   }
+
   const cacheKey = source.id;
   const now = Date.now();
   const cached = SOURCE_CACHE[cacheKey];
 
+  // Return in-memory cache if still within TTL
   if (cached && now - cached.timestamp < CACHE_TTL_MS) {
     return {
       items: cached.items,
@@ -156,9 +170,40 @@ export async function fetchFeed(source: {
     };
   }
 
+  // Build request headers — include conditional-GET fields when we have them
+  const reqHeaders: Record<string, string> = { ...BASE_HEADERS };
+  if (cached?.etag)         reqHeaders['If-None-Match']     = cached.etag;
+  if (cached?.lastModified) reqHeaders['If-Modified-Since'] = cached.lastModified;
+
   try {
-    const feed = await parser.parseURL(source.url);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10_000);
+
+    let res: Response;
+    try {
+      res = await fetch(source.url, { headers: reqHeaders, signal: controller.signal });
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    // 304 Not Modified — feed unchanged; refresh timestamp and serve stale items
+    if (res.status === 304 && cached) {
+      SOURCE_CACHE[cacheKey] = { ...cached, timestamp: now };
+      return {
+        items: cached.items,
+        health: { id: source.id, name: source.name, ok: true, itemCount: cached.items.length, fromCache: true },
+      };
+    }
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const xml = await res.text();
+    const feed = await parser.parseString(xml);
     const rawItems = feed.items || [];
+
+    // Store ETag / Last-Modified for the next conditional request
+    const etag         = res.headers.get('etag')          ?? undefined;
+    const lastModified = res.headers.get('last-modified') ?? undefined;
 
     // Pre-filtered sources (e.g. GDELT topic queries) are already topically
     // scoped — skip the keyword filter and take the full result.
@@ -205,7 +250,7 @@ export async function fetchFeed(source: {
         };
       });
 
-    SOURCE_CACHE[cacheKey] = { items, timestamp: now };
+    SOURCE_CACHE[cacheKey] = { items, timestamp: now, etag, lastModified };
 
     return {
       items,
@@ -228,4 +273,44 @@ export async function fetchFeed(source: {
       health: { id: source.id, name: source.name, ok: false, itemCount: 0, fromCache: false, errorMsg },
     };
   }
+}
+
+/**
+ * Fetch all sources with polite staggered dispatch.
+ *
+ * Sources are processed in batches of BATCH_SIZE with a short pause between
+ * each batch. This avoids sending 100+ simultaneous connections from one IP,
+ * which can look like abuse to smaller feed providers. Cached sources return
+ * instantly from memory so batching adds no meaningful latency for them.
+ */
+const BATCH_SIZE  = 10;
+const BATCH_DELAY = 150; // ms between batches
+
+export async function fetchAllFeeds(sources: Parameters<typeof fetchFeed>[0][]): Promise<{
+  items: FeedItem[];
+  health: SourceHealth[];
+}> {
+  const allItems:  FeedItem[]      = [];
+  const allHealth: SourceHealth[]  = [];
+
+  for (let i = 0; i < sources.length; i += BATCH_SIZE) {
+    const batch   = sources.slice(i, i + BATCH_SIZE);
+    const results = await Promise.allSettled(batch.map(s => fetchFeed(s)));
+
+    results.forEach(r => {
+      if (r.status === 'fulfilled') {
+        allItems.push(...r.value.items);
+        allHealth.push(r.value.health);
+      } else {
+        console.error('[FTG] fetchAllFeeds batch error:', r.reason);
+      }
+    });
+
+    // Brief pause between batches — skip after the last one
+    if (i + BATCH_SIZE < sources.length) {
+      await new Promise(resolve => setTimeout(resolve, BATCH_DELAY));
+    }
+  }
+
+  return { items: allItems, health: allHealth };
 }

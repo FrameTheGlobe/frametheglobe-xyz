@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { SOURCES } from '@/lib/sources';
+import IranOilBoard from './IranOilBoard';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type FeedItem = {
@@ -294,6 +295,9 @@ export default function IranWarSection({ items, sourceCountMap }: Props) {
       {/* ── Body ────────────────────────────────────────────────────────── */}
       {!collapsed && (
         <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+          {/* ── Crude Oil Price Board ────────────────────────────────────── */}
+          <IranOilBoard />
 
           {/* ── Situation Status ────────────────────────────────────────── */}
           <div>

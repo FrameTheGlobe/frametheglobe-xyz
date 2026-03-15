@@ -464,6 +464,9 @@ export default function Home() {
   const [focusedIdx, setFocusedIdx]     = useState<number>(-1);
   const [scrolled, setScrolled]         = useState(false);
   const searchRef                        = useRef<HTMLInputElement>(null);
+  // Track when data was last successfully fetched so the visibility handler
+  // can skip a re-fetch if the data is still reasonably fresh (< 10 min).
+  const lastFetchedAtRef                 = useRef<number>(0);
   const [imageErrors, setImageErrors]    = useState<Set<string>>(new Set());
 
   // ── Scroll listener for header shadow ─────────────────────────────────────
@@ -596,6 +599,7 @@ export default function Home() {
       setTotal(data.total || 0);
       setLastUpdated(data.fetchedAt);
       setFailedCount(data.failedSources || 0);
+      lastFetchedAtRef.current = Date.now();
     } catch (err) {
       console.error('[FTG] News fetch error:', err);
       setItems([]);
@@ -634,6 +638,7 @@ export default function Home() {
       setLastUpdated(data.fetchedAt ?? null);
       setFailedCount(data.failedSources ?? 0);
       setLoading(false);
+      lastFetchedAtRef.current = Date.now();
     };
 
     const stopPolling = () => {
@@ -696,10 +701,16 @@ export default function Home() {
     };
     window.addEventListener('online', handleOnline);
 
-    // Also refresh data when the tab becomes visible again after being backgrounded
+    // Refresh data when the tab becomes visible again — but only if it has been
+    // more than 10 minutes since the last successful fetch. This prevents a tab
+    // switch from hammering feed providers on every focus event.
+    const VISIBILITY_REFETCH_THRESHOLD = 10 * 60 * 1000; // 10 minutes
     const handleVisibility = () => {
       if (document.visibilityState === 'visible' && !destroyed) {
-        fetchNews();
+        const msSinceLastFetch = Date.now() - lastFetchedAtRef.current;
+        if (msSinceLastFetch > VISIBILITY_REFETCH_THRESHOLD) {
+          fetchNews();
+        }
         if (!es) {
           attempts = 0;
           stopPolling();
@@ -1576,7 +1587,7 @@ export default function Home() {
               padding: '22px 0',
               letterSpacing: '0.05em',
             }}>
-              {visibleItems.length} stories · {liveStatus === 'live' ? 'live via SSE' : 'auto-refreshes every 5 min'}
+              {visibleItems.length} stories · {liveStatus === 'live' ? 'live via SSE' : 'auto-refreshes every 10 min'}
             </div>
           )}
         </main>

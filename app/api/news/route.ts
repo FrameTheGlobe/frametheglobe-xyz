@@ -1,51 +1,63 @@
 import { NextResponse } from 'next/server';
 import { SOURCES } from '@/lib/sources';
-import { fetchFeed, FeedItem, SourceHealth } from '@/lib/fetcher';
-import { setNewsCache, getNewsCache, isCacheStale } from '@/lib/news-store';
+import { fetchAllFeeds, FeedItem, SourceHealth } from '@/lib/fetcher';
+import {
+  setNewsCache,
+  getNewsCache,
+  isCacheStale,
+  canForceRefresh,
+  markForcedRefresh,
+  nextForceRefreshIn,
+} from '@/lib/news-store';
 
 export const runtime   = 'nodejs';
 export const revalidate = 0; // Always dynamic — caching handled by news-store
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const region = searchParams.get('region');
 
-  // Return cached data immediately if it's still fresh and this isn't a forced refresh
-  const forceRefresh = searchParams.get('refresh') === '1';
+  // Forced refresh is rate-limited to once every 5 min to protect feed providers
+  const wantsForce  = searchParams.get('refresh') === '1';
+  const forceRefresh = wantsForce && canForceRefresh();
+
+  // Return cached data immediately if it's still fresh and no valid force-refresh
   if (!forceRefresh && !isCacheStale()) {
     const cached = getNewsCache();
     if (cached) {
-      const response = NextResponse.json({
-        ...cached,
-        health: searchParams.get('health') === '1' ? undefined : undefined,
-        cached: true,
-      });
+      const response = NextResponse.json({ ...cached, cached: true });
       response.headers.set('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=60');
       return response;
     }
   }
 
-  // Fetch fresh data
+  // If the client requested a forced refresh but is within the cooldown window,
+  // return the cached payload with a header indicating when they can retry.
+  if (wantsForce && !forceRefresh) {
+    const cached = getNewsCache();
+    const retryAfterSec = Math.ceil(nextForceRefreshIn() / 1000);
+    const response = NextResponse.json({
+      ...(cached ?? { items: [], total: 0, fetchedAt: new Date().toISOString(), sourceCount: 0, failedSources: 0 }),
+      cached: true,
+      refreshCoolingDown: true,
+      retryAfterSeconds: retryAfterSec,
+    });
+    response.headers.set('Retry-After', String(retryAfterSec));
+    return response;
+  }
+
+  // Mark before fetching so concurrent requests don't also bypass the gate
+  if (forceRefresh) markForcedRefresh();
+
+  // Fetch fresh data — staggered batches of 10 with 150 ms gaps between batches
+  const region     = searchParams.get('region');
   const rssSources =
     region && region !== 'all'
       ? SOURCES.filter(s => s.region === region)
       : SOURCES;
 
-  const results = await Promise.allSettled(rssSources.map(s => fetchFeed(s)));
+  const { items: allItems, health: healthReport } = await fetchAllFeeds(rssSources);
 
-  const allItems: FeedItem[] = [];
-  const healthReport: SourceHealth[] = [];
-  let failedCount = 0;
-
-  results.forEach(r => {
-    if (r.status === 'fulfilled') {
-      allItems.push(...r.value.items);
-      healthReport.push(r.value.health);
-      if (!r.value.health.ok) failedCount++;
-    } else {
-      failedCount++;
-    }
-  });
+  const failedCount = healthReport.filter(h => !h.ok).length;
 
   // Sort newest first
   allItems.sort((a, b) =>
