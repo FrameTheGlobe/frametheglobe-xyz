@@ -9,6 +9,7 @@ import LiveVideoWidget from './components/LiveVideoWidget';
 import RapidResponse   from './components/RapidResponse';
 import MacroWatch     from './components/MacroWatch';
 import OilTicker      from './components/OilTicker';
+import IranWarSection  from './components/IranWarSection';
 
 // MapView uses Leaflet (browser-only) — load with no SSR
 const MapView = dynamic(() => import('./components/MapView'), { ssr: false });
@@ -722,8 +723,14 @@ export default function Home() {
   }, []); // fetchNews is stable (useCallback with no deps)
 
   // ── Helpers ───────────────────────────────────────────────────────────────
-  const keyForItem = (item: FeedItem) =>
-    item.link || `${item.sourceId}::${item.title}::${item.pubDate}`;
+  const keyForItem = (item: FeedItem) => {
+    // Some RSS parsers return '#' or a blank string when no link is available.
+    // Treat those as missing so we fall through to a unique composite key.
+    const link = item.link && item.link !== '#' && item.link.startsWith('http')
+      ? item.link
+      : null;
+    return link ?? `${item.sourceId}::${item.title}::${item.pubDate}`;
+  };
 
   const togglePin = (item: FeedItem) => {
     const key = keyForItem(item);
@@ -742,10 +749,21 @@ export default function Home() {
   };
 
   // ── Derived data ──────────────────────────────────────────────────────────
-  const filteredBySource = useMemo(
-    () => items.filter(i => activeSources.has(i.sourceId)),
-    [items, activeSources]
-  );
+  // De-duplicate first: some sources (e.g. China Daily) emit multiple items
+  // with identical titles and timestamps, and GDELT/syndication can produce
+  // the same URL from two different source IDs.
+  const filteredBySource = useMemo(() => {
+    const seen = new Set<string>();
+    return items.filter(i => {
+      if (!activeSources.has(i.sourceId)) return false;
+      const k = (i.link && i.link !== '#' && i.link.startsWith('http'))
+        ? i.link
+        : `${i.sourceId}::${i.title}::${i.pubDate}`;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+  }, [items, activeSources]);
 
   const filteredByLens = useMemo(
     () => filteredBySource.filter(i => itemMatchesLens(i, activeLenses)),
@@ -1064,6 +1082,9 @@ export default function Home() {
 
         {/* Main feed */}
         <main>
+          {/* ── Iran War Theater ─────────────────────────────────── */}
+          <IranWarSection items={items} sourceCountMap={sourceCountMap} />
+
           {/* ── Widgets row ──────────────────────────────────────── */}
           {!loading && items.length > 0 && (
             <div className="widgets-grid" style={{ 
