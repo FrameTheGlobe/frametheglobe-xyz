@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 const LIVE_FEEDS = [
   { id: 'aljazeera', name: 'Al Jazeera English', channelId: 'UCNye-wNBqNL5ZzHSJj3l8Bg' },
-  { id: 'sky', name: 'Sky News Live', channelId: 'UCoMdktPbSTixAyNGwb-UYkQ' },
+  { id: 'sky', name: 'Sky News Live', channelId: 'UCoMdktPbSTixAyNGwb-UYkQ', videoId: 'YDvsBbKfLPA' },
   { id: 'dw', name: 'DW News', channelId: 'UCknLrEdhRCp1aegoMqRaCZg' },
   { id: 'france24', name: 'France 24', channelId: 'UCQfwfsi5VrQ8yKZ-UWmAEFg' },
 ];
@@ -77,7 +77,10 @@ export default function LiveVideoWidget() {
             height: '100%',
             border: 'none'
           }}
-          src={`https://www.youtube.com/embed/live_stream?channel=${activeFeed.channelId}&autoplay=1&mute=1&playsinline=1`}
+          src={activeFeed.videoId 
+            ? `https://www.youtube.com/embed/${activeFeed.videoId}?autoplay=1&mute=1&playsinline=1`
+            : `https://www.youtube.com/embed/live_stream?channel=${activeFeed.channelId}&autoplay=1&mute=1&playsinline=1`
+          }
           title={`${activeFeed.name} Live Stream`}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
