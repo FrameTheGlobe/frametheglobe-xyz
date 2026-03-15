@@ -3,9 +3,9 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { SOURCES, REGION_LABELS, Source } from '@/lib/sources';
-import BreakingTicker    from './components/BreakingTicker';
-import TrendingKeywords  from './components/TrendingKeywords';
-import VolumeChart       from './components/VolumeChart';
+import TopStorylines   from './components/TopStorylines';
+import LensPulse       from './components/LensPulse';
+import BreakingTicker  from './components/BreakingTicker';
 
 // MapView uses Leaflet (browser-only) — load with no SSR
 const MapView = dynamic(() => import('./components/MapView'), { ssr: false });
@@ -30,7 +30,14 @@ type LensId =
 type Theme = 'light' | 'dark';
 type ViewMode = 'list' | 'clusters' | 'map';
 type SortMode = 'date-desc' | 'date-asc' | 'source';
-type Cluster = { id: string; title: string; items: FeedItem[] };
+
+// A storyline cluster
+type Cluster = {
+  id: string;
+  title: string;
+  items: FeedItem[];
+  score: number; // For sorting clusters by size/recency
+};
 
 // ── Lens definitions ──────────────────────────────────────────────────────────
 const LENSES: { id: LensId; label: string; hint: string; keywords: string[] }[] = [
@@ -152,17 +159,22 @@ function buildClusters(items: FeedItem[]): Cluster[] {
   }
 
   return clusters
-    .map((clusterItems, idx) => ({
-      id:    `cluster-${idx}`,
-      title: clusterItems[0]?.title || 'Untitled',
-      items: clusterItems.sort(
-        (a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime()
-      ),
-    }))
-    .sort((a, b) =>
-      new Date(b.items[0]?.pubDate || 0).getTime() -
-      new Date(a.items[0]?.pubDate || 0).getTime()
-    );
+    .map((clusterItems, idx) => {
+      // Simplistic recency/size score for sorting
+      const finalItems = clusterItems.sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
+      const newestTime = new Date(finalItems[0]?.pubDate || 0).getTime();
+      const hoursOld = (Date.now() - newestTime) / (1000 * 60 * 60);
+      const recencyMultiplier = Math.max(0.1, 1 - (hoursOld / 48));
+      const score = finalItems.length * recencyMultiplier;
+
+      return {
+        id:    `cluster-${idx}`,
+        title: finalItems[0]?.title || 'Untitled',
+        items: finalItems,
+        score
+      };
+    })
+    .sort((a, b) => b.score - a.score);
 }
 
 function timeAgo(dateStr: string): string {
@@ -1012,9 +1024,9 @@ export default function Home() {
         <main>
           {/* ── Widgets row ──────────────────────────────────────── */}
           {!loading && items.length > 0 && (
-            <div className="widgets-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
-              <TrendingKeywords items={items} limit={8} />
-              <VolumeChart items={items} />
+            <div className="widgets-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 5fr) minmax(0, 4fr)', gap: 14, marginBottom: 14 }}>
+              <TopStorylines clusters={clusters} limit={4} />
+              <LensPulse items={items} lenses={LENSES} limit={5} />
             </div>
           )}
 
