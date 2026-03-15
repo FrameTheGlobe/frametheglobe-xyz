@@ -83,13 +83,44 @@ const BURN_RATES = [
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function IranWarCostBoard() {
-  const [now, setNow] = useState<Date>(() => new Date());
+  // Start as null so SSR renders nothing (component is loaded client-only via
+  // dynamic import anyway), then populate on mount to avoid hydration mismatch.
+  const [now, setNow] = useState<Date | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
+    setNow(new Date());
     timerRef.current = setInterval(() => setNow(new Date()), 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, []);
+
+  // Before mount, show a compact skeleton so there's no layout shift
+  if (!now) {
+    return (
+      <div style={{
+        background:   'var(--surface)',
+        border:       '1px solid var(--border-light)',
+        borderTop:    '2px solid #c93a20',
+        borderRadius: '0 0 3px 3px',
+        marginBottom: 12,
+        padding:      '12px 16px',
+        display:      'flex',
+        flexDirection:'column',
+        gap:          10,
+      }}>
+        <div className="skeleton" style={{ height: 10, width: '50%', borderRadius: 2 }} />
+        <div className="skeleton" style={{ height: 36, width: '80%', borderRadius: 2 }} />
+        <div className="skeleton" style={{ height: 10, width: '40%', borderRadius: 2 }} />
+        <div style={{ display: 'flex', gap: 8 }}>
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} style={{ flex: 1 }}>
+              <div className="skeleton" style={{ height: 28, borderRadius: 3 }} />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   const cost    = calcCost(now);
   const elapsed = getElapsed(now);

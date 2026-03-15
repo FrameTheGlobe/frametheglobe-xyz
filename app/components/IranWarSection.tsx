@@ -1,9 +1,13 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { SOURCES } from '@/lib/sources';
 import IranOilBoard from './IranOilBoard';
-import IranWarCostBoard from './IranWarCostBoard';
+
+// Dynamic import prevents SSR — IranWarCostBoard uses new Date() in state
+// which would cause a server/client hydration mismatch.
+const IranWarCostBoard = dynamic(() => import('./IranWarCostBoard'), { ssr: false });
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type FeedItem = {
