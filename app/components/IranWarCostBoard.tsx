@@ -77,8 +77,8 @@ const HUMAN_COST = [
 
 const BURN_RATES = [
   { label: 'Per Second', value: `$${Math.round(PER_SECOND).toLocaleString('en-US')}` },
-  { label: 'Per Hour',   value: `$${Math.round(PER_SECOND * 3600).toLocaleString('en-US')}` },
-  { label: 'Per Day',    value: '$1,000,000,000' },
+  { label: 'Per Hour',   value: `$${(PER_SECOND * 3600 / 1_000_000).toFixed(1)}M` },
+  { label: 'Per Day',    value: '$1B' },
 ];
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -259,7 +259,7 @@ export default function IranWarCostBoard() {
       </div>
 
       {/* ── Burn rates ──────────────────────────────────────────────── */}
-      <div style={{
+      <div className="ftg-cost-burn-grid" style={{
         display:     'grid',
         gridTemplateColumns: '1fr 1fr 1fr',
         borderTop:   `1px solid ${border}`,

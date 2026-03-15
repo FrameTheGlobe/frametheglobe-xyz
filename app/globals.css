@@ -253,6 +253,12 @@ html {
   gap: 0;
 }
 
+/* Main feed: flex column so we can reorder sections with CSS `order` on mobile */
+.ftg-main {
+  display: flex;
+  flex-direction: column;
+}
+
 /* Hide on mobile */
 .ftg-hide-mobile { display: inline; }
 
@@ -370,6 +376,71 @@ html {
   .ftg-war-cost-counter {
     font-size: 26px !important;
   }
+
+  /* ── FILTER BAR ──────────────────────────────────────────────── */
+
+  /* Lens pills: single swipeable row instead of wrapping */
+  .ftg-lens-pills {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+    /* Fade-out hint at right edge */
+    -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+    mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  }
+  .ftg-lens-pills::-webkit-scrollbar { display: none; }
+
+  /* Region filter: swipeable too */
+  .ftg-region-strip {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .ftg-region-strip::-webkit-scrollbar { display: none; }
+
+  /* Sort + view controls: wrap onto 2 rows if needed instead of overflowing */
+  .ftg-controls-row {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    flex-shrink: 1 !important;
+  }
+
+  /* ── HEADER ──────────────────────────────────────────────────── */
+
+  /* Hide stat tiles (stories / breaking / sources) — live dot is enough */
+  .ftg-header-stats {
+    display: none !important;
+  }
+
+  /* ── ARTICLE CARDS ───────────────────────────────────────────── */
+
+  /* No thumbnail: give the headline full card width */
+  .ftg-article-thumbnail {
+    display: none !important;
+  }
+
+  /* No summary: headline-only is standard mobile news browsing */
+  .ftg-article-summary {
+    display: none !important;
+  }
+
+  /* ── IRAN WAR BOARDS ─────────────────────────────────────────── */
+
+  /* Human cost: 2-col at tablet (Iranian Civilians spans second row) */
+  .ftg-human-cost-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* ── LAYOUT ORDERING ─────────────────────────────────────────── */
+
+  /* On mobile: push the widget row (Storylines, RapidResponse, etc.)
+     below the news feed — people want headlines first on phone */
+  .ftg-widgets-section {
+    order: 10;
+  }
 }
 
 /* ══════════════════════════════════════════════════════
@@ -412,9 +483,29 @@ html {
     font-size: 22px !important;
   }
 
-  /* Human cost: stack cards 1-col on small phones */
+  /* Human cost: 1-col stacked on small phones (3 rows, clean) */
   .ftg-human-cost-grid {
     grid-template-columns: 1fr !important;
+  }
+
+  /* Lens pills: bigger touch targets on small phones */
+  .ftg-filter-pill {
+    padding: 7px 14px !important;
+    white-space: nowrap;
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   iOS SAFE AREA (notch / home indicator)
+══════════════════════════════════════════════════════ */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .page-layout {
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+  }
+  @media (max-width: 820px) {
+    .page-layout {
+      padding-bottom: max(16px, env(safe-area-inset-bottom));
+    }
   }
 }
 

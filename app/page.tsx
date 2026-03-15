@@ -1344,7 +1344,7 @@ export default function Home() {
                   FrameTheGlobeNews
                 </h1>
 
-                <span style={{
+                <span className="ftg-hide-mobile" style={{
                   fontFamily: 'var(--font-mono)',
                   fontSize: 9,
                   letterSpacing: '0.12em',
@@ -1421,7 +1421,7 @@ export default function Home() {
                   Fetching feeds…
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 5, alignItems: 'center' }}>
+                <div className="ftg-header-stats" style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 5, alignItems: 'center' }}>
                   {/* Stories tile */}
                   <StatTile
                     icon="📰"
@@ -1553,28 +1553,30 @@ export default function Home() {
         </aside>
 
         {/* Main feed */}
-        <main>
+        <main className="ftg-main">
           {/* ── Iran War Theater ─────────────────────────────────── */}
           <IranWarSection items={items} sourceCountMap={sourceCountMap} />
 
           {/* ── Widgets row ──────────────────────────────────────── */}
-          {!loading && items.length > 0 && (
-            <div className="widgets-grid" style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', 
-              gap: 14, 
-              marginBottom: 14 
-            }}>
-              <TopStorylines clusters={clusters} limit={4} />
-              <RapidResponse 
-                items={items} 
-                limit={4} 
-                onViewAll={() => setActiveLenses(new Set(['trump']))}
-              />
-              <MacroWatch items={items} limit={4} />
-              <OilTicker items={items} />
-            </div>
-          )}
+          <div className="ftg-widgets-section">
+            {!loading && items.length > 0 && (
+              <div className="widgets-grid" style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
+                gap: 14,
+                marginBottom: 14
+              }}>
+                <TopStorylines clusters={clusters} limit={4} />
+                <RapidResponse
+                  items={items}
+                  limit={4}
+                  onViewAll={() => setActiveLenses(new Set(['trump']))}
+                />
+                <MacroWatch items={items} limit={4} />
+                <OilTicker items={items} />
+              </div>
+            )}
+          </div>
 
           <RegionStatsStrip items={visibleItems} />
 
@@ -1585,7 +1587,7 @@ export default function Home() {
             <div className="ftg-filter-top-row">
 
               {/* Lens pills (multi-select) */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, flex: 1 }}>
+              <div className="ftg-lens-pills" style={{ display: 'flex', flexWrap: 'wrap', gap: 5, flex: 1 }}>
                 {/* "All" clear button */}
                 <button
                   className="ftg-filter-pill"
@@ -1647,7 +1649,7 @@ export default function Home() {
               </div>
 
               {/* Right cluster: sort + view mode */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+              <div className="ftg-controls-row" style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                 {/* Sort control */}
                 <div style={{ display: 'flex', gap: 3 }}>
                   {([
@@ -1706,7 +1708,7 @@ export default function Home() {
 
             {/* Region quick-filter strip (shown when ≥2 regions have items) */}
             {availableRegions.size >= 2 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
+              <div className="ftg-region-strip" style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', marginRight: 4 }}>
                   Region
                 </span>
@@ -1817,7 +1819,7 @@ export default function Home() {
                   >
                       <div style={{ display: 'flex', gap: 14 }}>
                         {item.imageUrl && !imageErrors.has(item.imageUrl) && (
-                          <div style={{
+                          <div className="ftg-article-thumbnail" style={{
                             width: 100, height: 75, flexShrink: 0,
                             borderRadius: 4, overflow: 'hidden',
                             background: 'var(--border-light)'
@@ -1886,7 +1888,7 @@ export default function Home() {
 
                           {/* Summary */}
                           {item.summary && (
-                            <p style={{
+                            <p className="ftg-article-summary" style={{
                               fontFamily: 'var(--font-body)',
                               fontSize: 13,
                               color: 'var(--text-secondary)',
