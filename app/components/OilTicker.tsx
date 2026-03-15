@@ -50,16 +50,8 @@ export default function OilTicker({ items = [] }: Props) {
         
         const results = await res.json();
         
-        const mapped: PriceData[] = results.map((r: any) => ({
-          symbol: r.symbol,
-          name: r.shortName || r.symbol,
-          price: r.regularMarketPrice,
-          change: r.regularMarketChange,
-          changePercent: r.regularMarketChangePercent,
-          currency: r.currency
-        }));
-        
-        setPrices(mapped);
+        // Results are already mapped by the server route
+        setPrices(results);
         setError(false);
       } catch (err) {
         console.error('[FTG] Oil price fetch error:', err);
@@ -247,7 +239,7 @@ export default function OilTicker({ items = [] }: Props) {
         paddingTop: 8,
         opacity: 0.7
       }}>
-        Pricing via Yahoo Finance · News via FTG Global Feed
+        Pricing via Stooq · News via FTG Global Feed
       </div>
     </div>
   );
