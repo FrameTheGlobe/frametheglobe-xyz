@@ -116,6 +116,11 @@ html {
   50%       { opacity: 0.3; transform: scale(0.65); }
 }
 
+@keyframes radar-ring {
+  0% { transform: scale(0.8); opacity: 0.8; }
+  100% { transform: scale(3.5); opacity: 0; }
+}
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
@@ -423,9 +428,31 @@ html {
   border:     none        !important;
   box-shadow: none        !important;
   padding:    0           !important;
-  /* Ensure SVG arrow is visible above tile layer */
+/* Ensure SVG arrow is visible above tile layer */
   filter: drop-shadow(0 0 3px rgba(0,0,0,0.7));
 }
+
+/* ── Custom HTML Markers ───────────────────────────────────────────────── */
+.ftg-marker-icon {
+  background: transparent !important;
+  border:     none        !important;
+  box-shadow: none        !important;
+}
+
+.radar-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  margin-top: -50%;
+  margin-left: -50%;
+  border-radius: 50%;
+  border: 1px solid var(--badge-brk-border);
+  animation: radar-ring 2.5s ease-out infinite;
+  pointer-events: none;
+}
+
 /* Wider popup for flight cards */
 .ftg-leaflet-popup.ftg-flight-popup .leaflet-popup-content-wrapper {
   min-width: 220px;

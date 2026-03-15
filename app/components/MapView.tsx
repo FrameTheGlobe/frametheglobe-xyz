@@ -733,14 +733,24 @@ function paintMarkers(L: any, map: any, items: FeedItem[]) {
     const lng   = loc.coords[1] + jLng;
     const color = REGION_DOTS[item.region] || '#7f8c8d';
 
-    const circle = L.circleMarker([lat, lng], {
-      radius:      5,
-      fillColor:   color,
-      color:       color,
-      weight:      1,
-      opacity:     0.9,
-      fillOpacity: 0.65,
+    const diffMins = Math.floor((Date.now() - new Date(item.pubDate).getTime()) / 60_000);
+    const isBreaking = diffMins < 30; // 30 mins window for breaking
+
+    const markerHtml = `
+      <div style="position:relative; width:100%; height:100%;">
+        ${isBreaking ? `<div class="radar-ring" style="border-color: ${color}"></div>` : ''}
+        <div style="position: absolute; top:0; left:0; width:100%; height:100%; border-radius:50%; background:${color}; opacity:0.9; border: 1px solid rgba(0,0,0,0.5);"></div>
+      </div>
+    `;
+
+    const icon = L.divIcon({
+      html: markerHtml,
+      className: 'ftg-marker-icon', // Use new custom class without padding
+      iconSize: [12, 12],
+      iconAnchor: [6, 6],
     });
+
+    const marker = L.marker([lat, lng], { icon });
 
     // Escape HTML to prevent XSS in popup
     const safeTitle  = esc(item.title);
@@ -758,8 +768,8 @@ function paintMarkers(L: any, map: any, items: FeedItem[]) {
       </div>
     `;
 
-    circle.bindPopup(popupHTML, { className: 'ftg-leaflet-popup', maxWidth: 260 });
-    group.addLayer(circle);
+    marker.bindPopup(popupHTML, { className: 'ftg-leaflet-popup', maxWidth: 260 });
+    group.addLayer(marker);
   });
 }
 
