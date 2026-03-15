@@ -234,13 +234,36 @@ html {
 }
 
 /* ══════════════════════════════════════════════════════
+   MOBILE UTILITY CLASSES
+   (used by page.tsx + components via className)
+══════════════════════════════════════════════════════ */
+
+/* Filter bar top row: lens pills + controls */
+.ftg-filter-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+/* Oil board: 2-column price grid */
+.ftg-oil-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+
+/* Hide on mobile */
+.ftg-hide-mobile { display: inline; }
+
+/* ══════════════════════════════════════════════════════
    RESPONSIVE — ≤ 820 px
 ══════════════════════════════════════════════════════ */
 @media (max-width: 820px) {
   .page-layout {
     grid-template-columns: 1fr;
-    padding: 16px 14px;
-    gap: 14px;
+    padding: 12px 12px;
+    gap: 10px;
   }
 
   /* Stack widgets vertically on mobile */
@@ -297,6 +320,86 @@ html {
   .article-card {
     padding-top:    14px !important;
     padding-bottom: 14px !important;
+  }
+
+  /* Filter bar: stack lens row above controls on narrow screens */
+  .ftg-filter-top-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* Lens pills + region chips: bigger touch target */
+  .ftg-filter-pill {
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+  }
+
+  /* Sort / view mode buttons: bigger targets */
+  .ftg-sort-btn,
+  .ftg-view-btn {
+    padding: 6px 10px !important;
+    font-size: 11px !important;
+  }
+
+  /* Oil board: stack Brent + WTI vertically on very small screens */
+  .ftg-oil-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Reduce the big price number on mobile so it fits */
+  .ftg-oil-price {
+    font-size: 28px !important;
+  }
+
+  /* Header: hide keyboard shortcut hint */
+  .ftg-hide-mobile {
+    display: none !important;
+  }
+
+  /* Header wordmark: slightly smaller on mobile */
+  .ftg-wordmark {
+    font-size: 17px !important;
+  }
+
+  /* Section headers and labels: slightly tighter padding */
+  .ftg-section-body {
+    padding: 10px 12px !important;
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   RESPONSIVE — ≤ 480 px  (small phones)
+══════════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+  .page-layout {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  /* Article title: slightly smaller on phones */
+  .ftg-article-title {
+    font-size: 14px !important;
+  }
+
+  /* Breaking ticker text */
+  .ftg-ticker-text {
+    font-size: 11px !important;
+  }
+
+  /* Oil price number: fit on 375px */
+  .ftg-oil-price {
+    font-size: 24px !important;
+  }
+
+  /* Iran section body */
+  .ftg-section-body {
+    padding: 10px 10px !important;
+  }
+
+  /* Loading screen region chips: smaller */
+  .ftg-region-chip {
+    font-size: 8px !important;
+    padding: 2px 6px !important;
   }
 }
 

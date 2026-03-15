@@ -294,7 +294,7 @@ export default function IranWarSection({ items, sourceCountMap }: Props) {
 
       {/* ── Body ────────────────────────────────────────────────────────── */}
       {!collapsed && (
-        <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div className="ftg-section-body" style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
           {/* ── Crude Oil Price Board ────────────────────────────────────── */}
           <IranOilBoard />

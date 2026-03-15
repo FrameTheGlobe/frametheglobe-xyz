@@ -287,6 +287,7 @@ type SidebarPanelProps = {
   onToggleSource: (id: string) => void;
   onAllSources: () => void;
   onNoSources: () => void;
+  sourceHealth: SourceHealth[];
   sourceCountMap: Record<string, number>;
   failedSources: Set<string>;
   pinnedItems: FeedItem[];
@@ -297,11 +298,113 @@ type SidebarPanelProps = {
 function SidebarPanel({
   search, onSearch, searchRef,
   activeSources, onToggleSource, onAllSources, onNoSources,
-  sourceCountMap, failedSources,
+  sourceCountMap, failedSources, sourceHealth,
   pinnedItems, onTogglePin, keyForItem,
 }: SidebarPanelProps) {
+  const [healthOpen, setHealthOpen] = useState(false);
+  const failedHealth  = sourceHealth.filter(h => !h.ok);
+  const isAllHealthy  = sourceHealth.length > 0 && failedHealth.length === 0;
+  const total         = sourceHealth.length || SOURCES.length;
+
   return (
     <div style={{ fontFamily: 'var(--font-mono)' }}>
+
+      {/* ── Feed Status (always visible) ──────────────────────────────── */}
+      <div style={{
+        marginBottom: 14,
+        border:       '1px solid var(--border-light)',
+        borderRadius: 3,
+        overflow:     'hidden',
+      }}>
+        {/* Status header — clickable when there are failures */}
+        <button
+          onClick={() => failedHealth.length > 0 && setHealthOpen(v => !v)}
+          style={{
+            width:          '100%',
+            display:        'flex',
+            alignItems:     'center',
+            gap:            7,
+            padding:        '7px 10px',
+            background:     isAllHealthy
+              ? 'rgba(39,174,96,0.06)'
+              : failedHealth.length > 0
+                ? 'rgba(231,76,60,0.06)'
+                : 'var(--surface-hover)',
+            border:         'none',
+            cursor:         failedHealth.length > 0 ? 'pointer' : 'default',
+            textAlign:      'left',
+          }}
+        >
+          <span style={{
+            width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
+            background: isAllHealthy ? '#27ae60'
+              : failedHealth.length > 0 ? '#c93a20'
+              : 'var(--text-muted)',
+          }} />
+          <span style={{
+            fontFamily:    'var(--font-mono)',
+            fontSize:      9,
+            fontWeight:    600,
+            letterSpacing: '0.10em',
+            textTransform: 'uppercase',
+            color: isAllHealthy ? '#27ae60'
+              : failedHealth.length > 0 ? '#c93a20'
+              : 'var(--text-muted)',
+            flex: 1,
+          }}>
+            {sourceHealth.length === 0
+              ? 'Feed Status'
+              : isAllHealthy
+                ? `All ${total} sources online`
+                : `${failedHealth.length} of ${total} sources down`}
+          </span>
+          {failedHealth.length > 0 && (
+            <span style={{ fontSize: 8, color: 'var(--text-muted)' }}>
+              {healthOpen ? '▲' : '▼'}
+            </span>
+          )}
+        </button>
+
+        {/* Expanded failure list */}
+        {healthOpen && failedHealth.length > 0 && (() => {
+          const byRegion: Record<string, SourceHealth[]> = {};
+          failedHealth.forEach(h => {
+            const r = h.region || 'unknown';
+            if (!byRegion[r]) byRegion[r] = [];
+            byRegion[r].push(h);
+          });
+          return (
+            <div style={{ padding: '6px 10px 8px', borderTop: '1px solid var(--border-light)' }}>
+              {Object.entries(byRegion).map(([region, sources]) => (
+                <div key={region} style={{ marginBottom: 8 }}>
+                  <div style={{
+                    fontSize: 7, letterSpacing: '0.14em', textTransform: 'uppercase',
+                    color: 'var(--text-muted)', marginBottom: 4, fontWeight: 700,
+                  }}>
+                    {REGION_LABELS[region as Source['region']] || region}
+                  </div>
+                  {sources.map(h => (
+                    <div key={h.id} style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      gap: 6, marginBottom: 3,
+                    }}>
+                      <span style={{ fontSize: 10, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {h.name}
+                      </span>
+                      <span style={{ fontSize: 8, color: '#c93a20', flexShrink: 0 }}>
+                        {h.errorMsg || 'Error'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+              <div style={{ fontSize: 8, color: 'var(--text-muted)', marginTop: 4 }}>
+                Cached data served where available.
+              </div>
+            </div>
+          );
+        })()}
+      </div>
 
       {/* Search */}
       <div style={{ marginBottom: 16 }}>
@@ -1230,7 +1333,7 @@ export default function Home() {
             {/* Wordmark + badges */}
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                <h1 style={{
+                <h1 className="ftg-wordmark" style={{
                   fontFamily: 'var(--font-display)',
                   fontSize: 20,
                   fontWeight: 700,
@@ -1343,8 +1446,8 @@ export default function Home() {
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.04em' }}>
                     updated {lastUpdated ? timeAgo(lastUpdated) : '—'}
                   </span>
-                  {/* Keyboard hint */}
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--border)', letterSpacing: '0.06em', marginLeft: 4 }}>
+                  {/* Keyboard hint — hidden on mobile */}
+                  <span className="ftg-hide-mobile" style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--border)', letterSpacing: '0.06em', marginLeft: 4 }}>
                     j/k·o·/·m
                   </span>
                 </div>
@@ -1441,6 +1544,7 @@ export default function Home() {
               onNoSources={() => setActiveSources(new Set([SOURCES[0].id]))}
               sourceCountMap={sourceCountMap}
               failedSources={failedSources}
+              sourceHealth={sourceHealth}
               pinnedItems={pinnedItems}
               onTogglePin={togglePin}
               keyForItem={keyForItem}
@@ -1452,9 +1556,6 @@ export default function Home() {
         <main>
           {/* ── Iran War Theater ─────────────────────────────────── */}
           <IranWarSection items={items} sourceCountMap={sourceCountMap} />
-
-          {/* ── Feed Status (only visible when sources are down) ─── */}
-          {sourceHealth.length > 0 && <FeedStatusPanel health={sourceHealth} />}
 
           {/* ── Widgets row ──────────────────────────────────────── */}
           {!loading && items.length > 0 && (
@@ -1481,12 +1582,13 @@ export default function Home() {
           <div style={{ marginBottom: 10, display: 'flex', flexDirection: 'column', gap: 7 }}>
 
             {/* Top row: lenses + view/sort controls */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+            <div className="ftg-filter-top-row">
 
               {/* Lens pills (multi-select) */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, flex: 1 }}>
                 {/* "All" clear button */}
                 <button
+                  className="ftg-filter-pill"
                   onClick={() => { setActiveLenses(new Set()); setActiveRegions(new Set()); }}
                   style={{
                     fontFamily: 'var(--font-mono)',
@@ -1513,6 +1615,7 @@ export default function Home() {
                   return (
                     <button
                       key={l.id}
+                      className="ftg-filter-pill"
                       title={l.hint}
                       onClick={() => setActiveLenses(prev => {
                         const next = new Set(prev);
@@ -1554,6 +1657,7 @@ export default function Home() {
                   ] as [SortMode, string][]).map(([mode, label]) => (
                     <button
                       key={mode}
+                      className="ftg-sort-btn"
                       onClick={() => setSortMode(mode)}
                       style={{
                         fontFamily: 'var(--font-mono)',
@@ -1761,6 +1865,7 @@ export default function Home() {
                               target="_blank"
                               rel="noopener noreferrer"
                               data-article-idx={i}
+                              className="ftg-article-title"
                               style={{
                                 fontFamily: 'var(--font-display)',
                                 fontSize: 16,

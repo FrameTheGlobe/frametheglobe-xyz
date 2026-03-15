@@ -204,7 +204,7 @@ export default function IranOilBoard() {
         </div>
 
         {/* ── Main price board ─────────────────────────────────────── */}
-        <div style={{
+        <div className="ftg-oil-grid" style={{
           display:  'grid',
           gridTemplateColumns: brent && wti ? '1fr 1fr' : '1fr',
           gap:      0,
@@ -238,7 +238,7 @@ export default function IranOilBoard() {
                 {/* Big price */}
                 <div
                   key={`${p.symbol}-${flashGen}`}
-                  className="ftg-price-flash"
+                  className="ftg-price-flash ftg-oil-price"
                   style={{
                     fontFamily: 'var(--font-mono)',
                     fontSize:   36,
