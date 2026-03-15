@@ -33,6 +33,25 @@ if (!fs.existsSync(buildIdPath)) {
   }
 }
 
+// ── Hostinger Static File Fix ────────────────────────────────────────────────
+// On Hostinger LiteSpeed + Node.js, static file requests to /_next/static/...
+// are usually intercepted by the web server (avoiding the Node.js proxy).
+// Since the web server looks for an actual folder matching the URL in the
+// Document Root, and refusing to serve hidden dot-directories like `.next`,
+// explicitly copying `.next/static` to `_next/static` solves the 404 issue.
+try {
+  const nextStatic = path.join(__dirname, '.next', 'static');
+  const underscoreNextStatic = path.join(__dirname, '_next', 'static');
+  if (fs.existsSync(nextStatic)) {
+    console.log('[FTG] Exporting static chunks to ./_next/static for LiteSpeed...');
+    execSync(`rm -rf "${path.join(__dirname, '_next')}"`);
+    fs.mkdirSync(path.join(__dirname, '_next'), { recursive: true });
+    execSync(`cp -r "${nextStatic}" "${underscoreNextStatic}"`);
+  }
+} catch (err) {
+  console.error('[FTG] Note: Failed to export _next static files:', err.message);
+}
+
 // ── Start Next.js production server ──────────────────────────────────────────
 const app    = next({ dev: false, hostname, port, dir: __dirname });
 const handle = app.getRequestHandler();
