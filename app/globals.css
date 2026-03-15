@@ -1,10 +1,8 @@
-/* Google Fonts — must come first before any other @import or rules */
-@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=IBM+Plex+Mono:wght@400;500&display=swap');
-
 /* Leaflet — imported here (not in the component) so it lands in the main
    CSS bundle and is linked in <head>, not in a lazy chunk that can 404.
-   Must come after any url() @imports so Turbopack's inlining doesn't
-   push the Google Fonts import below Leaflet's rules (CSS parse error). */
+   Google Fonts @import removed — fonts are now loaded via next/font in
+   layout.tsx which self-hosts them at build time (zero CDN round-trip,
+   no render-blocking request). */
 @import 'leaflet/dist/leaflet.css';
 
 /* ══════════════════════════════════════════════════════
@@ -39,9 +37,10 @@
   --shadow-sm:   0 2px 8px rgba(0, 0, 0, 0.04);
   --shadow-md:   0 6px 16px rgba(0, 0, 0, 0.06);
 
-  --font-display: 'Lora', Georgia, serif;
-  --font-body:    'Lora', system-ui, sans-serif;
-  --font-mono:    'IBM Plex Mono', monospace;
+  /* next/font injects --font-lora and --font-ibm-mono onto <html> */
+  --font-display: var(--font-lora), Georgia, serif;
+  --font-body:    var(--font-lora), system-ui, sans-serif;
+  --font-mono:    var(--font-ibm-mono), monospace;
 }
 
 /* ══════════════════════════════════════════════════════

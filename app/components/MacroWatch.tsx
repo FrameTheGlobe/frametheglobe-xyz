@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, memo } from 'react';
 
 type FeedItem = {
   title: string;
@@ -22,7 +22,7 @@ const MACRO_KEYWORDS = [
   'treasury yield', 'petrodollar', 'us dollar', 'forex', 'global market', 'sanctions'
 ];
 
-export default function MacroWatch({ items, limit = 4 }: Props) {
+function MacroWatch({ items, limit = 4 }: Props) {
   const macroNews = useMemo(() => {
     return items
       .filter(item => {
@@ -139,3 +139,5 @@ export default function MacroWatch({ items, limit = 4 }: Props) {
     </div>
   );
 }
+
+export default memo(MacroWatch);

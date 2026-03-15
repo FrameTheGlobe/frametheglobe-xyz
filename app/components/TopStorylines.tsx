@@ -1,5 +1,7 @@
 'use client';
 
+import { memo } from 'react';
+
 type FeedItem = {
   title: string;
   link: string;
@@ -20,7 +22,7 @@ interface Props {
   limit?: number;
 }
 
-export default function TopStorylines({ clusters, limit = 5 }: Props) {
+function TopStorylines({ clusters, limit = 5 }: Props) {
   // Sort clusters by score (which factors in size and recency)
   const topClusters = clusters
     .sort((a, b) => b.score - a.score)
@@ -95,3 +97,7 @@ export default function TopStorylines({ clusters, limit = 5 }: Props) {
     </div>
   );
 }
+
+// Only re-render when the clusters array reference changes, i.e. when
+// visibleItems changes — not on every unrelated parent state update.
+export default memo(TopStorylines);

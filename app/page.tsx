@@ -88,15 +88,25 @@ const REGION_GROUPS: [string, typeof SOURCES][] = Object.entries(
   }, {})
 );
 
+// Pre-built map: lensId → its LENSES definition (avoids LENSES.find on every item)
+const LENS_MAP = Object.fromEntries(LENSES.map(l => [l.id, l])) as Record<LensId, typeof LENSES[0]>;
+
+// Pre-built single-id Sets for the lensCountMap computation.
+// Created once at module load — never recreated inside useMemo loops.
+const SINGLE_LENS_SETS: Partial<Record<LensId, Set<LensId>>> = Object.fromEntries(
+  LENSES.filter(l => l.id !== 'all').map(l => [l.id, new Set([l.id]) as Set<LensId>])
+);
+
 // ── Pure helpers ──────────────────────────────────────────────────────────────
 function itemMatchesLens(item: FeedItem, activeLenses: Set<LensId>): boolean {
   if (activeLenses.size === 0) return true; // empty selection = show all
   const text = `${item.title} ${item.summary}`.toLowerCase();
-  return [...activeLenses].some(lensId => {
-    const def = LENSES.find(l => l.id === lensId);
-    if (!def) return false;
-    return def.keywords.some(kw => text.includes(kw));
-  });
+  // Iterate Set directly — no intermediate array allocation from spread.
+  for (const lensId of activeLenses) {
+    const def = LENS_MAP[lensId];
+    if (def && def.keywords.some(kw => text.includes(kw))) return true;
+  }
+  return false;
 }
 
 function itemMatchesSearch(item: FeedItem, q: string): boolean {
@@ -118,20 +128,26 @@ const CLUSTER_STOPWORDS = new Set([
   'can','just','us','new','amid','amid','report','reports','sources',
 ]);
 
+// Hoisted regex constants — compiled once at module load, not per call.
+const RE_NON_ALNUM = /[^a-z0-9\s]/g;
+const RE_WHITESPACE = /\s+/;
+
 function titleToKeySet(title: string): Set<string> {
   return new Set(
     title
       .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, '')
-      .split(/\s+/)
+      .replace(RE_NON_ALNUM, '')
+      .split(RE_WHITESPACE)
       .filter(w => w.length > 2 && !CLUSTER_STOPWORDS.has(w))
   );
 }
 
 function jaccardSimilarity(a: Set<string>, b: Set<string>): number {
   if (a.size === 0 && b.size === 0) return 1;
-  const intersection = [...a].filter(w => b.has(w)).length;
-  const union = new Set([...a, ...b]).size;
+  // Count intersection without spreading either Set into a temporary array.
+  let intersection = 0;
+  a.forEach(w => { if (b.has(w)) intersection++; });
+  const union = a.size + b.size - intersection; // |A∪B| = |A| + |B| - |A∩B|
   return union === 0 ? 0 : intersection / union;
 }
 
@@ -910,6 +926,7 @@ export default function Home() {
   const [viewMode, setViewMode]         = useState<ViewMode>('list');
   const [pinnedKeys, setPinnedKeys]     = useState<string[]>([]);
   const [search, setSearch]             = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [sidebarOpen, setSidebarOpen]   = useState(false);
   const [theme, setTheme]               = useState<Theme>('light');
   const [liveStatus, setLiveStatus]     = useState<'connecting' | 'live' | 'polling'>('connecting');
@@ -920,6 +937,15 @@ export default function Home() {
   // can skip a re-fetch if the data is still reasonably fresh (< 10 min).
   const lastFetchedAtRef                 = useRef<number>(0);
   const [imageErrors, setImageErrors]    = useState<Set<string>>(new Set());
+
+  // ── Debounce search ───────────────────────────────────────────────────────
+  // Avoids re-running the O(n) itemMatchesSearch filter on every keystroke.
+  // The displayed value (search) updates immediately; the value that feeds
+  // the useMemo (debouncedSearch) settles 200ms after the user stops typing.
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 200);
+    return () => clearTimeout(t);
+  }, [search]);
 
   // ── Scroll listener for header shadow ─────────────────────────────────────
   useEffect(() => {
@@ -1188,30 +1214,45 @@ export default function Home() {
   }, []); // fetchNews is stable (useCallback with no deps)
 
   // ── Helpers ───────────────────────────────────────────────────────────────
-  const keyForItem = (item: FeedItem) => {
+  // Wrapped in useCallback so the stable references prevent unnecessary
+  // re-renders of child components that receive them as props.
+  const keyForItem = useCallback((item: FeedItem) => {
     // Some RSS parsers return '#' or a blank string when no link is available.
     // Treat those as missing so we fall through to a unique composite key.
     const link = item.link && item.link !== '#' && item.link.startsWith('http')
       ? item.link
       : null;
     return link ?? `${item.sourceId}::${item.title}::${item.pubDate}`;
-  };
+  }, []); // pure function — no external dependencies
 
-  const togglePin = (item: FeedItem) => {
+  const togglePin = useCallback((item: FeedItem) => {
     const key = keyForItem(item);
     setPinnedKeys(prev =>
       prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
     );
-  };
+  }, [keyForItem]);
 
-  const toggleSource = (id: string) => {
+  const toggleSource = useCallback((id: string) => {
     setActiveSources(prev => {
       const next = new Set(prev);
       if (next.has(id)) { if (next.size > 1) next.delete(id); }
       else next.add(id);
       return next;
     });
-  };
+  }, []); // uses only the setter — stable forever
+
+  // Stable handlers for Select-All / Select-None in the sidebar.
+  // Previously these were inline `() => setActiveSources(new Set(...))` arrow
+  // functions that created new references on every render, forcing SidebarPanel
+  // to re-render even when sources hadn't changed.
+  const selectAllSources = useCallback(
+    () => setActiveSources(new Set(SOURCES.map(s => s.id))),
+    []
+  );
+  const selectNoSources = useCallback(
+    () => setActiveSources(new Set([SOURCES[0].id])),
+    []
+  );
 
   // ── Derived data ──────────────────────────────────────────────────────────
   // De-duplicate first: some sources (e.g. China Daily) emit multiple items
@@ -1249,11 +1290,13 @@ export default function Home() {
   );
 
   const visibleItems = useMemo(() => {
-    const filtered = filteredByRegion.filter(i => itemMatchesSearch(i, search));
+    // Use debouncedSearch (200ms lag) so the O(n) filter only runs once the
+    // user has paused typing, not on every individual keystroke.
+    const filtered = filteredByRegion.filter(i => itemMatchesSearch(i, debouncedSearch));
     if (sortMode === 'date-asc') return [...filtered].reverse();
     if (sortMode === 'source') return [...filtered].sort((a, b) => a.sourceName.localeCompare(b.sourceName));
     return filtered; // date-desc is default from API
-  }, [filteredByRegion, search, sortMode]);
+  }, [filteredByRegion, debouncedSearch, sortMode]);
 
   const pinnedItems = useMemo(
     () => visibleItems.filter(i => pinnedKeys.includes(keyForItem(i))),
@@ -1287,7 +1330,8 @@ export default function Home() {
     LENSES.forEach(l => {
       map[l.id] = l.id === 'all'
         ? filteredBySource.length
-        : filteredBySource.filter(i => itemMatchesLens(i, new Set([l.id]))).length;
+        // Re-use pre-built single-id Sets — no `new Set(...)` inside the loop.
+        : filteredBySource.filter(i => itemMatchesLens(i, SINGLE_LENS_SETS[l.id]!)).length;
     });
     return map;
   }, [filteredBySource]);
@@ -1540,8 +1584,8 @@ export default function Home() {
               searchRef={searchRef}
               activeSources={activeSources}
               onToggleSource={toggleSource}
-              onAllSources={() => setActiveSources(new Set(SOURCES.map(s => s.id)))}
-              onNoSources={() => setActiveSources(new Set([SOURCES[0].id]))}
+              onAllSources={selectAllSources}
+              onNoSources={selectNoSources}
               sourceCountMap={sourceCountMap}
               failedSources={failedSources}
               sourceHealth={sourceHealth}
@@ -1825,10 +1869,14 @@ export default function Home() {
                             background: 'var(--border-light)'
                           }}>
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img 
-                              src={item.imageUrl} 
-                              alt="" 
-                              style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                            <img
+                              src={item.imageUrl}
+                              alt=""
+                              loading="lazy"
+                              decoding="async"
+                              width={100}
+                              height={75}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                               onError={() => setImageErrors(prev => {
                                 const next = new Set(prev);
                                 next.add(item.imageUrl!);

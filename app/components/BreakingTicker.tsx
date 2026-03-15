@@ -3,7 +3,12 @@
 /**
  * BreakingTicker — scrolling strip of articles published < 30 minutes ago.
  * Rendered only when there are breaking items; otherwise returns null.
+ *
+ * Wrapped in React.memo with a custom comparator: only re-renders when the
+ * set of recent article titles actually changes, not on every parent update.
  */
+
+import { memo } from 'react';
 
 type FeedItem = {
   title: string;
@@ -17,8 +22,9 @@ interface Props {
   items: FeedItem[];
 }
 
-export default function BreakingTicker({ items }: Props) {
-  const WINDOW_MS = 30 * 60 * 1000; // 30 minutes
+const WINDOW_MS = 30 * 60 * 1000; // 30 minutes
+
+function BreakingTicker({ items }: Props) {
   const now = Date.now();
 
   const breaking = items.filter(
@@ -106,3 +112,21 @@ export default function BreakingTicker({ items }: Props) {
     </div>
   );
 }
+
+// Only re-render when the breaking news window changes:
+// compare the titles + pubDates of items that are < 30 min old.
+function breakingItemsEqual(prev: Props, next: Props): boolean {
+  const now = Date.now();
+  const isBreaking = (i: FeedItem) => now - new Date(i.pubDate).getTime() < WINDOW_MS;
+
+  const prevBreaking = prev.items.filter(isBreaking);
+  const nextBreaking = next.items.filter(isBreaking);
+
+  if (prevBreaking.length !== nextBreaking.length) return false;
+  return prevBreaking.every((item, i) =>
+    item.title === nextBreaking[i].title &&
+    item.pubDate === nextBreaking[i].pubDate
+  );
+}
+
+export default memo(BreakingTicker, breakingItemsEqual);

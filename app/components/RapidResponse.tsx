@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, memo } from 'react';
 
 type FeedItem = {
   title: string;
@@ -19,7 +19,7 @@ interface Props {
 
 const TRUMP_KEYWORDS = ['trump', 'white house', 'rapid 47', 'vance', 'maga', 'mar-a-lago', 'trump administration', '47th president'];
 
-export default function RapidResponse({ items, limit = 4, onViewAll }: Props) {
+function RapidResponse({ items, limit = 4, onViewAll }: Props) {
   const trumpNews = useMemo(() => {
     return items
       .filter(item => {
@@ -146,3 +146,5 @@ export default function RapidResponse({ items, limit = 4, onViewAll }: Props) {
     </div>
   );
 }
+
+export default memo(RapidResponse);

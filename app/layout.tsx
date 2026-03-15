@@ -1,5 +1,25 @@
 import type { Metadata, Viewport } from 'next';
+import { Lora, IBM_Plex_Mono } from 'next/font/google';
 import './globals.css';
+
+// next/font self-hosts these at build time → no round-trip to Google Fonts CDN,
+// no render-blocking stylesheet, fonts inlined into the page bundle.
+const lora = Lora({
+  subsets:  ['latin'],
+  weight:   ['400', '500', '600', '700'],
+  style:    ['normal', 'italic'],
+  variable: '--font-lora',
+  display:  'swap',
+  preload:  true,
+});
+
+const ibmPlexMono = IBM_Plex_Mono({
+  subsets:  ['latin'],
+  weight:   ['400', '500'],
+  variable: '--font-ibm-mono',
+  display:  'swap',
+  preload:  false, // mono font — not on critical path
+});
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -62,7 +82,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${lora.variable} ${ibmPlexMono.variable}`}>
       <body>{children}</body>
     </html>
   );
