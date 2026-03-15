@@ -365,6 +365,11 @@ html {
   .ftg-section-body {
     padding: 10px 12px !important;
   }
+
+  /* War cost counter: slightly smaller at tablet width */
+  .ftg-war-cost-counter {
+    font-size: 26px !important;
+  }
 }
 
 /* ══════════════════════════════════════════════════════
@@ -400,6 +405,16 @@ html {
   .ftg-region-chip {
     font-size: 8px !important;
     padding: 2px 6px !important;
+  }
+
+  /* War cost counter: smaller number on tiny phones */
+  .ftg-war-cost-counter {
+    font-size: 22px !important;
+  }
+
+  /* Human cost: stack cards 1-col on small phones */
+  .ftg-human-cost-grid {
+    grid-template-columns: 1fr !important;
   }
 }
 
