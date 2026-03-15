@@ -842,12 +842,12 @@ export default function Home() {
                 <h1 style={{
                   fontFamily: 'var(--font-display)',
                   fontSize: 20,
-                  fontWeight: 900,
-                  letterSpacing: '-0.02em',
+                  fontWeight: 700,
+                  letterSpacing: '-0.01em',
                   color: 'var(--text-primary)',
                   lineHeight: 1,
                 }}>
-                  FrameTheGlobe
+                  FrameTheGlobeNews
                 </h1>
 
                 <span style={{
@@ -901,7 +901,7 @@ export default function Home() {
                         display: 'flex', 
                         alignItems: 'center', 
                         gap: 4, 
-                        background: 'var(--accent)', 
+                        background: 'var(--brand-blue)', 
                         color: '#fff', 
                         padding: '1px 5px', 
                         borderRadius: 3, 

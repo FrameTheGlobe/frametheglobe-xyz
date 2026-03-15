@@ -35,7 +35,7 @@ export default function LiveVideoWidget() {
           <h3 style={{ 
             fontFamily: 'var(--font-mono)', 
             fontSize: 10, 
-            color: 'var(--badge-brk-color)', 
+            color: 'var(--brand-blue)', 
             letterSpacing: '0.08em', 
             textTransform: 'uppercase', 
             margin: 0,
@@ -46,6 +46,8 @@ export default function LiveVideoWidget() {
         </div>
 
         <select 
+          id="live-feed-selector"
+          name="live-feed-selector"
           value={activeFeedId}
           onChange={(e) => setActiveFeedId(e.target.value)}
           style={{
@@ -84,7 +86,6 @@ export default function LiveVideoWidget() {
           title={`${activeFeed.name} Live Stream`}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
-          referrerPolicy="no-referrer"
         />
       </div>
     </div>

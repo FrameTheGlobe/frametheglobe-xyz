@@ -1,5 +1,5 @@
 /* Google Fonts — must come first before any other @import or rules */
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 /* Leaflet — imported here (not in the component) so it lands in the main
    CSS bundle and is linked in <head>, not in a lazy chunk that can 404.
@@ -11,17 +11,18 @@
    LIGHT THEME  (default)
 ══════════════════════════════════════════════════════ */
 :root {
-  --bg:             #faf9f7;
+  --bg:             #fafafa;
   --surface:        #ffffff;
-  --surface-hover:  #f4f2ef;
-  --border:         #e2ded7;
-  --border-light:   #f0ede8;
-  --text-primary:   #1a1918;
-  --text-secondary: #5a5650;
-  --text-muted:     #8a857e;
+  --surface-hover:  #f8f8f8;
+  --border:         #e8e8e8;
+  --border-light:   #f2f2f2;
+  --text-primary:   #363737;
+  --text-secondary: #5a5a5a;
+  --text-muted:     #8a8a8a;
   --accent:         #c93a20;
   --accent-light:   #fcefeb;
   --accent-hover:   #a82d16;
+  --brand-blue:     #005aa6;
 
   --badge-new-color:   #b58a0d;
   --badge-new-bg:      #fef9e7;
@@ -38,8 +39,8 @@
   --shadow-sm:   0 2px 8px rgba(0, 0, 0, 0.04);
   --shadow-md:   0 6px 16px rgba(0, 0, 0, 0.06);
 
-  --font-display: 'Playfair Display', Georgia, serif;
-  --font-body:    'IBM Plex Sans', system-ui, sans-serif;
+  --font-display: 'Lora', Georgia, serif;
+  --font-body:    'Lora', system-ui, sans-serif;
   --font-mono:    'IBM Plex Mono', monospace;
 }
 

@@ -47,13 +47,13 @@ export default function RapidResponse({ items, limit = 4, onViewAll }: Props) {
             width: 8, 
             height: 8, 
             borderRadius: '50%', 
-            background: 'var(--accent)', 
-            boxShadow: '0 0 8px var(--accent)' 
+            background: 'var(--brand-blue)', 
+            boxShadow: '0 0 8px var(--brand-blue)' 
           }} />
           <h3 style={{ 
             fontFamily: 'var(--font-mono)', 
             fontSize: 10, 
-            color: 'var(--accent)', 
+            color: 'var(--brand-blue)', 
             letterSpacing: '0.12em', 
             textTransform: 'uppercase', 
             margin: 0,

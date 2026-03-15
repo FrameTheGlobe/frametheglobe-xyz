@@ -30,7 +30,7 @@ export default function TopStorylines({ clusters, limit = 5 }: Props) {
     return (
       <div className="article-card" style={{ padding: '16px 20px', background: 'var(--surface)', border: '1px solid var(--border-light)' }}>
         <h3 style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 12 }}>
-          <span style={{ color: 'var(--accent)' }}>●</span> Top Storylines
+          <span style={{ color: 'var(--brand-blue)' }}>●</span> Top Storylines
         </h3>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>
           Awaiting sufficient data to form clusters...
@@ -42,7 +42,7 @@ export default function TopStorylines({ clusters, limit = 5 }: Props) {
   return (
     <div className="article-card" style={{ padding: '16px 20px', background: 'var(--surface)', border: '1px solid var(--border-light)' }}>
       <h3 style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 16 }}>
-        <span style={{ color: 'var(--accent)' }}>●</span> Top Storylines
+        <span style={{ color: 'var(--brand-blue)' }}>●</span> Top Storylines
       </h3>
       
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
