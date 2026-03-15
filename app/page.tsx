@@ -458,6 +458,7 @@ export default function Home() {
   const [focusedIdx, setFocusedIdx]     = useState<number>(-1);
   const [scrolled, setScrolled]         = useState(false);
   const searchRef                        = useRef<HTMLInputElement>(null);
+  const [imageErrors, setImageErrors]    = useState<Set<string>>(new Set());
 
   // ── Scroll listener for header shadow ─────────────────────────────────────
   useEffect(() => {
@@ -1327,14 +1328,23 @@ export default function Home() {
                     onMouseEnter={() => setFocusedIdx(i)}
                   >
                       <div style={{ display: 'flex', gap: 14 }}>
-                        {item.imageUrl && (
+                        {item.imageUrl && !imageErrors.has(item.imageUrl) && (
                           <div style={{
                             width: 100, height: 75, flexShrink: 0,
                             borderRadius: 4, overflow: 'hidden',
                             background: 'var(--border-light)'
                           }}>
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={item.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <img 
+                              src={item.imageUrl} 
+                              alt="" 
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                              onError={() => setImageErrors(prev => {
+                                const next = new Set(prev);
+                                next.add(item.imageUrl!);
+                                return next;
+                              })}
+                            />
                           </div>
                         )}
                         <div style={{ flex: 1, minWidth: 0 }}>
