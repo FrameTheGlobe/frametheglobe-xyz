@@ -297,6 +297,8 @@ function SidebarPanel({
       {/* Search */}
       <div style={{ marginBottom: 16 }}>
         <input
+          id="search-input"
+          name="search-input"
           ref={searchRef}
           className="search-input"
           type="search"

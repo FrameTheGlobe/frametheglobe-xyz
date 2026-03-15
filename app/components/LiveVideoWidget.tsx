@@ -3,10 +3,10 @@
 import { useState } from 'react';
 
 const LIVE_FEEDS = [
-  { id: 'aljazeera', name: 'Al Jazeera English', videoId: 'b_f1I6e2R4Y' },
-  { id: 'sky', name: 'Sky News Live', videoId: '9Auq9mYxFEE' },
-  { id: 'dw', name: 'DW News', videoId: 'GqK8jQYxyEE' },
-  { id: 'france24', name: 'France 24', videoId: 'WdF281vSgD8' },
+  { id: 'aljazeera', name: 'Al Jazeera English', channelId: 'UCNye-wNBqNL5ZzHSJj3l8Bg' },
+  { id: 'sky', name: 'Sky News Live', channelId: 'UCoMdktPbSTixAyNGwb-UYkQ' },
+  { id: 'dw', name: 'DW News', channelId: 'UCknLrEdhRCp1aegoMqRaCZg' },
+  { id: 'france24', name: 'France 24', channelId: 'UCQfwfsi5VrQ8yKZ-UWmAEFg' },
 ];
 
 export default function LiveVideoWidget() {
@@ -77,7 +77,7 @@ export default function LiveVideoWidget() {
             height: '100%',
             border: 'none'
           }}
-          src={`https://www.youtube.com/embed/${activeFeed.videoId}?autoplay=1&mute=1&playsinline=1`}
+          src={`https://www.youtube.com/embed/live_stream?channel=${activeFeed.channelId}&autoplay=1&mute=1&playsinline=1`}
           title={`${activeFeed.name} Live Stream`}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen

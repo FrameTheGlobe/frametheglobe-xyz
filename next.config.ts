@@ -27,19 +27,20 @@ const nextConfig: NextConfig = {
           {
             key: "Content-Security-Policy",
             value: [
-              "default-src 'self'",
-              // Scripts: self + Next.js chunks + any CDN fallbacks
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
-              // Styles: self + inline (Next.js injects critical CSS)
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "default-src 'self' https://www.youtube.com https://*.ytimg.com",
+              // Scripts: self + Next.js chunks + YouTube
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.youtube.com https://s.ytimg.com",
+              // Styles: self + inline + Fonts + YouTube
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.youtube.com",
               // Fonts
               "font-src 'self' https://fonts.gstatic.com",
-              // Images: self + data URIs + tile servers + RSS article thumbnails
+              // Images: self + data URIs + tile servers + RSS thumbnails + YouTube
               "img-src 'self' data: blob: https: http:",
               // Connections: self + all feeds + ADS-B APIs + SSE
               "connect-src 'self' https://adsb.lol https://opensky-network.org https://fonts.googleapis.com https://fonts.gstatic.com",
-              // Frames
-              "frame-src 'self' https://www.youtube.com",
+              // Frames: allow embedding YouTube
+              "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com",
+              // Prevent others from framing us
               "frame-ancestors 'none'",
             ].join("; "),
           },
