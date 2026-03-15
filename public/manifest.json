@@ -1,7 +1,7 @@
 {
-  "name": "FrameTheGlobe — Middle East War Theater",
+  "name": "FrameTheGlobe — Middle East & South Asia War Theater",
   "short_name": "FrameTheGlobe",
-  "description": "Live multi-source news aggregator covering the Middle East war theater: Iran, Gaza, and Lebanon.",
+  "description": "Live news aggregator covering Gaza, Lebanon, Iran, Afghanistan, and Pakistan from 70+ sources.",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait-primary",

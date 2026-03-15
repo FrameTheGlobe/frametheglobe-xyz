@@ -37,8 +37,8 @@ const parser = new Parser({
   },
 });
 
-// ── Middle East War Theater keywords ─────────────────────────────────────────
-// Coverage: Iran, Gaza, Lebanon — diplomacy, military, proxy conflicts, economics, chokepoints
+// ── War Theater keywords ──────────────────────────────────────────────────────
+// Coverage: Iran · Gaza · Lebanon · Afghanistan · Pakistan — conflict, diplomacy, economics
 const IRAN_KEYWORDS = [
   // Core actors & places
   'iran', 'iranian', 'tehran', 'irgc', 'irgc-qf', 'quds force',
@@ -89,6 +89,19 @@ const IRAN_KEYWORDS = [
   'currency', 'forex', 'bonds', 'yields', 'selloff', 'rally',
   'supply chain', 'logistics', 'freight', 'shipping', 'container',
   'chokepoint', 'rerouted', 'port congestion',
+
+  // Afghanistan
+  'afghanistan', 'afghan', 'taliban', 'kabul', 'kandahar', 'helmand', 'panjshir',
+  'haqqani', 'islamic emirate', 'nrf', 'national resistance front',
+  'ttp', 'tehrik-i-taliban', 'afghan war', 'afghan civilians',
+  'doha agreement', 'afghan refugees',
+
+  // Pakistan conflict
+  'pakistan military', 'pakistan army', 'ispr', 'isi pakistan',
+  'balochistan', 'bla', 'blf', 'ptm', 'pashtun tahafuz',
+  'north waziristan', 'south waziristan', 'khyber pakhtunkhwa',
+  'line of control', 'loc pakistan', 'pakistan india border',
+  'karachi attack', 'pakistan terrorism', 'pakistan operation',
 
   // Geopolitics
   'us military', 'pentagon', 'centcom', 'nato', 'russia iran', 'china iran',

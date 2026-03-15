@@ -53,10 +53,20 @@ export const SOURCES: Source[] = [
   { id: 'alarabiya',      name: 'Al Arabiya English',     url: 'https://english.alarabiya.net/tools/rss',                      region: 'gulf',     color: '#8e44ad' },
   { id: 'aawsat',         name: 'Asharq Al-Awsat',        url: 'https://english.aawsat.com/home/rss',                          region: 'gulf',     color: '#5b2c6f' },
 
-  // ── South Asian ───────────────────────────────────────────────────────
+  // ── South Asia — Pakistan ─────────────────────────────────────────────
   { id: 'dawn',           name: 'Dawn (PK)',              url: 'https://www.dawn.com/feeds/latest-news',                       region: 'south-asian', color: '#2980b9' },
-  { id: 'samaa',          name: 'Samaa News',             url: 'https://www.samaa.tv/feed/',                                   region: 'south-asian', color: '#1abc9c' },
-  { id: 'ary',            name: 'ARY News',               url: 'https://arynews.tv/feed/',                                     region: 'south-asian', color: '#3498db' },
+  { id: 'samaa',          name: 'Samaa News (PK)',        url: 'https://www.samaa.tv/feed/',                                   region: 'south-asian', color: '#1abc9c' },
+  { id: 'ary',            name: 'ARY News (PK)',          url: 'https://arynews.tv/feed/',                                     region: 'south-asian', color: '#3498db' },
+  { id: 'geo',            name: 'Geo News (PK)',          url: 'https://www.geo.tv/rss/2',                                     region: 'south-asian', color: '#2471a3' },
+  { id: 'thenews',        name: 'The News Intl (PK)',     url: 'https://www.thenews.com.pk/rss/1/1',                           region: 'south-asian', color: '#1a5276' },
+  { id: 'expresstribune', name: 'Express Tribune (PK)',   url: 'https://tribune.com.pk/feed',                                  region: 'south-asian', color: '#117a65' },
+
+  // ── South Asia — Afghanistan ──────────────────────────────────────────
+  { id: 'tolonews',       name: 'TOLOnews (AF)',          url: 'https://tolonews.com/feed',                                    region: 'south-asian', color: '#e67e22', prefiltered: true },
+  { id: 'pajhwok',        name: 'Pajhwok Afghan News',   url: 'https://pajhwok.com/en/feed/',                                 region: 'south-asian', color: '#d35400', prefiltered: true },
+  { id: 'khaama',         name: 'Khaama Press (AF)',      url: 'https://www.khaama.com/feed/',                                 region: 'south-asian', color: '#ca6f1e', prefiltered: true },
+
+  // ── South Asia — India ────────────────────────────────────────────────
   { id: 'theprint',       name: 'The Print (IN)',         url: 'https://theprint.in/feed/',                                    region: 'south-asian', color: '#e74c3c' },
 
   // ── Analysis / Think-tanks ───────────────────────────────────────────
@@ -64,10 +74,17 @@ export const SOURCES: Source[] = [
   { id: 'mei',            name: 'Middle East Institute',  url: 'https://www.mei.edu/rss.xml',                                  region: 'analysis', color: '#1abc9c' },
   { id: 'crisisgroup',    name: 'ICG / Crisis Group',     url: 'https://www.crisisgroup.org/rss.xml',                          region: 'analysis', color: '#2ecc71' },
   { id: 'atlanticcouncil',name: 'Atlantic Council',       url: 'https://www.atlanticcouncil.org/feed/',                        region: 'analysis', color: '#27ae60' },
+  { id: 'almonitor',      name: 'Al-Monitor',             url: 'https://www.al-monitor.com/rss',                               region: 'analysis', color: '#0e6655' },
+  { id: 'resp-statecraft', name: 'Responsible Statecraft', url: 'https://responsiblestatecraft.org/feed/',                    region: 'analysis', color: '#1d8348' },
+  { id: 'thecradle',      name: 'The Cradle',             url: 'https://thecradle.co/rss',                                     region: 'analysis', color: '#196f3d', prefiltered: true },
 
-  // ── OSINT ─────────────────────────────────────────────────────────────
+  // ── OSINT / Independent ───────────────────────────────────────────────
   { id: 'dropsite',       name: 'DropSite News',          url: 'https://www.dropsitenews.com/feed',                            region: 'osint',    color: '#f1c40f' },
   { id: 'bellingcat',     name: 'Bellingcat',             url: 'https://www.bellingcat.com/feed/',                             region: 'osint',    color: '#f39c12' },
+  { id: 'theintercept',   name: 'The Intercept',          url: 'https://theintercept.com/feed/?lang=en',                       region: 'osint',    color: '#e67e22' },
+  { id: 'antiwar',        name: 'Antiwar.com',            url: 'https://www.antiwar.com/updates.rss',                          region: 'osint',    color: '#e74c3c', prefiltered: true },
+  { id: 'middleeastmonitor', name: 'Middle East Monitor', url: 'https://www.middleeastmonitor.com/feed/',                      region: 'osint',    color: '#f0b429', prefiltered: true },
+  { id: 'mintpress',      name: 'MintPress News',         url: 'https://www.mintpressnews.com/feed/',                          region: 'osint',    color: '#d4ac0d', prefiltered: true },
 
   // ── Global Markets & Logistics ───────────────────────────────────────
   { id: 'oilprice',       name: 'OilPrice.com',           url: 'https://oilprice.com/rss/main',                                region: 'global',   color: '#f39c12' },
@@ -116,6 +133,18 @@ export const SOURCES: Source[] = [
     url: 'https://api.gdeltproject.org/api/v2/doc/doc?query=strait+hormuz+OR+red+sea+tanker+OR+iran+oil+sanctions+OR+persian+gulf+naval&mode=artlist&format=rss&maxrecords=20&timespan=12h&sort=DateDesc',
     region: 'global', color: '#2980b9', prefiltered: true,
   },
+  {
+    id: 'gdelt-afghanistan',
+    name: 'GDELT · Afghanistan',
+    url: 'https://api.gdeltproject.org/api/v2/doc/doc?query=afghanistan+taliban+OR+kabul+attack+OR+afghan+military+OR+ttp+afghanistan+OR+haqqani&mode=artlist&format=rss&maxrecords=25&timespan=6h&sort=DateDesc',
+    region: 'global', color: '#e67e22', prefiltered: true,
+  },
+  {
+    id: 'gdelt-pakistan',
+    name: 'GDELT · Pakistan Conflict',
+    url: 'https://api.gdeltproject.org/api/v2/doc/doc?query=pakistan+military+operation+OR+ttp+pakistan+OR+balochistan+attack+OR+pakistan+terrorism+OR+waziristan&mode=artlist&format=rss&maxrecords=20&timespan=12h&sort=DateDesc',
+    region: 'global', color: '#d35400', prefiltered: true,
+  },
 
   // ── UN / Humanitarian ────────────────────────────────────────────────────────
   {
@@ -129,6 +158,12 @@ export const SOURCES: Source[] = [
     name: 'UNRWA',
     url: 'https://www.unrwa.org/rss.xml',
     region: 'global', color: '#1a6ea8', prefiltered: true,
+  },
+  {
+    id: 'reliefweb-afghanistan',
+    name: 'ReliefWeb · Afghanistan',
+    url: 'https://reliefweb.int/updates/rss.xml?primary_country=13',
+    region: 'global', color: '#e8a020', prefiltered: true,
   },
   {
     id: 'reliefweb-iran',
@@ -182,7 +217,7 @@ export const REGION_LABELS: Record<Source['region'], string> = {
   western:      'Western',
   iranian:      'Iranian',
   gulf:         'Gulf / MENA',
-  'south-asian':'South Asian',
+  'south-asian':'South Asia (Pak · Afghan)',
   levant:       'Israel · Palestine · Lebanon',
   analysis:     'Analysis',
   osint:        'OSINT',

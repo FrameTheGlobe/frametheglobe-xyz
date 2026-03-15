@@ -23,7 +23,8 @@ type FeedItem = {
 };
 
 type LensId =
-  | 'all' | 'gaza' | 'lebanon' | 'nuclear' | 'naval' | 'proxy' | 'domestic'
+  | 'all' | 'gaza' | 'lebanon' | 'afghanistan' | 'pakistan'
+  | 'nuclear' | 'naval' | 'proxy' | 'domestic'
   | 'oil' | 'commodities' | 'finance' | 'shipping' | 'supply';
 
 type Theme = 'light' | 'dark';
@@ -35,6 +36,8 @@ const LENSES: { id: LensId; label: string; hint: string; keywords: string[] }[] 
   { id: 'all',         label: 'All Topics',        hint: 'All Middle East war theater stories across every source.',   keywords: [] },
   { id: 'gaza',        label: 'Gaza',              hint: 'Gaza war, genocide, ceasefire, hostages, occupation, UNRWA.', keywords: ['gaza','rafah','khan younis','jabalia','deir al-balah','hamas','idf','ceasefire','hostages','unrwa','genocide','occupation','west bank','displacement','famine','siege','blockade','casualties','airstrike','ground invasion'] },
   { id: 'lebanon',     label: 'Lebanon',           hint: 'Lebanon war, Hezbollah, South Lebanon, Beirut, UNIFIL.',     keywords: ['lebanon','beirut','hezbollah','south lebanon','litani','nasrallah','dahieh','unifil','laf','pager','lebanese army'] },
+  { id: 'afghanistan', label: 'Afghanistan',       hint: 'Taliban rule, Kabul, TTP, Haqqani, Afghan conflict.',       keywords: ['afghanistan','afghan','taliban','kabul','kandahar','helmand','panjshir','haqqani','ttp','nrf','islamic emirate','warlord'] },
+  { id: 'pakistan',    label: 'Pakistan',          hint: 'TTP attacks, Balochistan, military operations, PTM.',       keywords: ['pakistan','islamabad','rawalpindi','ttp','tehrik-i-taliban','balochistan','bla','ptm','waziristan','khyber','imran khan','pti','pakistan army','pakistan military'] },
   { id: 'nuclear',     label: 'Nuclear',           hint: 'Enrichment, IAEA, centrifuges, breakout.',                  keywords: ['nuclear','uranium','centrifuge','natanz','fordow','iaea','enrichment','jcpoa','snapback'] },
   { id: 'naval',       label: 'Naval / Hormuz',    hint: 'Persian Gulf, Strait of Hormuz, tankers.',                  keywords: ['hormuz','strait of hormuz','persian gulf','tanker','naval','fleet','frigate','destroyer','maritime'] },
   { id: 'proxy',       label: 'Proxy Network',     hint: 'Houthis, Hamas, Hezbollah, axis of resistance.',            keywords: ['houthi','houthis','ansarallah','proxy','yemen','militia','kataib','hashd','pmu','axis of resistance'] },
@@ -801,7 +804,7 @@ export default function Home() {
                   textTransform: 'uppercase',
                   fontWeight: 500,
                 }}>
-                  Middle East Theater
+                  ME · South Asia
                 </span>
 
                 {/* Live / connection indicator */}
