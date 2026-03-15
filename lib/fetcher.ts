@@ -37,8 +37,8 @@ const parser = new Parser({
   },
 });
 
-// ── Iran War Theater keywords ──────────────────────────────────────────────────
-// Comprehensive coverage: diplomacy, military, proxy conflicts, economics, chokepoints
+// ── Middle East War Theater keywords ─────────────────────────────────────────
+// Coverage: Iran, Gaza, Lebanon — diplomacy, military, proxy conflicts, economics, chokepoints
 const IRAN_KEYWORDS = [
   // Core actors & places
   'iran', 'iranian', 'tehran', 'irgc', 'irgc-qf', 'quds force',
@@ -55,10 +55,19 @@ const IRAN_KEYWORDS = [
   'war', 'warfare', 'military operation', 'offensive', 'retaliation',
   'idf', 'israel', 'netanyahu', 'mossad', 'shin bet',
 
-  // Proxy network
+  // Gaza / Palestine
+  'gaza', 'rafah', 'khan younis', 'jabalia', 'deir al-balah', 'beit lahiya',
+  'hamas', 'islamic jihad', 'pij', 'west bank', 'unrwa', 'ramallah',
+  'occupation', 'ceasefire', 'hostages', 'genocide', 'displacement', 'famine',
+  'siege', 'blockade', 'ground invasion', 'settler violence', 'idf',
+
+  // Lebanon
+  'lebanon', 'beirut', 'south lebanon', 'litani', 'dahieh',
+  'nasrallah', 'unifil', 'lebanese army', 'laf',
+
+  // Proxy network / axis of resistance
   'hezbollah', 'houthi', 'houthis', 'ansarallah',
-  'yemen', 'gaza', 'hamas', 'islamic jihad', 'pij',
-  'west bank', 'lebanon', 'beirut', 'proxy', 'militia',
+  'yemen', 'proxy', 'militia',
   'popular mobilization', 'pmu', 'hashd',
   'kataib hezbollah', 'axis of resistance',
 

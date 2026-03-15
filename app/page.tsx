@@ -23,7 +23,7 @@ type FeedItem = {
 };
 
 type LensId =
-  | 'all' | 'nuclear' | 'naval' | 'proxy' | 'domestic'
+  | 'all' | 'gaza' | 'lebanon' | 'nuclear' | 'naval' | 'proxy' | 'domestic'
   | 'oil' | 'commodities' | 'finance' | 'shipping' | 'supply';
 
 type Theme = 'light' | 'dark';
@@ -32,16 +32,18 @@ type Cluster = { id: string; title: string; items: FeedItem[] };
 
 // ── Lens definitions ──────────────────────────────────────────────────────────
 const LENSES: { id: LensId; label: string; hint: string; keywords: string[] }[] = [
-  { id: 'all',         label: 'All Topics',        hint: 'All Iran-theater stories across every source.',          keywords: [] },
-  { id: 'nuclear',     label: 'Nuclear',           hint: 'Enrichment, IAEA, centrifuges, breakout.',              keywords: ['nuclear','uranium','centrifuge','natanz','fordow','iaea','enrichment','jcpoa','snapback'] },
-  { id: 'naval',       label: 'Naval / Hormuz',    hint: 'Persian Gulf, Strait of Hormuz, tankers.',              keywords: ['hormuz','strait of hormuz','persian gulf','tanker','naval','fleet','frigate','destroyer','maritime'] },
-  { id: 'proxy',       label: 'Proxy Conflicts',   hint: 'Hezbollah, Houthis, Gaza, proxy network.',             keywords: ['hezbollah','houthi','houthis','ansarallah','proxy','gaza','yemen','militia','kataib','hashd','pmu'] },
-  { id: 'domestic',    label: 'Iran Domestic',     hint: 'Elections, protests, leadership.',                      keywords: ['parliament','election','protest','supreme leader','khamenei','pezeshkian','raisi','crackdown','dissent'] },
-  { id: 'oil',         label: 'Oil Markets',       hint: 'Crude, Brent, WTI, barrels, OPEC+.',                   keywords: ['oil','oil price','brent','wti','barrel','crude','opec','oil output','oil supply'] },
-  { id: 'commodities', label: 'Commodities',       hint: 'Metals, food, LNG, and broader commodity impacts.',    keywords: ['commodity','commodities','wheat','grain','gas','lng','metals','fertilizer','natural gas'] },
-  { id: 'finance',     label: 'Markets / Finance', hint: 'Stocks, bonds, FX, risk premiums, sanctions.',         keywords: ['market','markets','stocks','equities','bonds','yields','currency','fx','rally','selloff','sanctions','war premium'] },
-  { id: 'shipping',    label: 'Shipping',          hint: 'Tankers, freight rates, insurance, chokepoints.',      keywords: ['tanker','freight','shipping','vessel','container','bulk carrier','insurance','suez','red sea','bab el-mandeb'] },
-  { id: 'supply',      label: 'Supply Chains',     hint: 'Ports, logistics, delays, rerouting.',                 keywords: ['supply chain','logistics','port','backlog','delays','rerouted','diverted','shipping lane','chokepoint'] },
+  { id: 'all',         label: 'All Topics',        hint: 'All Middle East war theater stories across every source.',   keywords: [] },
+  { id: 'gaza',        label: 'Gaza',              hint: 'Gaza war, genocide, ceasefire, hostages, occupation, UNRWA.', keywords: ['gaza','rafah','khan younis','jabalia','deir al-balah','hamas','idf','ceasefire','hostages','unrwa','genocide','occupation','west bank','displacement','famine','siege','blockade','casualties','airstrike','ground invasion'] },
+  { id: 'lebanon',     label: 'Lebanon',           hint: 'Lebanon war, Hezbollah, South Lebanon, Beirut, UNIFIL.',     keywords: ['lebanon','beirut','hezbollah','south lebanon','litani','nasrallah','dahieh','unifil','laf','pager','lebanese army'] },
+  { id: 'nuclear',     label: 'Nuclear',           hint: 'Enrichment, IAEA, centrifuges, breakout.',                  keywords: ['nuclear','uranium','centrifuge','natanz','fordow','iaea','enrichment','jcpoa','snapback'] },
+  { id: 'naval',       label: 'Naval / Hormuz',    hint: 'Persian Gulf, Strait of Hormuz, tankers.',                  keywords: ['hormuz','strait of hormuz','persian gulf','tanker','naval','fleet','frigate','destroyer','maritime'] },
+  { id: 'proxy',       label: 'Proxy Network',     hint: 'Houthis, Hamas, Hezbollah, axis of resistance.',            keywords: ['houthi','houthis','ansarallah','proxy','yemen','militia','kataib','hashd','pmu','axis of resistance'] },
+  { id: 'domestic',    label: 'Iran Domestic',     hint: 'Elections, protests, leadership.',                          keywords: ['parliament','election','protest','supreme leader','khamenei','pezeshkian','raisi','crackdown','dissent'] },
+  { id: 'oil',         label: 'Oil Markets',       hint: 'Crude, Brent, WTI, barrels, OPEC+.',                       keywords: ['oil','oil price','brent','wti','barrel','crude','opec','oil output','oil supply'] },
+  { id: 'commodities', label: 'Commodities',       hint: 'Metals, food, LNG, and broader commodity impacts.',        keywords: ['commodity','commodities','wheat','grain','gas','lng','metals','fertilizer','natural gas'] },
+  { id: 'finance',     label: 'Markets / Finance', hint: 'Stocks, bonds, FX, risk premiums, sanctions.',             keywords: ['market','markets','stocks','equities','bonds','yields','currency','fx','rally','selloff','sanctions','war premium'] },
+  { id: 'shipping',    label: 'Shipping',          hint: 'Tankers, freight rates, insurance, chokepoints.',          keywords: ['tanker','freight','shipping','vessel','container','bulk carrier','insurance','suez','red sea','bab el-mandeb'] },
+  { id: 'supply',      label: 'Supply Chains',     hint: 'Ports, logistics, delays, rerouting.',                     keywords: ['supply chain','logistics','port','backlog','delays','rerouted','diverted','shipping lane','chokepoint'] },
 ];
 
 // ── Region colours ─────────────────────────────────────────────────────────────
@@ -799,7 +801,7 @@ export default function Home() {
                   textTransform: 'uppercase',
                   fontWeight: 500,
                 }}>
-                  Iran Theater
+                  Middle East Theater
                 </span>
 
                 {/* Live / connection indicator */}

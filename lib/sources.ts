@@ -19,11 +19,22 @@ export const SOURCES: Source[] = [
   { id: 'reuters-markets',name: 'Reuters Markets',        url: 'http://feeds.reuters.com/news/usmarkets',                      region: 'western',  color: '#95a5a6' },
   { id: 'apnews',         name: 'AP News',                url: 'https://rsshub.app/apnews/topics/world-news',                  region: 'western',  color: '#d35400' },
 
-  // ── Levant / Israel ──────────────────────────────────────────────────
+  // ── Levant — Israel ──────────────────────────────────────────────────
   { id: 'timesofisrael',  name: 'Times of Israel',        url: 'https://www.timesofisrael.com/feed/',                          region: 'levant',   color: '#e67e22' },
   { id: 'jpost',          name: 'Jerusalem Post',         url: 'https://www.jpost.com/rss/rssfeedsheadlines.aspx',             region: 'levant',   color: '#d35400' },
   { id: 'ynetnews',       name: 'Ynet News (IL)',         url: 'https://www.ynetnews.com/category/3082/rss',                   region: 'levant',   color: '#c0392b' },
   { id: 'haaretz',        name: 'Haaretz English',        url: 'https://www.haaretz.com/srv/haaretz-en.rss',                   region: 'levant',   color: '#f39c12' },
+
+  // ── Levant — Palestine / Gaza ─────────────────────────────────────────
+  { id: 'wafa',           name: 'WAFA (Palestine)',       url: 'https://english.wafa.ps/rss.aspx',                             region: 'levant',   color: '#2ecc71', prefiltered: true },
+  { id: 'palchronicle',   name: 'Palestine Chronicle',   url: 'https://www.palestinechronicle.com/feed/',                     region: 'levant',   color: '#27ae60', prefiltered: true },
+  { id: 'electronicintifada', name: 'Electronic Intifada', url: 'https://electronicintifada.net/rss.xml',                     region: 'levant',   color: '#1e8449', prefiltered: true },
+  { id: 'mondoweiss',     name: 'Mondoweiss',             url: 'https://mondoweiss.net/feed/',                                 region: 'levant',   color: '#145a32', prefiltered: true },
+
+  // ── Levant — Lebanon ──────────────────────────────────────────────────
+  { id: 'lorienttoday',   name: "L'Orient Today (LB)",   url: 'https://today.lorientlejour.com/rss',                          region: 'levant',   color: '#e74c3c', prefiltered: true },
+  { id: 'naharnet',       name: 'Naharnet (LB)',          url: 'https://www.naharnet.com/stories/en/rss',                      region: 'levant',   color: '#c0392b', prefiltered: true },
+  { id: 'nna-lebanon',    name: 'NNA Lebanon',            url: 'https://nna-leb.gov.lb/en/rss',                                region: 'levant',   color: '#a93226', prefiltered: true },
 
   // ── Iranian / Iran-adjacent ──────────────────────────────────────────
   { id: 'mehr',           name: 'Mehr News Agency',       url: 'https://en.mehrnews.com/rss',                                  region: 'iranian',  color: '#27ae60' },
@@ -88,6 +99,18 @@ export const SOURCES: Source[] = [
     region: 'global', color: '#27ae60', prefiltered: true,
   },
   {
+    id: 'gdelt-gaza',
+    name: 'GDELT · Gaza War',
+    url: 'https://api.gdeltproject.org/api/v2/doc/doc?query=gaza+war+OR+rafah+OR+idf+gaza+OR+gaza+ceasefire+OR+gaza+humanitarian+OR+gaza+genocide&mode=artlist&format=rss&maxrecords=25&timespan=6h&sort=DateDesc',
+    region: 'global', color: '#2ecc71', prefiltered: true,
+  },
+  {
+    id: 'gdelt-lebanon',
+    name: 'GDELT · Lebanon',
+    url: 'https://api.gdeltproject.org/api/v2/doc/doc?query=lebanon+hezbollah+OR+south+lebanon+OR+beirut+attack+OR+lebanon+ceasefire+OR+unifil+lebanon&mode=artlist&format=rss&maxrecords=20&timespan=12h&sort=DateDesc',
+    region: 'global', color: '#e74c3c', prefiltered: true,
+  },
+  {
     id: 'gdelt-hormuz',
     name: 'GDELT · Hormuz / Shipping',
     url: 'https://api.gdeltproject.org/api/v2/doc/doc?query=strait+hormuz+OR+red+sea+tanker+OR+iran+oil+sanctions+OR+persian+gulf+naval&mode=artlist&format=rss&maxrecords=20&timespan=12h&sort=DateDesc',
@@ -102,15 +125,33 @@ export const SOURCES: Source[] = [
     region: 'global', color: '#1a6ea8', prefiltered: true,
   },
   {
+    id: 'unrwa',
+    name: 'UNRWA',
+    url: 'https://www.unrwa.org/rss.xml',
+    region: 'global', color: '#1a6ea8', prefiltered: true,
+  },
+  {
     id: 'reliefweb-iran',
     name: 'ReliefWeb · Iran Crisis',
     url: 'https://reliefweb.int/updates/rss.xml?primary_country=254',
     region: 'global', color: '#e8a020', prefiltered: true,
   },
   {
+    id: 'reliefweb-palestine',
+    name: 'ReliefWeb · Palestine',
+    url: 'https://reliefweb.int/updates/rss.xml?primary_country=201',
+    region: 'global', color: '#e8a020', prefiltered: true,
+  },
+  {
+    id: 'reliefweb-lebanon',
+    name: 'ReliefWeb · Lebanon',
+    url: 'https://reliefweb.int/updates/rss.xml?primary_country=141',
+    region: 'global', color: '#e8a020', prefiltered: true,
+  },
+  {
     id: 'reliefweb-mideast',
     name: 'ReliefWeb · MENA',
-    url: 'https://reliefweb.int/updates/rss.xml?primary_country=141',
+    url: 'https://reliefweb.int/updates/rss.xml?primary_country=109',
     region: 'global', color: '#e8a020', prefiltered: true,
   },
 
@@ -142,7 +183,7 @@ export const REGION_LABELS: Record<Source['region'], string> = {
   iranian:      'Iranian',
   gulf:         'Gulf / MENA',
   'south-asian':'South Asian',
-  levant:       'Levant / Israel',
+  levant:       'Israel · Palestine · Lebanon',
   analysis:     'Analysis',
   osint:        'OSINT',
   global:       'Markets & Logistics',

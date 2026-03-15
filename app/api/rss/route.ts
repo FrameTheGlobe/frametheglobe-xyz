@@ -22,9 +22,9 @@ export const dynamic   = 'force-dynamic';
 
 const SITE_URL  = 'https://frametheglobe.xyz';
 const FEED_URL  = `${SITE_URL}/api/rss`;
-const SITE_NAME = 'FrameTheGlobe — Iran War Theater';
+const SITE_NAME = 'FrameTheGlobe — Middle East War Theater';
 const SITE_DESC =
-  'Aggregated live news covering the Iran war theater: nuclear, proxy conflicts, Strait of Hormuz, oil markets, and regional geopolitics.';
+  'Aggregated live news covering the Middle East war theater: Iran nuclear program, Gaza, Lebanon, Hezbollah, Houthis, Strait of Hormuz, oil markets, and regional geopolitics.';
 
 function xmlEscape(str: string): string {
   return str
@@ -94,7 +94,7 @@ export async function GET(req: NextRequest) {
       <link>${SITE_URL}</link>
     </image>
     <dc:rights>Content belongs to respective sources. Aggregated by FrameTheGlobe.</dc:rights>
-    <dc:subject>Iran War Theater, Middle East News, Geopolitics</dc:subject>
+    <dc:subject>Middle East War Theater, Iran, Gaza, Lebanon, Geopolitics</dc:subject>
     <dc:description>Sources: ${xmlEscape(sourceList)}</dc:description>
 ${itemsXml}
   </channel>
