@@ -44,12 +44,11 @@ export default function OilTicker({ items = [] }: Props) {
     const fetchPrices = async () => {
       try {
         setLoading(true);
-        // Using Yahoo Finance public API (v7) - Fetching Crude Oil (CL=F) and Brent (BZ=F)
-        const res = await fetch('https://query1.finance.yahoo.com/v7/finance/quote?symbols=CL=F,BZ=F,NG=F');
+        // Using our safe server-side API proxy to avoid CORS blocks
+        const res = await fetch('/api/market');
         if (!res.ok) throw new Error('Fetch failed');
         
-        const data = await res.json();
-        const results = data.quoteResponse?.result || [];
+        const results = await res.json();
         
         const mapped: PriceData[] = results.map((r: any) => ({
           symbol: r.symbol,
