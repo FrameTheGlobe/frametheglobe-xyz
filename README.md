@@ -9,73 +9,98 @@
 ## 🌐 Overview
 FrameTheGlobe is a high-performance, real-time news aggregation and intelligence platform specifically engineered to monitor the **Iran War Theater**, **South Asia**, and the **Global Pivot** (the emerging superpower dynamics between the West, China, and Russia).
 
-The application distill's thousands of signals into a single, high-density dashboard designed for analysts, researchers, and geopolitical observers.
+The application distills thousands of signals from direct news agency wires, international state media, and OSINT conflict trackers into a single, high-density dashboard designed for analysts, researchers, and geopolitical observers.
 
 ---
 
-## 🚀 Key Features
+## 🗺️ Geographical Intelligence Scope
 
-### 1. The Energy Dashboard (Commodity Pulse)
-A real-time financial ticker tracking the lifeblood of the war theater: **WTI Crude**, **Brent Crude**, and **Natural Gas**.
-*   **Precision Data**: Fetched via a custom server-side proxy to **Stooq.com**.
-*   **Heuristic Filtering**: Specifically separates high-intent energy news (OPEC+, supply disruptions, maritime incidents) from general reporting.
-*   **Resilience**: Built-in JSON sanitization logic to handle malformed data streams from external providers.
+The platform categorizes intelligence across **10 distinct regional poles**, ensuring a balanced view of "The Global Pivot":
 
-### 2. Rapid 47 Response (Trump Administration Tracker)
-A dedicated intelligence lane tracking the **47th US Administration's** impact on Middle Eastern and Global policy.
-*   **Pattern Matching**: Advanced keyword clustering for Trump, Vance, and MAGA policy shift indicators.
-*   **Low-Latency**: Prioritizes White House alerts to ensure policy pivots are visual within minutes.
+| Region Pole | Description | Primary Sources |
+| :--- | :--- | :--- |
+| **Western** | Transatlantic and global reporting. | Reuters, BBC World, AP News, The Guardian, Foreign Policy. |
+| **Iranian** | State-linked and independent Persian-theater news. | Mehr News, Tasnim (IRGC), Financial Tribune, Iran International. |
+| **Levant** | The Israel-Palestine-Lebanon conflict core. | Times of Israel, WAFA (Palestine), L'Orient Today (Lebanon), Haaretz. |
+| **Gulf / MENA** | Energy-rich states and regional mediators. | Arab News, UAE National, Al Jazeera, Al Arabiya. |
+| **South Asian** | The Afghanistan-Pakistan conflict corridor. | Dawn (PK), TOLOnews (AF), Geo News, The Print (IN), Pajhwok Afghan News. |
+| **China** | Beijing's influence and the "Belt & Road" context. | Xinhua, Global Times (CN), SCMP, China Daily. |
+| **Russia** | Moscow's strategic moves and energy diplomacy. | TASS, RT News, Sputnik Globe, The Moscow Times. |
+| **Analysis** | Deep-dive think tanks and conflict researchers. | War on the Rocks, ICG (Crisis Group), Atlantic Council, The Cradle. |
+| **OSINT** | Open-source conflict tracking and independent probes. | Bellingcat, The Intercept, DropSite News, liveuamap. |
+| **Global** | Markets, logistics, and international bodies. | OilPrice.com, gCaptain, ZeroHedge, GDELT Project, UN Security Council. |
 
-### 3. Top Storylines (The Clustering Engine)
+---
+
+## 🔍 Thematic Lenses (Content Segments)
+
+The intelligence is sliced into **16 specialized lenses** using a custom keyword-heuristic engine:
+
+### Regional Theaters
+*   **Gaza**: Deep monitoring of the Gaza war, IDF operations, Hamas, UNRWA, and ceasefire negotiations.
+*   **Lebanon**: Focused tracking of Hezbollah, Beirut developments, and the South Lebanon Litani frontier.
+*   **Afghanistan**: Surveillance of Taliban rule, the Islamic Emirate, NRF resistance, and Kabul security.
+*   **Pakistan**: Tracking TTP insurgency, Balochistan (BLA) conflict, and Pakistan Military (ISPR) operations.
+
+### Strategic Segments
+*   **Nuclear/Diplomacy**: Real-time tracking of IAEA inspections, Iranian uranium enrichment (Natanz/Fordow), and JCPOA status.
+*   **Naval / Hormuz**: Monitoring the Strait of Hormuz, Persian Gulf maritime security, and tanker seizures.
+*   **Proxy Network**: Investigating the "Axis of Resistance" including Houthis (Ansarallah), PMU militias, and regional proxy coordination.
+*   **Iran Domestic**: Tracking internal Iranian protests, parliamentary leadership Pezeshkian/Khamenei), and economic dissent.
+
+### Superpower Pivot
+*   **Rapid 47 (Trump)**: Monitoring the 47th US Administration’s policy shifts, White House alerts, and MAGA geopolitical strategy.
+*   **China Pivot**: Beijing’s BRICS influence, PLA maritime moves, and Silk Road economic diplomacy.
+*   **Russia Pivot**: Moscow’s military maneuvers, Kremlin diplomacy, and Wagner/Energy influence.
+
+### Markets & Logistics
+*   **Oil Markets**: Comprehensive crude energy tracking (OPEC+, production quotas, supply disruptions).
+*   **Commodities**: Tracking LNG, grains/wheat (food security), and strategic metals.
+*   **Finance/Markets**: Monitoring war premiums, FX rates, sanctions impacts, and global bond yields.
+*   **Shipping**: Real-time intelligence on Suez/Red Sea chokepoints, freight rates, and maritime insurance.
+
+---
+
+## 📉 Financial & Commodity Intelligence (The Pulse)
+
+The **Energy Dashboard** provides live financial data integrated with sector-specific news wires:
+
+### Market Tickers (via Stooq Proxy)
+*   **WTI Crude (CL.F)**: West Texas Intermediate benchmark.
+*   **Brent Crude (CB.F)**: International energy benchmark.
+*   **Natural Gas (NG.F)**: Tracks global LNG and pipeline gas pricing.
+
+### Resilience Features
+*   **Server-Side Logic**: API requests are proxied via `/api/market` to handle CORS and prevent provider rate-limiting.
+*   **JSON Repair Layer**: A regex-based sanitization engine automatically fixes malformed JSON streams (common with free market data providers) before the dashboard renders.
+
+---
+
+## 🚀 Technical Features & Clustering
+
+### 1. Top Storylines (The Clustering Engine)
 Automatically groups related reports from diverse global sources into unified "Storylines."
 *   **Algorithm**: Uses **Jaccard Similarity** (0.40 threshold) to compare article titles and summaries.
-*   **Temporal Windows**: Groups stories published within a 12-hour window to maintain relevance.
-*   **Scoring**: Clusters are ranked by a proprietary "Impact Score" factoring in source diversity and recency.
+*   **Clustering**: Groups stories published within a 12-hour window.
+*   **Scoring**: Ranked by a proprietary "Impact Score" factoring in source diversity and recency.
 
-### 4. Macro & Markets (Superpower Quadrant)
-Tracks the "Global Pivot" by isolating news from **Chinese** (Xinhua, SCMP, Global Times) and **Russian** (TASS, RT) poles alongside Western market data.
-*   **ZeroHedge Integration**: Prioritizes ZeroHedge's contrarian macro-analysis at the top of the feed for strategic depth.
+### 2. Live Updates (SSE)
+Built a custom **Server-Sent Events (SSE)** stream (`/api/stream`) to push updates to the dashboard without the overhead of WebSockets. If SSE fails, the system automatically falls back to 5-minute polling.
 
-### 5. Live Conflict Mapping
-A custom **Leaflet.js** implementation providing a spatial dimension to current events.
-*   **Interactivity**: Real-time markers synced with active news clusters.
-*   **Region Badging**: Color-coded markers for Western, Iranian, Gulf, South Asian, and Superpower news sources.
-
-### 6. Live Video Integration
-A persistable live video feed capable of streaming global news networks (YouTube/External).
-*   **CSP Hardened**: Securely configured to allow stable channel-ID based embeds while maintaining strict Content Security Policy.
+### 3. Leaflet Geo-Mapping
+A customized **Leaflet.js** map provides spatial context to news, with color-coded markers linked directly to current story clusters.
 
 ---
 
-## 🛠️ Technical Implementation & Solved Challenges
-
-### The "Macro-to-Micro" Debugging Philosophy
-Throughout the development of v3.x, we solved several critical infrastructure hurdles:
-
-*   **API Resilience & Rate Limiting**: When Yahoo Finance began aggressive rate limiting (HTTP 429), we transitioned the system to **Stooq**. We implemented a **Server-Side API Route (`/api/market`)** to act as a CORS-compliant buffer between client components and raw data providers.
-*   **Data Sanitization**: Discovered a rare bug in Stooq's JSON output (malformed volume fields like `"volume":}`). We implemented a **Regex-based sanitization layer** that repairs the raw text feed before it hits the JSON parser, preventing local dashboard crashes.
-*   **Live Updates (SSE)**: Built a custom **Server-Sent Events (SSE)** stream (`/api/stream`) to push updates to the dashboard without the overhead of WebSockets or the lag of traditional polling.
-*   **Branding & Aesthetics**: Transitioned the entire UI to match the master brand of `frametheglobenews.com`. This included a total CSS overhaul to use a "Glassmorphism" design system, premium typography (Inter/Outfit), and a refined high-contrast light/dark mode.
-
----
-
-## 🏗️ Technical Stack
+## 🛠️ Stack & Infrastructure
 
 *   **Runtime**: Node.js 20.9+ (Essential for SSE and persistent in-memory caching).
 *   **Framework**: Next.js 16 (Turbopack enabled) using the App Router.
-*   **State Management**: React `useState` / `useMemo` hooks with shared server-client state via SSE.
+*   **CSS**: Pure Vanilla CSS logic for maximum performance.
 *   **Data Parsing**: `rss-parser` for high-throughput XML/Atom ingestion.
-*   **CSS**: Pure Vanilla CSS logic for maximum performance and zero dependency overhead.
-
----
-
-## 📦 Deployment & Nginx Configuration
-
-The app requires a **persistent Node.js process** (not serverless) to maintain the SSE connections and the in-memory feed cache.
 
 ### Nginx Recommendation (SSE Support)
-To ensure the live status dot stays green, Nginx buffering must be disabled for the stream endpoint:
-
+For the live feed to function, Nginx buffering **must** be disabled:
 ```nginx
 location /api/stream {
     proxy_pass http://localhost:3000;
@@ -86,15 +111,6 @@ location /api/stream {
     chunked_transfer_encoding off;
 }
 ```
-
----
-
-## 📝 Change Log (Recent Milestones)
-
-*   **v3.1.1**: Fixed sectional feed accuracy and ZeroHedge prioritization. Sanitized malformed JSON from data providers.
-*   **v3.1.0**: Expanded scope to **"Global Pivot"**, integrating Russian and Chinese news poles.
-*   **v3.0.7**: Final stabilization of the Energy Dashboard and pulse fix.
-*   **v3.0.0**: Master branding alignment with FrameTheGlobeNews identity.
 
 ---
 *Maintained by the FrameTheGlobe Engineering Team.*
