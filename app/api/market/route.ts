@@ -12,7 +12,7 @@ export async function GET() {
 
     const res = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; FrameTheGlobe/3.0.5; +https://frametheglobe.xyz)',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'application/json',
       },
       next: { revalidate: 60 }
@@ -22,23 +22,29 @@ export async function GET() {
       throw new Error(`Stooq responded with ${res.status}`);
     }
 
-    const rawData = await res.json();
+    const text = await res.text();
+    const sanitizedText = text
+      .replace(/"volume":\s*}/g, '"volume":null}')
+      .replace(/"volume":\s*,/g, '"volume":null,');
+    
+    const rawData = JSON.parse(sanitizedText);
     const results = rawData.symbols || [];
     
     // Map Stooq data to our component format
     const mapped = results.map((r: any) => {
+      // Handle missing data gracefully
       const price = r.close || r.open || 0;
-      const open = r.open || price;
+      const open = r.open || price || 1; // avoid div by zero
       const change = price - open;
-      const changePercent = open !== 0 ? (change / open) * 100 : 0;
+      const changePercent = (change / open) * 100;
       
-      let name = r.symbol;
+      let name = r.symbol || 'Unknown';
       if (r.symbol === 'CL.F') name = 'WTI Crude';
       if (r.symbol === 'CB.F') name = 'Brent Crude';
       if (r.symbol === 'NG.F') name = 'Natural Gas';
 
       return {
-        symbol: r.symbol,
+        symbol: r.symbol || '?',
         name: name,
         price: price,
         change: change,
@@ -49,7 +55,7 @@ export async function GET() {
     
     return NextResponse.json(mapped);
   } catch (error) {
-    console.error('[FTG-Market] API Error:', error);
-    return NextResponse.json({ error: 'Failed to fetch market data' }, { status: 500 });
+    console.error('[FTG-Market] API Exception:', error);
+    return NextResponse.json({ error: 'Failed to fetch market data', details: error instanceof Error ? error.message : String(error) }, { status: 500 });
   }
 }
