@@ -87,7 +87,7 @@ export default function LensPulse({ items, lenses, limit = 5 }: Props) {
                 <div style={{ 
                   height: '100%', 
                   width: `${percentage}%`, 
-                  background: 'var(--accent)',
+                  background: 'var(--brand-blue)',
                   borderRadius: 3,
                   transition: 'width 0.5s cubic-bezier(0.16, 1, 0.3, 1)'
                 }} />

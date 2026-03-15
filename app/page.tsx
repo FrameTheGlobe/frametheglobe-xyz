@@ -8,6 +8,7 @@ import LensPulse       from './components/LensPulse';
 import BreakingTicker  from './components/BreakingTicker';
 import LiveVideoWidget from './components/LiveVideoWidget';
 import RapidResponse   from './components/RapidResponse';
+import MacroWatch     from './components/MacroWatch';
 
 // MapView uses Leaflet (browser-only) — load with no SSR
 const MapView = dynamic(() => import('./components/MapView'), { ssr: false });
@@ -1061,14 +1062,20 @@ export default function Home() {
         <main>
           {/* ── Widgets row ──────────────────────────────────────── */}
           {!loading && items.length > 0 && (
-            <div className="widgets-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 14 }}>
+            <div className="widgets-grid" style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', 
+              gap: 14, 
+              marginBottom: 14 
+            }}>
               <TopStorylines clusters={clusters} limit={4} />
               <RapidResponse 
                 items={items} 
                 limit={4} 
                 onViewAll={() => setActiveLenses(new Set(['trump']))}
               />
-              <LensPulse items={items} lenses={LENSES} limit={5} />
+              <MacroWatch items={items} limit={4} />
+              <LensPulse items={items} lenses={LENSES} limit={6} />
             </div>
           )}
 
