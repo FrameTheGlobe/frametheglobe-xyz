@@ -70,6 +70,9 @@ export async function GET(request: Request) {
     fetchedAt:     new Date().toISOString(),
     sourceCount:   SOURCES.length,
     failedSources: failedCount,
+    // Always include health in the stored payload so SSE clients and the
+    // status panel always have up-to-date source health data.
+    health:        healthReport,
   };
 
   // Update the module-level store — this broadcasts to all SSE clients
@@ -78,7 +81,6 @@ export async function GET(request: Request) {
   const response = NextResponse.json({
     ...payload,
     cached: false,
-    health: searchParams.get('health') === '1' ? healthReport : undefined,
   });
 
   response.headers.set(

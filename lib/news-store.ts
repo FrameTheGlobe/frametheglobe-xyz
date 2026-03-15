@@ -7,7 +7,7 @@
  * interval keeps running between requests.
  */
 
-import { FeedItem } from './fetcher';
+import { FeedItem, SourceHealth } from './fetcher';
 
 export type NewsPayload = {
   items: FeedItem[];
@@ -15,6 +15,8 @@ export type NewsPayload = {
   fetchedAt: string;
   sourceCount: number;
   failedSources: number;
+  /** Full per-source health report — included in SSE broadcasts and cached payloads */
+  health?: SourceHealth[];
 };
 
 // ── Cache ─────────────────────────────────────────────────────────────────────

@@ -15,9 +15,12 @@ export type FeedItem = {
 export type SourceHealth = {
   id: string;
   name: string;
+  region: string;
   ok: boolean;
   itemCount: number;
   fromCache: boolean;
+  /** Set when the feed returned 0 items after keyword filtering (not necessarily an error) */
+  emptyFeed?: boolean;
   errorMsg?: string;
 };
 
@@ -45,7 +48,7 @@ export const CACHE_TTL_MS = 15 * 60 * 1000;
 const parser = new Parser({ timeout: 10000 });
 
 const BASE_HEADERS = {
-  'User-Agent': 'Mozilla/5.0 (compatible; FrameTheGlobe/3.1.4; +https://frametheglobe.xyz)',
+  'User-Agent': 'Mozilla/5.0 (compatible; FrameTheGlobe/3.1.5; +https://frametheglobe.xyz)',
   'Accept':     'application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
   'Accept-Language': 'en-US,en;q=0.9',
 } as const;
@@ -154,7 +157,7 @@ export async function fetchFeed(source: {
   if (source.fetchType === 'acled') {
     return {
       items: [],
-      health: { id: source.id, name: source.name, ok: true, itemCount: 0, fromCache: false },
+      health: { id: source.id, name: source.name, region: source.region, ok: true, itemCount: 0, fromCache: false },
     };
   }
 
@@ -166,7 +169,7 @@ export async function fetchFeed(source: {
   if (cached && now - cached.timestamp < CACHE_TTL_MS) {
     return {
       items: cached.items,
-      health: { id: source.id, name: source.name, ok: true, itemCount: cached.items.length, fromCache: true },
+      health: { id: source.id, name: source.name, region: source.region, ok: true, itemCount: cached.items.length, fromCache: true },
     };
   }
 
@@ -191,7 +194,7 @@ export async function fetchFeed(source: {
       SOURCE_CACHE[cacheKey] = { ...cached, timestamp: now };
       return {
         items: cached.items,
-        health: { id: source.id, name: source.name, ok: true, itemCount: cached.items.length, fromCache: true },
+        health: { id: source.id, name: source.name, region: source.region, ok: true, itemCount: cached.items.length, fromCache: true },
       };
     }
 
@@ -237,9 +240,25 @@ export async function fetchFeed(source: {
           }
         }
 
+        // Prefer item.link; fall back to item.guid (many feeds use <guid> as
+        // the canonical permalink — e.g. China Daily has empty <link> elements
+        // but puts the full URL in <guid>).
+        const rawLink = (item.link || item.guid || '').trim();
+        let resolvedLink = rawLink;
+        if (rawLink && !rawLink.startsWith('http')) {
+          // Relative URL — resolve against the feed's hostname
+          try {
+            const base  = new URL(source.url);
+            resolvedLink = new URL(rawLink, `${base.protocol}//${base.host}`).href;
+          } catch {
+            resolvedLink = '';
+          }
+        }
+        const link = resolvedLink.startsWith('http') ? resolvedLink : '';
+
         return {
           title,
-          link:        item.link || '',
+          link,
           pubDate:     item.pubDate || item.isoDate || new Date().toISOString(),
           summary:     (item.contentSnippet || item.summary || '').replace(/<[^>]*>/g, '').trim(),
           sourceId:    source.id,
@@ -254,23 +273,41 @@ export async function fetchFeed(source: {
 
     return {
       items,
-      health: { id: source.id, name: source.name, ok: true, itemCount: items.length, fromCache: false },
+      health: {
+        id: source.id, name: source.name, region: source.region,
+        ok: true, itemCount: items.length, fromCache: false,
+        emptyFeed: items.length === 0,
+      },
     };
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
+    // Shorten noisy timeout/abort messages for the UI
+    const displayError = errorMsg.includes('aborted') || errorMsg.includes('AbortError')
+      ? 'Timeout'
+      : errorMsg.startsWith('HTTP ')
+        ? errorMsg          // e.g. "HTTP 403"
+        : 'Fetch error';
     console.error(`[FTG] Feed fetch failed: ${source.id} — ${errorMsg}`);
 
     // Return stale cache if available rather than nothing
     if (cached) {
       return {
         items: cached.items,
-        health: { id: source.id, name: source.name, ok: false, itemCount: cached.items.length, fromCache: true, errorMsg },
+        health: {
+          id: source.id, name: source.name, region: source.region,
+          ok: false, itemCount: cached.items.length, fromCache: true,
+          errorMsg: displayError,
+        },
       };
     }
 
     return {
       items: [],
-      health: { id: source.id, name: source.name, ok: false, itemCount: 0, fromCache: false, errorMsg },
+      health: {
+        id: source.id, name: source.name, region: source.region,
+        ok: false, itemCount: 0, fromCache: false,
+        errorMsg: displayError,
+      },
     };
   }
 }
