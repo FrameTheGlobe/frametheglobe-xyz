@@ -29,6 +29,7 @@ type LensId =
 
 type Theme = 'light' | 'dark';
 type ViewMode = 'list' | 'clusters' | 'map';
+type SortMode = 'date-desc' | 'date-asc' | 'source';
 type Cluster = { id: string; title: string; items: FeedItem[] };
 
 // ── Lens definitions ──────────────────────────────────────────────────────────
@@ -70,12 +71,14 @@ const REGION_GROUPS: [string, typeof SOURCES][] = Object.entries(
 );
 
 // ── Pure helpers ──────────────────────────────────────────────────────────────
-function itemMatchesLens(item: FeedItem, lens: LensId): boolean {
-  if (lens === 'all') return true;
-  const def = LENSES.find(l => l.id === lens);
-  if (!def) return true;
+function itemMatchesLens(item: FeedItem, activeLenses: Set<LensId>): boolean {
+  if (activeLenses.size === 0) return true; // empty selection = show all
   const text = `${item.title} ${item.summary}`.toLowerCase();
-  return def.keywords.some(kw => text.includes(kw));
+  return [...activeLenses].some(lensId => {
+    const def = LENSES.find(l => l.id === lensId);
+    if (!def) return false;
+    return def.keywords.some(kw => text.includes(kw));
+  });
 }
 
 function itemMatchesSearch(item: FeedItem, q: string): boolean {
@@ -349,7 +352,7 @@ function SidebarPanel({
                       flexShrink: 0,
                     }} />
                     <span style={{
-                      fontSize: 10, letterSpacing: '0.02em',
+                      fontSize: 11, letterSpacing: '0.02em',
                       color: active ? 'var(--text-primary)' : 'var(--text-muted)',
                       fontWeight: active ? 500 : 400,
                       overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
@@ -359,7 +362,7 @@ function SidebarPanel({
                     {failed && <span className="source-error-dot" title="Feed failed to load" />}
                   </div>
                   {count > 0 && (
-                    <span style={{ fontSize: 8, color: active ? 'var(--text-muted)' : 'var(--border)', flexShrink: 0 }}>
+                    <span style={{ fontSize: 10, color: active ? 'var(--text-muted)' : 'var(--border)', flexShrink: 0 }}>
                       {count}
                     </span>
                   )}
@@ -378,7 +381,7 @@ function SidebarPanel({
         {Object.entries(REGION_DOTS).map(([r, c]) => (
           <div key={r} style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 5 }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: c, flexShrink: 0 }} />
-            <span style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.02em' }}>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.02em' }}>
               {REGION_LABELS[r as Source['region']] || r}
             </span>
           </div>
@@ -398,7 +401,7 @@ function SidebarPanel({
                 onClick={() => onTogglePin(item)}
                 style={{
                   border: 'none', background: 'transparent', textAlign: 'left',
-                  cursor: 'pointer', fontSize: 10, color: 'var(--text-secondary)', padding: '3px 0',
+                  cursor: 'pointer', fontSize: 11, color: 'var(--text-secondary)', padding: '3px 0',
                 }}
               >
                 <span style={{ fontWeight: 500, color: 'var(--accent)' }}>{item.sourceName}</span>
@@ -425,7 +428,9 @@ export default function Home() {
   const [activeSources, setActiveSources] = useState<Set<string>>(
     new Set(SOURCES.map(s => s.id))
   );
-  const [lens, setLens]                 = useState<LensId>('all');
+  const [activeLenses, setActiveLenses] = useState<Set<LensId>>(new Set());
+  const [activeRegions, setActiveRegions] = useState<Set<string>>(new Set());
+  const [sortMode, setSortMode]         = useState<SortMode>('date-desc');
   const [viewMode, setViewMode]         = useState<ViewMode>('list');
   const [pinnedKeys, setPinnedKeys]     = useState<string[]>([]);
   const [search, setSearch]             = useState('');
@@ -485,10 +490,20 @@ export default function Home() {
         fetchNews();
         return;
       }
-      // 1-9 → switch lens
+      // 1 → clear all lenses; 2-9 → toggle specific lens by index
       const digit = parseInt(e.key, 10);
-      if (digit >= 1 && digit <= 9 && digit <= LENSES.length) {
-        setLens(LENSES[digit - 1].id);
+      if (digit >= 1 && digit <= 9) {
+        if (digit === 1) {
+          setActiveLenses(new Set()); // "1" = show all (clear filters)
+          setActiveRegions(new Set());
+        } else if (digit - 1 < LENSES.length) {
+          const lensId = LENSES[digit - 1].id;
+          setActiveLenses(prev => {
+            const next = new Set(prev);
+            if (next.has(lensId)) next.delete(lensId); else next.add(lensId);
+            return next;
+          });
+        }
       }
     };
 
@@ -701,14 +716,29 @@ export default function Home() {
   );
 
   const filteredByLens = useMemo(
-    () => filteredBySource.filter(i => itemMatchesLens(i, lens)),
-    [filteredBySource, lens]
+    () => filteredBySource.filter(i => itemMatchesLens(i, activeLenses)),
+    [filteredBySource, activeLenses]
   );
 
-  const visibleItems = useMemo(
-    () => filteredByLens.filter(i => itemMatchesSearch(i, search)),
-    [filteredByLens, search]
+  const availableRegions = useMemo(() => {
+    const set = new Set<string>();
+    filteredByLens.forEach(i => set.add(i.region));
+    return set;
+  }, [filteredByLens]);
+
+  const filteredByRegion = useMemo(
+    () => activeRegions.size === 0
+      ? filteredByLens
+      : filteredByLens.filter(i => activeRegions.has(i.region)),
+    [filteredByLens, activeRegions]
   );
+
+  const visibleItems = useMemo(() => {
+    const filtered = filteredByRegion.filter(i => itemMatchesSearch(i, search));
+    if (sortMode === 'date-asc') return [...filtered].reverse();
+    if (sortMode === 'source') return [...filtered].sort((a, b) => a.sourceName.localeCompare(b.sourceName));
+    return filtered; // date-desc is default from API
+  }, [filteredByRegion, search, sortMode]);
 
   const pinnedItems = useMemo(
     () => visibleItems.filter(i => pinnedKeys.includes(keyForItem(i))),
@@ -736,12 +766,10 @@ export default function Home() {
     LENSES.forEach(l => {
       map[l.id] = l.id === 'all'
         ? filteredBySource.length
-        : filteredBySource.filter(i => itemMatchesLens(i, l.id)).length;
+        : filteredBySource.filter(i => itemMatchesLens(i, new Set([l.id]))).length;
     });
     return map;
   }, [filteredBySource]);
-
-  const activeLens = LENSES.find(l => l.id === lens);
   const clusters = useMemo(
     () => buildClusters(visibleItems),
     [visibleItems]
@@ -982,75 +1010,193 @@ export default function Home() {
 
           <RegionStatsStrip items={visibleItems} />
 
-          {/* Lenses + view-mode toggle */}
-          <div style={{ marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1 }}>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                {LENSES.map(l => {
-                  const active = lens === l.id;
-                  const count = lensCountMap[l.id] ?? 0;
+          {/* ── FILTER + VIEW CONTROLS ─────────────────────────────────────── */}
+          <div style={{ marginBottom: 10, display: 'flex', flexDirection: 'column', gap: 7 }}>
+
+            {/* Top row: lenses + view/sort controls */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+
+              {/* Lens pills (multi-select) */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, flex: 1 }}>
+                {/* "All" clear button */}
+                <button
+                  onClick={() => { setActiveLenses(new Set()); setActiveRegions(new Set()); }}
+                  style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 11,
+                    padding: '3px 10px',
+                    borderRadius: 999,
+                    border: `1px solid ${activeLenses.size === 0 ? 'var(--accent)' : 'var(--border-light)'}`,
+                    background: activeLenses.size === 0 ? 'var(--accent-light)' : 'transparent',
+                    color: activeLenses.size === 0 ? 'var(--accent)' : 'var(--text-muted)',
+                    cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: 4,
+                    transition: 'background 0.12s, color 0.12s, border-color 0.12s',
+                  }}
+                >
+                  All Topics
+                  <span style={{ fontSize: 9, opacity: 0.75 }}>{lensCountMap['all'] ?? 0}</span>
+                </button>
+
+                {/* Individual topic lenses (skip index 0 = 'all') */}
+                {LENSES.slice(1).map(l => {
+                  const active = activeLenses.has(l.id);
+                  const count  = lensCountMap[l.id] ?? 0;
                   return (
                     <button
                       key={l.id}
-                      onClick={() => setLens(l.id)}
+                      title={l.hint}
+                      onClick={() => setActiveLenses(prev => {
+                        const next = new Set(prev);
+                        if (next.has(l.id)) next.delete(l.id); else next.add(l.id);
+                        return next;
+                      })}
                       style={{
                         fontFamily: 'var(--font-mono)',
-                        fontSize: 9,
-                        letterSpacing: '0.06em',
-                        textTransform: 'uppercase',
-                        padding: '3px 8px',
+                        fontSize: 11,
+                        padding: '3px 10px',
                         borderRadius: 999,
                         border: `1px solid ${active ? 'var(--accent)' : 'var(--border-light)'}`,
                         background: active ? 'var(--accent-light)' : 'transparent',
                         color: active ? 'var(--accent)' : 'var(--text-muted)',
                         cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 4,
+                        display: 'flex', alignItems: 'center', gap: 4,
                         transition: 'background 0.12s, color 0.12s, border-color 0.12s',
+                        fontWeight: active ? 500 : 400,
                       }}
                     >
                       {l.label}
                       {count > 0 && (
-                        <span style={{ fontSize: 8, opacity: 0.75 }}>{count}</span>
+                        <span style={{ fontSize: 9, opacity: 0.7 }}>{count}</span>
                       )}
                     </button>
                   );
                 })}
               </div>
 
-              {activeLens && (
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.04em' }}>
-                  {activeLens.hint}
-                  {search && <span style={{ color: 'var(--accent)', marginLeft: 6 }}>· filtering: &ldquo;{search}&rdquo;</span>}
+              {/* Right cluster: sort + view mode */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                {/* Sort control */}
+                <div style={{ display: 'flex', gap: 3 }}>
+                  {([
+                    ['date-desc', '↓ Date'],
+                    ['date-asc',  '↑ Date'],
+                    ['source',    'Source'],
+                  ] as [SortMode, string][]).map(([mode, label]) => (
+                    <button
+                      key={mode}
+                      onClick={() => setSortMode(mode)}
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: 10,
+                        letterSpacing: '0.04em',
+                        padding: '4px 8px',
+                        borderRadius: 3,
+                        border: `1px solid ${sortMode === mode ? 'var(--accent)' : 'var(--border-light)'}`,
+                        background: sortMode === mode ? 'var(--accent-light)' : 'transparent',
+                        color: sortMode === mode ? 'var(--accent)' : 'var(--text-muted)',
+                        cursor: 'pointer',
+                        transition: 'background 0.12s, color 0.12s, border-color 0.12s',
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
                 </div>
-              )}
+
+                <span style={{ color: 'var(--border)', fontSize: 12 }}>|</span>
+
+                {/* View mode */}
+                {(['list', 'clusters', 'map'] as const).map(mode => (
+                  <button
+                    key={mode}
+                    onClick={() => setViewMode(mode)}
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: 11,
+                      letterSpacing: '0.04em',
+                      padding: '4px 9px',
+                      borderRadius: 3,
+                      border: `1px solid ${viewMode === mode ? 'var(--accent)' : 'var(--border-light)'}`,
+                      background: viewMode === mode ? 'var(--accent-light)' : 'transparent',
+                      color: viewMode === mode ? 'var(--accent)' : 'var(--text-muted)',
+                      cursor: 'pointer',
+                      transition: 'background 0.12s, color 0.12s, border-color 0.12s',
+                    }}
+                  >
+                    {mode === 'list' ? '≡ Stream' : mode === 'clusters' ? '⊞ Storylines' : '⊕ Map'}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* View mode */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
-              {(['list', 'clusters', 'map'] as const).map(mode => (
+            {/* Region quick-filter strip (shown when ≥2 regions have items) */}
+            {availableRegions.size >= 2 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', marginRight: 4 }}>
+                  Region
+                </span>
+                {[...availableRegions].sort().map(reg => {
+                  const active = activeRegions.has(reg);
+                  const dotColor = REGION_DOTS[reg] || '#999';
+                  return (
+                    <button
+                      key={reg}
+                      onClick={() => setActiveRegions(prev => {
+                        const next = new Set(prev);
+                        if (next.has(reg)) next.delete(reg); else next.add(reg);
+                        return next;
+                      })}
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: 10,
+                        padding: '2px 8px',
+                        borderRadius: 999,
+                        border: `1px solid ${active ? dotColor : 'var(--border-light)'}`,
+                        background: active ? `${dotColor}18` : 'transparent',
+                        color: active ? dotColor : 'var(--text-muted)',
+                        cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: 5,
+                        transition: 'background 0.12s, color 0.12s, border-color 0.12s',
+                      }}
+                    >
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: active ? dotColor : 'var(--border)', flexShrink: 0, display: 'inline-block' }} />
+                      {REGION_LABELS[reg as Source['region']] || reg}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Active filter summary + clear */}
+            {(activeLenses.size > 0 || activeRegions.size > 0 || search) && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.03em', flexWrap: 'wrap' }}>
+                <span>{visibleItems.length} stories shown</span>
+                {activeLenses.size > 0 && (
+                  <span>
+                    · lenses: {[...activeLenses].map(id => LENSES.find(l => l.id === id)?.label).filter(Boolean).join(', ')}
+                  </span>
+                )}
+                {activeRegions.size > 0 && (
+                  <span>· regions: {[...activeRegions].map(r => REGION_LABELS[r as Source['region']] || r).join(', ')}</span>
+                )}
+                {search && <span style={{ color: 'var(--accent)' }}>· &ldquo;{search}&rdquo;</span>}
                 <button
-                  key={mode}
-                  onClick={() => setViewMode(mode)}
+                  onClick={() => { setActiveLenses(new Set()); setActiveRegions(new Set()); setSearch(''); }}
                   style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: 9,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.08em',
-                    padding: '4px 9px',
-                    borderRadius: 3,
-                    border: `1px solid ${viewMode === mode ? 'var(--accent)' : 'var(--border-light)'}`,
-                    background: viewMode === mode ? 'var(--accent-light)' : 'transparent',
-                    color: viewMode === mode ? 'var(--accent)' : 'var(--text-muted)',
-                    cursor: 'pointer',
-                    transition: 'background 0.12s, color 0.12s, border-color 0.12s',
+                    fontFamily: 'var(--font-mono)', fontSize: 10,
+                    color: 'var(--accent)', background: 'none',
+                    border: '1px solid var(--accent)', borderRadius: 3,
+                    padding: '1px 7px', cursor: 'pointer', letterSpacing: '0.04em',
+                    transition: 'background 0.12s',
                   }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-light)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'none')}
                 >
-                  {mode === 'list' ? '≡ Stream' : mode === 'clusters' ? '⊞ Storylines' : '⊕ Map'}
+                  ✕ Clear all
                 </button>
-              ))}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* ── LOADING skeleton ───────────────────────────────────────── */}
@@ -1094,7 +1240,7 @@ export default function Home() {
 
           /* ── STREAM view ──────────────────────────────────────────── */
           ) : viewMode === 'list' ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
               {visibleItems.map((item, i) => {
                 const badge = getAgeBadge(item.pubDate);
                 const isPinned = pinnedKeys.includes(keyForItem(item));
@@ -1163,10 +1309,10 @@ export default function Home() {
                     {item.summary && (
                       <p style={{
                         fontFamily: 'var(--font-body)',
-                        fontSize: 12,
+                        fontSize: 13,
                         color: 'var(--text-secondary)',
                         lineHeight: 1.55,
-                        fontWeight: 300,
+                        fontWeight: 400,
                         marginBottom: 8,
                       }}>
                         {truncate(item.summary)}
@@ -1179,7 +1325,7 @@ export default function Home() {
                       alignItems: 'center',
                       gap: 7,
                       fontFamily: 'var(--font-mono)',
-                      fontSize: 10,
+                      fontSize: 11,
                       color: 'var(--text-muted)',
                       letterSpacing: '0.04em',
                       flexWrap: 'wrap',
@@ -1188,7 +1334,7 @@ export default function Home() {
                         onClick={() => togglePin(item)}
                         style={{
                           border: 'none', background: 'transparent',
-                          cursor: 'pointer', fontSize: 10, padding: 0,
+                          cursor: 'pointer', fontSize: 11, padding: 0,
                           color: isPinned ? 'var(--pin-active)' : 'var(--text-muted)',
                           transition: 'color 0.1s',
                         }}

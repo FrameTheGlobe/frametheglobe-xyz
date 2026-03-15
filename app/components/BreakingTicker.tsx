@@ -76,7 +76,7 @@ export default function BreakingTicker({ items }: Props) {
               rel="noopener noreferrer"
               style={{
                 fontFamily:    'var(--font-body)',
-                fontSize:      11,
+                fontSize:      12,
                 color:         'rgba(255,255,255,0.95)',
                 textDecoration:'none',
                 padding:       '5px 0',

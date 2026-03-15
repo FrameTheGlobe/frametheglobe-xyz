@@ -134,7 +134,7 @@ export default function VolumeChart({ items }: Props) {
             y={HEIGHT + 12}
             textAnchor="middle"
             fontFamily="IBM Plex Mono, monospace"
-            fontSize={7}
+            fontSize={9}
             fill="var(--text-muted)"
           >
             {label}

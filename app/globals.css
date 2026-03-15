@@ -18,7 +18,7 @@
   --border-light:   #e8e4de;
   --text-primary:   #0f0e0c;
   --text-secondary: #5a5650;
-  --text-muted:     #9a9590;
+  --text-muted:     #797570;
   --accent:         #b5351a;
   --accent-light:   #f9ede9;
   --accent-hover:   #8f2712;
@@ -164,7 +164,7 @@ html {
   border-radius: 4px;
   padding: 7px 10px;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 12px;
   color: var(--text-primary);
   letter-spacing: 0.04em;
   outline: none;
