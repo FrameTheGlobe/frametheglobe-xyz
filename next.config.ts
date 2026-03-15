@@ -34,11 +34,12 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               // Fonts
               "font-src 'self' https://fonts.gstatic.com",
-              // Images: self + data URIs + tile servers + ADS-B
-              "img-src 'self' data: blob: https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org https://unpkg.com",
+              // Images: self + data URIs + tile servers + RSS article thumbnails
+              "img-src 'self' data: blob: https: http:",
               // Connections: self + all feeds + ADS-B APIs + SSE
               "connect-src 'self' https://adsb.lol https://opensky-network.org https://fonts.googleapis.com https://fonts.gstatic.com",
               // Frames
+              "frame-src 'self' https://www.youtube.com",
               "frame-ancestors 'none'",
             ].join("; "),
           },
