@@ -11,30 +11,32 @@
    LIGHT THEME  (default)
 ══════════════════════════════════════════════════════ */
 :root {
-  --bg:             #f5f2ed;
+  --bg:             #faf9f7;
   --surface:        #ffffff;
-  --surface-hover:  #faf8f5;
-  --border:         #d4cfc8;
-  --border-light:   #e8e4de;
-  --text-primary:   #0f0e0c;
+  --surface-hover:  #f4f2ef;
+  --border:         #e2ded7;
+  --border-light:   #f0ede8;
+  --text-primary:   #1a1918;
   --text-secondary: #5a5650;
-  --text-muted:     #797570;
-  --accent:         #b5351a;
-  --accent-light:   #f9ede9;
-  --accent-hover:   #8f2712;
+  --text-muted:     #8a857e;
+  --accent:         #c93a20;
+  --accent-light:   #fcefeb;
+  --accent-hover:   #a82d16;
 
   --badge-new-color:   #b58a0d;
   --badge-new-bg:      #fef9e7;
   --badge-new-border:  #e8c840;
-  --badge-brk-color:   #b5351a;
-  --badge-brk-bg:      #fdecea;
-  --badge-brk-border:  #e05a3a;
+  --badge-brk-color:   #c93a20;
+  --badge-brk-bg:      #fdf1ef;
+  --badge-brk-border:  #f05a40;
 
-  --shimmer-a:   #e8e4de;
-  --shimmer-b:   #f0ece6;
-  --toggle-bg:   #e8e4de;
+  --shimmer-a:   #f0ede8;
+  --shimmer-b:   #f8f6f4;
+  --toggle-bg:   transparent;
   --search-bg:   #ffffff;
-  --pin-active:  #b5351a;
+  --pin-active:  #c93a20;
+  --shadow-sm:   0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-md:   0 6px 16px rgba(0, 0, 0, 0.06);
 
   --font-display: 'Playfair Display', Georgia, serif;
   --font-body:    'IBM Plex Sans', system-ui, sans-serif;
@@ -45,30 +47,32 @@
    DARK THEME
 ══════════════════════════════════════════════════════ */
 [data-theme="dark"] {
-  --bg:             #0d0c0a;
-  --surface:        #171613;
-  --surface-hover:  #1e1c18;
-  --border:         #2c2a25;
-  --border-light:   #222018;
-  --text-primary:   #f0ede8;
-  --text-secondary: #9a9590;
-  --text-muted:     #5a5650;
-  --accent:         #e05a3a;
-  --accent-light:   #2a1a14;
-  --accent-hover:   #f07050;
+  --bg:             #0a0a0b;
+  --surface:        #121214;
+  --surface-hover:  #18181b;
+  --border:         #27272a;
+  --border-light:   #1c1c1f;
+  --text-primary:   #f4f4f5;
+  --text-secondary: #a1a1aa;
+  --text-muted:     #71717a;
+  --accent:         #e84a2f;
+  --accent-light:   #2a1612;
+  --accent-hover:   #ff5a3f;
 
   --badge-new-color:   #e8c840;
   --badge-new-bg:      #1e1c0a;
   --badge-new-border:  #6b5c00;
-  --badge-brk-color:   #e05a3a;
+  --badge-brk-color:   #e84a2f;
   --badge-brk-bg:      #1e0d0a;
   --badge-brk-border:  #7a2010;
 
-  --shimmer-a:   #171613;
-  --shimmer-b:   #222018;
-  --toggle-bg:   #2c2a25;
-  --search-bg:   #171613;
-  --pin-active:  #e05a3a;
+  --shimmer-a:   #121214;
+  --shimmer-b:   #1c1c1f;
+  --toggle-bg:   transparent;
+  --search-bg:   #121214;
+  --pin-active:  #e84a2f;
+  --shadow-sm:   0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md:   0 6px 16px rgba(0, 0, 0, 0.4);
 }
 
 /* ══════════════════════════════════════════════════════
@@ -148,10 +152,16 @@ html {
    ARTICLE CARD
 ══════════════════════════════════════════════════════ */
 .article-card {
-  transition: background 0.12s ease;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s ease, border-color 0.2s ease;
+  border-radius: 6px;
+  box-shadow: var(--shadow-sm);
+  will-change: transform, box-shadow;
 }
 .article-card:hover {
-  background: var(--surface-hover) !important;
+  background: var(--surface) !important;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--border) !important;
 }
 
 /* ══════════════════════════════════════════════════════
@@ -213,10 +223,6 @@ html {
 /* ══════════════════════════════════════════════════════
    SIDEBAR
 ══════════════════════════════════════════════════════ */
-.sidebar-col {
-  /* desktop: normal grid column */
-}
-
 .sidebar-overlay {
   display: none;
 }

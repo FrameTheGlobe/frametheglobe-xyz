@@ -438,7 +438,15 @@ export default function Home() {
   const [theme, setTheme]               = useState<Theme>('light');
   const [liveStatus, setLiveStatus]     = useState<'connecting' | 'live' | 'polling'>('connecting');
   const [focusedIdx, setFocusedIdx]     = useState<number>(-1);
+  const [scrolled, setScrolled]         = useState(false);
   const searchRef                        = useRef<HTMLInputElement>(null);
+
+  // ── Scroll listener for header shadow ─────────────────────────────────────
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   // ── Keyboard shortcuts ────────────────────────────────────────────────────
   // j/k  — navigate articles  |  o — open focused article
@@ -788,11 +796,13 @@ export default function Home() {
 
       {/* ── HEADER ─────────────────────────────────────────────────────── */}
       <header style={{
-        borderBottom: '1px solid var(--border)',
+        borderBottom: `1px solid ${scrolled ? 'transparent' : 'var(--border)'}`,
         background: 'var(--surface)',
         position: 'sticky',
         top: 0,
         zIndex: 200,
+        boxShadow: scrolled ? 'var(--shadow-sm)' : 'none',
+        transition: 'box-shadow 0.3s ease, border-color 0.3s ease',
       }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', padding: '11px 0 9px', gap: 10 }}>
@@ -1026,12 +1036,13 @@ export default function Home() {
                     fontSize: 11,
                     padding: '3px 10px',
                     borderRadius: 999,
-                    border: `1px solid ${activeLenses.size === 0 ? 'var(--accent)' : 'var(--border-light)'}`,
-                    background: activeLenses.size === 0 ? 'var(--accent-light)' : 'transparent',
-                    color: activeLenses.size === 0 ? 'var(--accent)' : 'var(--text-muted)',
+                    border: `1px solid ${activeLenses.size === 0 ? 'transparent' : 'var(--border-light)'}`,
+                    background: activeLenses.size === 0 ? 'var(--text-primary)' : 'var(--surface)',
+                    color: activeLenses.size === 0 ? 'var(--bg)' : 'var(--text-muted)',
+                    boxShadow: activeLenses.size === 0 ? 'var(--shadow-sm)' : 'none',
                     cursor: 'pointer',
                     display: 'flex', alignItems: 'center', gap: 4,
-                    transition: 'background 0.12s, color 0.12s, border-color 0.12s',
+                    transition: 'background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s',
                   }}
                 >
                   All Topics
@@ -1056,12 +1067,13 @@ export default function Home() {
                         fontSize: 11,
                         padding: '3px 10px',
                         borderRadius: 999,
-                        border: `1px solid ${active ? 'var(--accent)' : 'var(--border-light)'}`,
-                        background: active ? 'var(--accent-light)' : 'transparent',
-                        color: active ? 'var(--accent)' : 'var(--text-muted)',
+                        border: `1px solid ${active ? 'transparent' : 'var(--border-light)'}`,
+                        background: active ? 'var(--text-primary)' : 'var(--surface)',
+                        color: active ? 'var(--bg)' : 'var(--text-muted)',
+                        boxShadow: active ? 'var(--shadow-sm)' : 'none',
                         cursor: 'pointer',
                         display: 'flex', alignItems: 'center', gap: 4,
-                        transition: 'background 0.12s, color 0.12s, border-color 0.12s',
+                        transition: 'background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s',
                         fontWeight: active ? 500 : 400,
                       }}
                     >
@@ -1117,11 +1129,12 @@ export default function Home() {
                       letterSpacing: '0.04em',
                       padding: '4px 9px',
                       borderRadius: 3,
-                      border: `1px solid ${viewMode === mode ? 'var(--accent)' : 'var(--border-light)'}`,
-                      background: viewMode === mode ? 'var(--accent-light)' : 'transparent',
-                      color: viewMode === mode ? 'var(--accent)' : 'var(--text-muted)',
+                      border: `1px solid ${viewMode === mode ? 'transparent' : 'var(--border-light)'}`,
+                      background: viewMode === mode ? 'var(--text-primary)' : 'var(--surface)',
+                      color: viewMode === mode ? 'var(--bg)' : 'var(--text-muted)',
                       cursor: 'pointer',
-                      transition: 'background 0.12s, color 0.12s, border-color 0.12s',
+                      transition: 'background 0.15s, color 0.15s, border-color 0.15s',
+                      boxShadow: viewMode === mode ? 'var(--shadow-sm)' : 'none',
                     }}
                   >
                     {mode === 'list' ? '≡ Stream' : mode === 'clusters' ? '⊞ Storylines' : '⊕ Map'}
@@ -1248,16 +1261,15 @@ export default function Home() {
                 return (
                   <article
                     key={keyForItem(item)}
-                    className="article-card"
+                    className={`article-card ${isFocused ? 'focused' : ''}`}
                     style={{
-                      background:   isFocused ? 'var(--surface-hover)' : 'var(--surface)',
-                      // Never mix `border` shorthand with `borderLeft` — use individual sides
-                      borderTop:    `1px solid ${isFocused ? 'var(--accent)' : 'var(--border-light)'}`,
-                      borderRight:  `1px solid ${isFocused ? 'var(--accent)' : 'var(--border-light)'}`,
-                      borderBottom: `1px solid ${isFocused ? 'var(--accent)' : 'var(--border-light)'}`,
+                      background:   'var(--surface)',
+                      borderTop:    '1px solid var(--border-light)',
+                      borderRight:  '1px solid var(--border-light)',
+                      borderBottom: '1px solid var(--border-light)',
                       borderLeft:   `3px solid ${REGION_DOTS[item.region] || '#999'}`,
-                      padding:      '12px 16px',
-                      animation:    `fadeUp 0.25s ease ${Math.min(i, 12) * 0.02}s both`,
+                      padding:      '14px 18px',
+                      animation:    `fadeUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) ${Math.min(i, 12) * 0.03}s both`,
                     }}
                     onMouseEnter={() => setFocusedIdx(i)}
                   >
@@ -1290,13 +1302,14 @@ export default function Home() {
                         data-article-idx={i}
                         style={{
                           fontFamily: 'var(--font-display)',
-                          fontSize: 15,
+                          fontSize: 16,
                           fontWeight: 700,
                           color: 'var(--text-primary)',
                           textDecoration: 'none',
                           lineHeight: 1.35,
                           flex: 1,
-                          transition: 'color 0.1s',
+                          textWrap: 'balance',
+                          transition: 'color 0.15s',
                         }}
                         onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
                         onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-primary)')}

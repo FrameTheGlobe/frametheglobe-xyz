@@ -32,10 +32,10 @@ export default function BreakingTicker({ items }: Props) {
 
   return (
     <div style={{
-      background:   '#b5351a',
+      background:   'var(--accent)',
       overflow:     'hidden',
       whiteSpace:   'nowrap',
-      borderBottom: '1px solid rgba(0,0,0,0.25)',
+      borderBottom: '1px solid rgba(0, 0, 0, 0.1)',
       position:     'relative',
       zIndex:       150,
     }}>
@@ -48,7 +48,7 @@ export default function BreakingTicker({ items }: Props) {
         display:        'flex',
         alignItems:     'center',
         padding:        '0 14px',
-        background:     '#8f2712',
+        background:     'var(--accent-hover)',
         fontFamily:     'var(--font-mono)',
         fontSize:       9,
         fontWeight:     700,
@@ -56,7 +56,8 @@ export default function BreakingTicker({ items }: Props) {
         color:          '#fff',
         textTransform:  'uppercase',
         zIndex:         2,
-        borderRight:    '1px solid rgba(255,255,255,0.15)',
+        borderRight:    '1px solid rgba(255,255,255,0.1)',
+        boxShadow:      '4px 0 10px rgba(0,0,0,0.15)'
       }}>
         Breaking
       </span>
@@ -76,10 +77,11 @@ export default function BreakingTicker({ items }: Props) {
               rel="noopener noreferrer"
               style={{
                 fontFamily:    'var(--font-body)',
-                fontSize:      12,
+                fontSize:      13,
+                fontWeight:    500,
                 color:         'rgba(255,255,255,0.95)',
                 textDecoration:'none',
-                padding:       '5px 0',
+                padding:       '6px 0',
                 transition:    'color 0.1s',
               }}
               onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
@@ -90,7 +92,7 @@ export default function BreakingTicker({ items }: Props) {
               </span>
               {item.title}
             </a>
-            <span style={{ margin: '0 22px', color: 'rgba(255,255,255,0.3)', fontSize: 10 }}>◆</span>
+            <span style={{ margin: '0 25px', color: 'rgba(255,255,255,0.25)', fontSize: 9 }}>◆</span>
           </span>
         ))}
       </div>
