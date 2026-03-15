@@ -39,141 +39,270 @@ const REGION_DOTS: Record<string, string> = {
 };
 
 // ── Keyword → [lat, lng] lookup table ─────────────────────────────────────────
-// Ordered most-specific first so "strait of hormuz" matches before "hormuz"
+// Ordered most-specific first so multi-word terms match before single words.
 const LOCATION_MAP: [string, [number, number]][] = [
-  // Iran — cities & sites
+  // ── Iran — nuclear sites ───────────────────────────────────────────────────
   ['natanz',            [33.72, 51.93]],
   ['fordow',            [34.88, 50.57]],
-  ['bushehr',           [28.97, 50.84]],
+  ['parchin',           [35.52, 51.78]],
+  ['arak heavy water',  [34.32, 49.00]],
   ['arak',              [34.09, 49.69]],
+  ['bushehr',           [28.97, 50.84]],
+
+  // ── Iran — cities ──────────────────────────────────────────────────────────
+  ['ahvaz',             [31.32, 48.67]],
+  ['bandar abbas',      [27.19, 56.28]],
+  ['abadan',            [30.34, 48.30]],
+  ['khuzestan',         [31.50, 49.00]],
+  ['qom',               [34.64, 50.88]],
+  ['shiraz',            [29.59, 52.58]],
   ['isfahan',           [32.66, 51.68]],
   ['tabriz',            [38.08, 46.30]],
   ['mashhad',           [36.29, 59.61]],
+  ['urmia',             [37.55, 45.07]],
+  ['kermanshah',        [34.32, 47.07]],
+  ['zahedan',           [29.50, 60.86]],
+  ['chabahar',          [25.29, 60.64]],
   ['tehran',            [35.69, 51.39]],
   ['irgc',              [35.69, 51.39]],
   ['khamenei',          [35.69, 51.39]],
   ['pezeshkian',        [35.69, 51.39]],
   ['iran',              [32.43, 53.69]],
 
-  // Iraq
+  // ── Iraq ──────────────────────────────────────────────────────────────────
+  ['fallujah',          [33.35, 43.77]],
+  ['ramadi',            [33.43, 43.30]],
+  ['tikrit',            [34.61, 43.68]],
+  ['kirkuk',            [35.47, 44.39]],
   ['mosul',             [36.34, 43.13]],
+  ['tal afar',          [36.37, 42.45]],
+  ['sinjar',            [36.32, 41.87]],
+  ['baquba',            [33.75, 44.64]],
+  ['najaf',             [32.00, 44.33]],
+  ['karbala',           [32.62, 44.02]],
   ['basra',             [30.51, 47.81]],
+  ['nasiriyah',         [31.05, 46.26]],
   ['erbil',             [36.19, 44.01]],
   ['sulaymaniyah',      [35.56, 45.43]],
+  ['duhok',             [36.87, 42.99]],
+  ['pmu',               [33.34, 44.40]], // Popular Mobilization Units → Baghdad
+  ['hashd',             [33.34, 44.40]],
   ['baghdad',           [33.34, 44.40]],
   ['iraq',              [33.22, 43.68]],
 
-  // Syria
+  // ── Syria ─────────────────────────────────────────────────────────────────
+  ['raqqa',             [35.95, 39.01]],
+  ['deir ez-zor',       [35.34, 40.14]],
+  ['deir ezzor',        [35.34, 40.14]],
+  ['al-tanf',           [33.47, 38.65]],
+  ['tanf',              [33.47, 38.65]],
+  ['palmyra',           [34.55, 38.27]],
+  ['latakia',           [35.52, 35.79]],
+  ['tartus',            [34.89, 35.89]],
+  ['idlib',             [35.93, 36.63]],
   ['aleppo',            [36.20, 37.16]],
+  ['hama',              [35.13, 36.76]],
   ['homs',              [34.73, 36.71]],
+  ['daraa',             [32.62, 36.10]],
+  ['deir al-zour',      [35.34, 40.14]],
+  ['al-bukamal',        [34.46, 40.93]],
+  ['qaim',              [34.44, 40.97]], // Iraq-Syria border crossing
   ['damascus',          [33.51, 36.29]],
+  ['hayat tahrir',      [35.93, 36.63]], // HTS → Idlib
+  ['sdf',               [36.82, 40.05]], // Syrian Democratic Forces
   ['syria',             [35.00, 38.00]],
 
-  // Lebanon
+  // ── Lebanon ───────────────────────────────────────────────────────────────
+  ['tripoli',           [34.43, 35.85]], // Lebanon Tripoli
+  ['bint jbeil',        [33.12, 35.43]],
+  ['baalbek',           [34.00, 36.21]],
+  ['nabatieh',          [33.38, 35.48]],
   ['tyre',              [33.27, 35.20]],
   ['sidon',             [33.56, 35.37]],
   ['hezbollah',         [33.55, 35.50]],
   ['beirut',            [33.89, 35.50]],
   ['lebanon',           [33.85, 35.86]],
 
-  // Israel / Palestine
+  // ── Israel / Palestine ────────────────────────────────────────────────────
+  ['tulkarm',           [32.31, 35.03]],
+  ['qalqilya',          [32.19, 34.97]],
+  ['hebron',            [31.53, 35.10]],
+  ['jericho',           [31.86, 35.46]],
+  ['bethlehem',         [31.71, 35.20]],
   ['west bank',         [32.00, 35.25]],
   ['ramallah',          [31.90, 35.21]],
   ['nablus',            [32.22, 35.26]],
   ['jenin',             [32.46, 35.30]],
+  ['jabalia',           [31.53, 34.48]],
+  ['beit lahia',        [31.55, 34.49]],
+  ['deir al-balah',     [31.42, 34.35]],
   ['rafah',             [31.29, 34.25]],
   ['khan younis',       [31.34, 34.31]],
+  ['khan yunis',        [31.34, 34.31]],
   ['gaza city',         [31.52, 34.46]],
   ['gaza',              [31.42, 34.38]],
   ['hamas',             [31.42, 34.38]],
   ['islamic jihad',     [31.42, 34.38]],
   ['pij',               [31.42, 34.38]],
+  ['golan',             [33.00, 35.75]],
   ['tel aviv',          [32.09, 34.79]],
   ['haifa',             [32.82, 34.99]],
+  ['beer sheva',        [31.25, 34.79]],
+  ['eilat',             [29.56, 34.95]],
+  ['dimona',            [31.07, 35.03]], // Israel nuclear site
   ['jerusalem',         [31.78, 35.22]],
   ['netanyahu',         [31.78, 35.22]],
   ['idf',               [31.50, 34.80]],
   ['mossad',            [31.50, 34.80]],
+  ['shin bet',          [31.50, 34.80]],
   ['israel',            [31.50, 34.80]],
 
-  // Yemen
+  // ── Yemen ─────────────────────────────────────────────────────────────────
+  ['taiz',              [13.58, 44.02]],
+  ['hajjah',            [15.69, 43.60]],
+  ['dhamar',            [14.55, 44.41]],
+  ['ibb',               [13.98, 44.18]],
+  ['mukalla',           [14.52, 49.12]],
+  ['socotra',           [12.46, 53.82]],
   ['aden',              [12.80, 45.03]],
+  ['hudaydah',          [14.80, 42.95]],
   ['hodeidah',          [14.80, 42.95]],
   ['marib',             [15.48, 45.33]],
   ['ansarallah',        [15.35, 44.21]],
   ['houthis',           [15.35, 44.21]],
   ['houthi',            [15.35, 44.21]],
   ['sanaa',             [15.35, 44.21]],
+  ['sana\'a',           [15.35, 44.21]],
   ['yemen',             [15.91, 47.59]],
 
-  // Saudi Arabia
+  // ── Saudi Arabia ──────────────────────────────────────────────────────────
+  ['abha',              [18.22, 42.51]],
+  ['jazan',             [16.89, 42.57]],
+  ['tabuk',             [28.38, 36.57]],
+  ['dhahran',           [26.28, 50.11]],
+  ['aramco',            [26.27, 50.18]],
+  ['abqaiq',            [25.92, 49.67]], // oil facility target
+  ['khurais',           [25.04, 48.76]], // oil facility target
   ['riyadh',            [24.69, 46.72]],
   ['jeddah',            [21.54, 39.17]],
   ['mecca',             [21.39, 39.86]],
   ['medina',            [24.47, 39.61]],
   ['saudi',             [23.89, 45.08]],
 
-  // UAE
+  // ── UAE ───────────────────────────────────────────────────────────────────
+  ['sharjah',           [25.36, 55.39]],
   ['dubai',             [25.20, 55.27]],
   ['abu dhabi',         [24.45, 54.38]],
   ['uae',               [24.47, 54.37]],
 
-  // Qatar
+  // ── Qatar ─────────────────────────────────────────────────────────────────
+  ['al udeid',          [25.12, 51.31]], // US air base
   ['doha',              [25.29, 51.53]],
   ['qatar',             [25.35, 51.18]],
 
-  // Kuwait
+  // ── Kuwait ────────────────────────────────────────────────────────────────
   ['kuwait city',       [29.38, 47.99]],
   ['kuwait',            [29.31, 47.48]],
 
-  // Bahrain
+  // ── Bahrain ───────────────────────────────────────────────────────────────
+  ['fifth fleet',       [26.22, 50.59]], // US 5th Fleet → Manama
   ['manama',            [26.22, 50.59]],
   ['bahrain',           [26.07, 50.56]],
 
-  // Oman
+  // ── Oman ──────────────────────────────────────────────────────────────────
+  ['sohar',             [24.36, 56.75]],
+  ['salalah',           [17.02, 54.10]],
   ['muscat',            [23.61, 58.59]],
   ['oman',              [21.51, 55.92]],
 
-  // Jordan
+  // ── Jordan ────────────────────────────────────────────────────────────────
+  ['tower 22',          [31.81, 38.20]], // US base in Jordan
   ['amman',             [31.95, 35.93]],
   ['aqaba',             [29.53, 35.00]],
   ['jordan',            [31.24, 36.51]],
 
-  // Egypt
+  // ── Egypt ─────────────────────────────────────────────────────────────────
+  ['port said',         [31.26, 32.28]],
+  ['ismailia',          [30.59, 32.27]],
+  ['sinai',             [29.50, 34.00]],
+  ['alexandria',        [31.20, 29.92]],
   ['cairo',             [30.04, 31.23]],
   ['suez canal',        [30.50, 32.35]],
   ['suez',              [29.97, 32.54]],
   ['egypt',             [26.82, 30.80]],
 
-  // Turkey
+  // ── Turkey ────────────────────────────────────────────────────────────────
+  ['incirlik',          [37.00, 35.43]], // US air base
+  ['izmir',             [38.42, 27.14]],
   ['ankara',            [39.93, 32.87]],
   ['istanbul',          [41.01, 28.96]],
   ['turkey',            [38.96, 35.24]],
+  ['türkiye',           [38.96, 35.24]],
 
-  // Pakistan / Afghanistan
+  // ── Pakistan / Afghanistan ─────────────────────────────────────────────────
+  ['lahore',            [31.55, 74.34]],
+  ['quetta',            [30.19, 67.01]],
   ['islamabad',         [33.72, 73.04]],
   ['peshawar',          [34.01, 71.57]],
   ['karachi',           [24.86, 67.01]],
   ['pakistan',          [30.38, 69.35]],
+  ['kandahar',          [31.62, 65.70]],
+  ['herat',             [34.35, 62.20]],
+  ['jalalabad',         [34.43, 70.45]],
   ['kabul',             [34.53, 69.17]],
+  ['taliban',           [33.94, 67.71]],
   ['afghanistan',       [33.94, 67.71]],
 
-  // Sea lanes & chokepoints
+  // ── Libya ─────────────────────────────────────────────────────────────────
+  ['tripoli, libya',    [32.89, 13.18]],
+  ['benghazi',          [32.12, 20.07]],
+  ['misrata',           [32.38, 15.09]],
+  ['libya',             [26.34, 17.23]],
+
+  // ── Sudan ─────────────────────────────────────────────────────────────────
+  ['port sudan',        [19.61, 37.22]],
+  ['khartoum',          [15.50, 32.56]],
+  ['sudan',             [12.86, 30.22]],
+
+  // ── Azerbaijan / Caucasus ──────────────────────────────────────────────────
+  ['baku',              [40.41, 49.87]],
+  ['nagorno-karabakh',  [39.82, 46.76]],
+  ['azerbaijan',        [40.14, 47.58]],
+  ['yerevan',           [40.18, 44.51]],
+  ['armenia',           [40.07, 45.04]],
+
+  // ── Sea lanes & chokepoints ───────────────────────────────────────────────
   ['strait of hormuz',  [26.59, 56.26]],
   ['hormuz',            [26.59, 56.26]],
+  ['gulf of oman',      [23.00, 58.50]],
   ['persian gulf',      [27.00, 51.00]],
   ['bab el-mandeb',     [12.58, 43.35]],
+  ['bab-el-mandeb',     [12.58, 43.35]],
   ['gulf of aden',      [12.50, 47.00]],
   ['red sea',           [20.00, 38.00]],
   ['arabian sea',       [17.00, 65.00]],
+  ['mediterranean',     [34.00, 18.00]],
+  ['caspian sea',       [41.00, 50.50]],
+  ['indian ocean',      [ 5.00, 65.00]],
 
-  // Global players — mapped to capital / HQ
-  ['pentagon',          [38.87, -77.06]],
-  ['centcom',           [25.20, 55.27]], // AOR centre
-  ['washington',        [38.90, -77.04]],
-  ['london',            [51.51,  -0.13]],
-  ['moscow',            [55.76,  37.62]],
-  ['beijing',           [39.91, 116.39]],
+  // ── Global players — mapped to capital / HQ ───────────────────────────────
+  ['pentagon',          [38.87,  -77.06]],
+  ['centcom',           [25.20,   55.27]],
+  ['nato',              [50.88,    4.42]], // Brussels
+  ['washington',        [38.90,  -77.04]],
+  ['white house',       [38.90,  -77.04]],
+  ['state department',  [38.90,  -77.04]],
+  ['london',            [51.51,   -0.13]],
+  ['paris',             [48.86,    2.35]],
+  ['berlin',            [52.52,   13.40]],
+  ['brussels',          [50.85,    4.35]],
+  ['geneva',            [46.20,    6.15]],
+  ['vienna',            [48.21,   16.37]], // IAEA HQ
+  ['iaea',              [48.21,   16.37]],
+  ['moscow',            [55.76,   37.62]],
+  ['beijing',           [39.91,  116.39]],
+  ['new york',          [40.71,  -74.01]],
+  ['united nations',    [40.75,  -73.97]],
 ];
 
 // ── Extract best-matching location from an article ────────────────────────────
@@ -275,6 +404,9 @@ export default function MapView({ items }: MapViewProps) {
   const [flightStatus,   setFlightStatus]   = useState<'idle'|'loading'|'ok'|'error'>('idle');
   const [flightUpdated,  setFlightUpdated]  = useState<string | null>(null);
   const flightTimerRef  = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // ── Legend collapsed state (useful on small screens) ──────────────────────
+  const [legendOpen, setLegendOpen] = useState(true);
 
   // How many news items have a mappable location?
   const mappedCount = useMemo(
@@ -401,6 +533,7 @@ export default function MapView({ items }: MapViewProps) {
       {/* Map container */}
       <div
         ref={containerRef}
+        className="ftg-map-container"
         style={{ width: '100%', height: '72vh', minHeight: 440, background: '#0d0c0a' }}
       />
 
@@ -490,7 +623,7 @@ export default function MapView({ items }: MapViewProps) {
         {mappedCount} news events · {flightsOn ? `${flights.length} aircraft` : 'flights off'} · click any marker
       </div>
 
-      {/* ── Legend (top-right) ───────────────────────────────────────────── */}
+      {/* ── Legend (top-right, collapsible) ─────────────────────────────── */}
       <div style={{
         position:       'absolute',
         top:            10,
@@ -499,48 +632,79 @@ export default function MapView({ items }: MapViewProps) {
         background:     'rgba(13,12,10,0.82)',
         border:         '1px solid rgba(255,255,255,0.10)',
         borderRadius:   3,
-        padding:        '8px 10px',
         fontFamily:     'IBM Plex Mono, monospace',
         fontSize:       9,
         color:          'rgba(255,255,255,0.5)',
         letterSpacing:  '0.06em',
         backdropFilter: 'blur(6px)',
-        display:        'flex',
-        flexDirection:  'column',
-        gap:            4,
-        maxHeight:      '50vh',
-        overflowY:      'auto',
+        minWidth:       90,
       }}>
-        {/* News legend */}
-        <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 2 }}>News</div>
-        {Object.entries(REGION_DOTS).map(([region, color]) => (
-          <div key={region} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ width: 7, height: 7, borderRadius: '50%', background: color, display: 'inline-block', flexShrink: 0 }} />
-            <span style={{ textTransform: 'capitalize' }}>{region.replace('-', ' ')}</span>
-          </div>
-        ))}
+        {/* Toggle header */}
+        <button
+          onClick={() => setLegendOpen(v => !v)}
+          style={{
+            display:        'flex',
+            alignItems:     'center',
+            justifyContent: 'space-between',
+            gap:            8,
+            width:          '100%',
+            padding:        '6px 10px',
+            background:     'transparent',
+            border:         'none',
+            cursor:         'pointer',
+            color:          'rgba(255,255,255,0.45)',
+            fontFamily:     'IBM Plex Mono, monospace',
+            fontSize:       9,
+            letterSpacing:  '0.08em',
+          }}
+          aria-label={legendOpen ? 'Collapse legend' : 'Expand legend'}
+        >
+          <span style={{ textTransform: 'uppercase' }}>Legend</span>
+          <span style={{ fontSize: 8, opacity: 0.6 }}>{legendOpen ? '▲' : '▼'}</span>
+        </button>
 
-        {/* Flight legend (only show when flights enabled) */}
-        {flightsOn && flights.length > 0 && (
-          <>
-            <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: 6, marginBottom: 2 }}>Aircraft</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 10 }}>▲</span>
-              <span style={{ color: STRATEGIC_COLOR }}>⚡ Strategic/Military</span>
-            </div>
-            {Object.entries(COUNTRY_COLORS)
-              .filter(([country]) => flights.some(f => f.country === country && !f.isStrategic))
-              .map(([country, color]) => (
-                <div key={country} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 10, color }}>▲</span>
-                  <span>{country}</span>
+        {/* Collapsible content */}
+        {legendOpen && (
+          <div style={{
+            padding:   '0 10px 8px',
+            display:   'flex',
+            flexDirection: 'column',
+            gap:       4,
+            maxHeight: '45vh',
+            overflowY: 'auto',
+          }}>
+            {/* News legend */}
+            <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 2 }}>News</div>
+            {Object.entries(REGION_DOTS).map(([region, color]) => (
+              <div key={region} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: color, display: 'inline-block', flexShrink: 0 }} />
+                <span style={{ textTransform: 'capitalize' }}>{region.replace('-', ' ')}</span>
+              </div>
+            ))}
+
+            {/* Flight legend (only show when flights enabled) */}
+            {flightsOn && flights.length > 0 && (
+              <>
+                <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: 6, marginBottom: 2 }}>Aircraft</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 10 }}>▲</span>
+                  <span style={{ color: STRATEGIC_COLOR }}>⚡ Strategic/Military</span>
                 </div>
-              ))}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 10, color: AIRCRAFT_DEFAULT_COLOR }}>▲</span>
-              <span>Other</span>
-            </div>
-          </>
+                {Object.entries(COUNTRY_COLORS)
+                  .filter(([country]) => flights.some(f => f.country === country && !f.isStrategic))
+                  .map(([country, color]) => (
+                    <div key={country} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: 10, color }}>▲</span>
+                      <span>{country}</span>
+                    </div>
+                  ))}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 10, color: AIRCRAFT_DEFAULT_COLOR }}>▲</span>
+                  <span>Other</span>
+                </div>
+              </>
+            )}
+          </div>
         )}
       </div>
     </div>

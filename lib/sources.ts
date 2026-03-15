@@ -6,8 +6,6 @@ export type Source = {
   color: string;
   /** Skip the Iran keyword filter — source is already topically filtered */
   prefiltered?: boolean;
-  /** Source fetched via a custom API handler, not RSS */
-  fetchType?: 'rss' | 'acled';
 };
 
 export const SOURCES: Source[] = [
@@ -94,18 +92,6 @@ export const SOURCES: Source[] = [
     name: 'GDELT · Hormuz / Shipping',
     url: 'https://api.gdeltproject.org/api/v2/doc/doc?query=strait+hormuz+OR+red+sea+tanker+OR+iran+oil+sanctions+OR+persian+gulf+naval&mode=artlist&format=rss&maxrecords=20&timespan=12h&sort=DateDesc',
     region: 'global', color: '#2980b9', prefiltered: true,
-  },
-
-  // ── ACLED (free key required — set ACLED_API_KEY + ACLED_EMAIL in .env) ─────
-  // Fetched via a custom handler rather than RSS; shown in the sidebar
-  // so users can toggle it on/off like any other source.
-  {
-    id: 'acled',
-    name: 'ACLED (Conflict Events)',
-    url: '',           // fetched via lib/acled.ts, not RSS
-    region: 'global', color: '#e74c3c',
-    prefiltered: true,
-    fetchType: 'acled',
   },
 
   // ── UN / Humanitarian ────────────────────────────────────────────────────────

@@ -271,6 +271,18 @@ html {
   .menu-btn {
     display: flex !important;
   }
+
+  /* Reduce map height on mobile so content stays visible above fold */
+  .ftg-map-container {
+    height: 58vh !important;
+    min-height: 320px !important;
+  }
+
+  /* Larger touch targets on article cards */
+  .article-card {
+    padding-top:    14px !important;
+    padding-bottom: 14px !important;
+  }
 }
 
 /* Hide hamburger on desktop */

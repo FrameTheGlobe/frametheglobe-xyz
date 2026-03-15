@@ -79,18 +79,78 @@ function itemMatchesSearch(item: FeedItem, q: string): boolean {
   return `${item.title} ${item.summary} ${item.sourceName}`.toLowerCase().includes(lower);
 }
 
+// Stop-words to ignore when comparing article titles for clustering
+const CLUSTER_STOPWORDS = new Set([
+  'a','an','the','and','or','but','in','on','at','to','for','of','with',
+  'by','from','as','is','was','are','were','be','been','being','have','has',
+  'had','do','does','did','will','would','could','should','may','might',
+  'says','said','over','after','before','into','through','about','against',
+  'between','into','during','without','within','along','following','across',
+  'up','down','out','off','over','under','again','its','it','this','that',
+  'these','those','than','then','so','yet','both','each','more','most',
+  'other','some','such','no','nor','not','only','own','same','too','very',
+  'can','just','us','new','amid','amid','report','reports','sources',
+]);
+
+function titleToKeySet(title: string): Set<string> {
+  return new Set(
+    title
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .split(/\s+/)
+      .filter(w => w.length > 2 && !CLUSTER_STOPWORDS.has(w))
+  );
+}
+
+function jaccardSimilarity(a: Set<string>, b: Set<string>): number {
+  if (a.size === 0 && b.size === 0) return 1;
+  const intersection = [...a].filter(w => b.has(w)).length;
+  const union = new Set([...a, ...b]).size;
+  return union === 0 ? 0 : intersection / union;
+}
+
 function buildClusters(items: FeedItem[]): Cluster[] {
-  const map = new Map<string, FeedItem[]>();
-  const norm = (t: string) => t.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
-  items.forEach(item => {
-    const key = norm(item.title || item.link);
-    if (!key) return;
-    const bucket = map.get(key) || [];
-    bucket.push(item);
-    map.set(key, bucket);
-  });
-  return Array.from(map.entries())
-    .map(([id, items]) => ({ id, title: items[0]?.title || 'Untitled', items }))
+  // Deduplicate: group articles whose titles share ≥40% Jaccard similarity
+  // and were published within 12 hours of each other.
+  const SIMILARITY_THRESHOLD = 0.40;
+  const TIME_WINDOW_MS = 12 * 60 * 60 * 1000;
+
+  const keySets = items.map(item => titleToKeySet(item.title || ''));
+  const assigned = new Array<number>(items.length).fill(-1);
+  const clusters: FeedItem[][] = [];
+
+  for (let i = 0; i < items.length; i++) {
+    if (assigned[i] !== -1) continue; // already in a cluster
+
+    // Start a new cluster with this item
+    const clusterIdx = clusters.length;
+    clusters.push([items[i]]);
+    assigned[i] = clusterIdx;
+
+    const timeI = new Date(items[i].pubDate).getTime();
+
+    for (let j = i + 1; j < items.length; j++) {
+      if (assigned[j] !== -1) continue;
+
+      const timeJ = new Date(items[j].pubDate).getTime();
+      if (Math.abs(timeI - timeJ) > TIME_WINDOW_MS) continue; // too far apart in time
+
+      const sim = jaccardSimilarity(keySets[i], keySets[j]);
+      if (sim >= SIMILARITY_THRESHOLD) {
+        clusters[clusterIdx].push(items[j]);
+        assigned[j] = clusterIdx;
+      }
+    }
+  }
+
+  return clusters
+    .map((clusterItems, idx) => ({
+      id:    `cluster-${idx}`,
+      title: clusterItems[0]?.title || 'Untitled',
+      items: clusterItems.sort(
+        (a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime()
+      ),
+    }))
     .sort((a, b) =>
       new Date(b.items[0]?.pubDate || 0).getTime() -
       new Date(a.items[0]?.pubDate || 0).getTime()
@@ -506,7 +566,10 @@ export default function Home() {
     let es: EventSource | null = null;
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
     let pollFallback:   ReturnType<typeof setInterval>  | null = null;
+    // sseRetryTimer: periodically tries to reclaim SSE after falling back to polling
+    let sseRetryTimer:  ReturnType<typeof setInterval>  | null = null;
     let attempts = 0;
+    let destroyed = false; // set true on cleanup so callbacks don't fire after unmount
 
     const applyPayload = (data: {
       type: string; items?: FeedItem[]; total?: number;
@@ -520,13 +583,21 @@ export default function Home() {
       setLoading(false);
     };
 
+    const stopPolling = () => {
+      if (pollFallback) { clearInterval(pollFallback); pollFallback = null; }
+      if (sseRetryTimer) { clearInterval(sseRetryTimer); sseRetryTimer = null; }
+    };
+
     const connect = () => {
+      if (destroyed) return;
       setLiveStatus('connecting');
       es = new EventSource('/api/stream');
 
       es.addEventListener('open', () => {
+        if (destroyed) { es?.close(); return; }
         setLiveStatus('live');
         attempts = 0;
+        stopPolling(); // SSE is up — no need for polling fallback anymore
       });
 
       es.addEventListener('message', (e: MessageEvent) => {
@@ -534,27 +605,66 @@ export default function Home() {
       });
 
       es.addEventListener('error', () => {
+        if (destroyed) return;
         es?.close();
         es = null;
-        setLiveStatus(attempts >= 3 ? 'polling' : 'connecting');
+        attempts++;
 
-        if (attempts >= 3) {
-          // Give up on SSE after 3 failed attempts — use polling instead
-          pollFallback = setInterval(fetchNews, 5 * 60 * 1000);
+        if (attempts > 3) {
+          // SSE not available — switch to polling and schedule a periodic retry
+          setLiveStatus('polling');
+          if (!pollFallback) {
+            pollFallback = setInterval(fetchNews, 5 * 60 * 1000);
+          }
+          // Every 2 minutes, try to reconnect SSE (e.g. after a network blip)
+          if (!sseRetryTimer) {
+            sseRetryTimer = setInterval(() => {
+              if (!destroyed && !es) {
+                attempts = 0; // reset so we give SSE another 3 chances
+                connect();
+              }
+            }, 2 * 60 * 1000);
+          }
         } else {
-          // Exponential back-off: 3s, 6s, 12s
-          attempts++;
-          reconnectTimer = setTimeout(connect, Math.min(3000 * attempts, 15000));
+          // Exponential back-off: 3s → 6s → 9s
+          setLiveStatus('connecting');
+          reconnectTimer = setTimeout(connect, 3000 * attempts);
         }
       });
     };
 
+    // Also reconnect on browser online event (device woke up, wifi reconnected)
+    const handleOnline = () => {
+      if (destroyed || es) return; // already connected
+      attempts = 0;
+      stopPolling();
+      fetchNews(); // get fresh data immediately
+      connect();
+    };
+    window.addEventListener('online', handleOnline);
+
+    // Also refresh data when the tab becomes visible again after being backgrounded
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && !destroyed) {
+        fetchNews();
+        if (!es) {
+          attempts = 0;
+          stopPolling();
+          connect();
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
     connect();
 
     return () => {
+      destroyed = true;
       es?.close();
       if (reconnectTimer) clearTimeout(reconnectTimer);
-      if (pollFallback)   clearInterval(pollFallback);
+      stopPolling();
+      window.removeEventListener('online', handleOnline);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // fetchNews is stable (useCallback with no deps)

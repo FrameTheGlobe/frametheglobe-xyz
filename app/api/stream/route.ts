@@ -2,8 +2,8 @@
  * /api/stream — Server-Sent Events endpoint
  *
  * Clients connect once and receive news updates in real time as the
- * server refreshes RSS/ACLED/GDELT feeds (every 2 minutes). The
- * connection is kept alive with periodic heartbeat comments.
+ * server refreshes RSS/GDELT feeds (every 2 minutes). The connection
+ * is kept alive with periodic heartbeat comments.
  *
  * Works on any persistent Node.js host (no serverless / edge needed).
  * If running behind nginx, make sure proxy_buffering is off for this path.
@@ -26,12 +26,10 @@ export async function GET(request: NextRequest) {
     // Fire-and-forget — the store will broadcast the result when ready
     import('@/lib/news-store').then(async ({ setNewsCache, isCacheStale: isStill }) => {
       if (!isStill()) return; // another request already refreshed it
-      const { SOURCES }    = await import('@/lib/sources');
-      const { fetchFeed }  = await import('@/lib/fetcher');
-      const { fetchACLED } = await import('@/lib/acled');
+      const { SOURCES }   = await import('@/lib/sources');
+      const { fetchFeed } = await import('@/lib/fetcher');
 
-      const rssSources = SOURCES.filter(s => s.fetchType !== 'acled');
-      const results    = await Promise.allSettled(rssSources.map(s => fetchFeed(s)));
+      const results = await Promise.allSettled(SOURCES.map(s => fetchFeed(s)));
 
       const items: import('@/lib/fetcher').FeedItem[] = [];
       let failed = 0;
@@ -40,15 +38,13 @@ export async function GET(request: NextRequest) {
         else failed++;
       });
 
-      try { const acled = await fetchACLED(); items.push(...acled); } catch { /* optional */ }
-
       items.sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
 
       setNewsCache({
         items,
-        total:        items.length,
-        fetchedAt:    new Date().toISOString(),
-        sourceCount:  SOURCES.length,
+        total:         items.length,
+        fetchedAt:     new Date().toISOString(),
+        sourceCount:   SOURCES.length,
         failedSources: failed,
       });
     }).catch(console.error);

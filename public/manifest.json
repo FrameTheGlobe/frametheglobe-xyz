@@ -11,7 +11,7 @@
   "lang": "en-US",
   "icons": [
     {
-      "src": "/favicon.png",
+      "src": "/img/favicon.png",
       "sizes": "any",
       "type": "image/png",
       "purpose": "any maskable"

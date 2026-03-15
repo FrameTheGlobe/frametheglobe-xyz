@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { SOURCES } from '@/lib/sources';
 import { fetchFeed, FeedItem, SourceHealth } from '@/lib/fetcher';
-import { fetchACLED } from '@/lib/acled';
 import { setNewsCache, getNewsCache, isCacheStale } from '@/lib/news-store';
 
 export const runtime   = 'nodejs';
@@ -27,11 +26,10 @@ export async function GET(request: Request) {
   }
 
   // Fetch fresh data
-  const rssSources = (
+  const rssSources =
     region && region !== 'all'
       ? SOURCES.filter(s => s.region === region)
-      : SOURCES
-  ).filter(s => s.fetchType !== 'acled'); // ACLED fetched separately below
+      : SOURCES;
 
   const results = await Promise.allSettled(rssSources.map(s => fetchFeed(s)));
 
@@ -48,14 +46,6 @@ export async function GET(request: Request) {
       failedCount++;
     }
   });
-
-  // ACLED (optional — only runs when ACLED_API_KEY + ACLED_EMAIL are set)
-  try {
-    const acledItems = await fetchACLED();
-    allItems.push(...acledItems);
-  } catch (err) {
-    console.error('[FTG] ACLED fetch error:', err);
-  }
 
   // Sort newest first
   allItems.sort((a, b) =>

@@ -28,15 +28,20 @@ export const metadata: Metadata = {
     type: 'website',
     url: 'https://frametheglobe.xyz',
     siteName: 'FrameTheGlobe',
-    images: ['/img/social-card.png'],
+    locale: 'en_US',
+    images: [{
+      url:    '/img/social-card.png',
+      width:  1200,
+      height: 630,
+      type:   'image/png',
+      alt:    'FrameTheGlobe — Iran War Theater live news aggregator',
+    }],
   },
   twitter: {
-    card: 'summary_large_image',
-    title: 'FrameTheGlobe — Iran War Theater',
-    description:
-      'Live news aggregator covering the Iran war theater from 40+ sources.',
-    site: '@frametheglobe',
-    images: ['/img/social-card.png'],
+    card:        'summary_large_image',
+    title:       'FrameTheGlobe — Iran War Theater',
+    description: 'Live news aggregator covering the Iran war theater from 40+ sources.',
+    images:      ['/img/social-card.png'],
   },
   robots: { index: true, follow: true },
   alternates: {
@@ -46,9 +51,9 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: '/favicon.png',
-    shortcut: '/favicon.png',
-    apple: '/favicon.png',
+    icon:     '/img/favicon.png',
+    shortcut: '/img/favicon.png',
+    apple:    '/img/favicon.png',
   },
   manifest: '/manifest.json',
 };
