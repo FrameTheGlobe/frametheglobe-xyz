@@ -441,6 +441,204 @@ function SidebarPanel({
   );
 }
 
+// ── Feed Loading Screen ────────────────────────────────────────────────────────
+// Replaces the generic skeleton during initial page load. Uses mission-ops
+// language and animated progress to tell the reader exactly what's happening.
+
+const LOADING_REGIONS = [
+  'Iran','Gaza','Lebanon','Afghanistan',
+  'Pakistan','China','Russia','US','Middle East','Global',
+];
+
+const LOADING_MESSAGES = [
+  'ESTABLISHING SECURE FEED CONNECTIONS',
+  'Querying Iranian state media…',
+  'Scanning GDELT conflict database…',
+  'Pulling Middle East wire services…',
+  'Indexing war theater developments…',
+  'Cross-referencing South Asia sources…',
+  'Aggregating open-source intelligence…',
+  'Scanning maritime & energy feeds…',
+  'Pulling diplomatic channel updates…',
+  'Indexing proxy network activity…',
+  'Cross-referencing CENTCOM region…',
+  'Scanning Hormuz chokepoint feeds…',
+  'Calibrating relevance filters…',
+  'Sorting by recency…',
+  'WAR THEATER READY',
+];
+
+function FeedLoadingScreen({ sourceCount }: { sourceCount: number }) {
+  const [msgIdx,    setMsgIdx]    = useState(0);
+  const [regionIdx, setRegionIdx] = useState(-1);
+  const [dots,      setDots]      = useState('');
+
+  // Cycle through status messages
+  useEffect(() => {
+    const t = setInterval(() => {
+      setMsgIdx(i => Math.min(i + 1, LOADING_MESSAGES.length - 1));
+    }, 380);
+    return () => clearInterval(t);
+  }, []);
+
+  // Light up region chips one by one
+  useEffect(() => {
+    if (regionIdx >= LOADING_REGIONS.length - 1) return;
+    const t = setTimeout(() => setRegionIdx(i => i + 1), 340);
+    return () => clearTimeout(t);
+  }, [regionIdx]);
+
+  // Blinking cursor dots
+  useEffect(() => {
+    const t = setInterval(() => setDots(d => d.length < 3 ? d + '.' : ''), 420);
+    return () => clearInterval(t);
+  }, []);
+
+  // Progress bar: CSS animation fills to ~88% over ~5s then holds
+  const total = sourceCount || SOURCES.length;
+  const msg   = LOADING_MESSAGES[msgIdx];
+  const isFinal = msg === 'WAR THEATER READY';
+
+  return (
+    <>
+      <style>{`
+        @keyframes ftg-bar-fill {
+          0%   { width: 0%; }
+          30%  { width: 35%; }
+          60%  { width: 60%; }
+          85%  { width: 82%; }
+          100% { width: 88%; }
+        }
+        .ftg-progress-bar {
+          animation: ftg-bar-fill 5s cubic-bezier(0.15, 0.5, 0.3, 1) forwards;
+        }
+        .ftg-progress-bar-done {
+          width: 100%;
+          transition: width 0.4s ease;
+        }
+        @keyframes ftg-blink {
+          0%, 100% { opacity: 1; }
+          50%       { opacity: 0; }
+        }
+        .ftg-cursor { animation: ftg-blink 1s step-end infinite; }
+      `}</style>
+
+      <div style={{
+        border:       '1px solid var(--border-light)',
+        borderTop:    '3px solid #c93a20',
+        borderRadius: '0 0 4px 4px',
+        background:   'var(--surface)',
+        padding:      '28px 28px 24px',
+        marginBottom: 10,
+        fontFamily:   'var(--font-mono)',
+      }}>
+        {/* Header row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 22 }}>
+          <span style={{
+            width: 8, height: 8, borderRadius: '50%',
+            background: '#c93a20', flexShrink: 0,
+            boxShadow:  '0 0 0 3px rgba(201,58,32,0.18)',
+            animation:  'pulse 1.5s infinite',
+          }} />
+          <span style={{
+            fontSize: 11, fontWeight: 700, letterSpacing: '0.18em',
+            textTransform: 'uppercase', color: '#c93a20',
+          }}>
+            FrameTheGlobe · Intelligence Feed
+          </span>
+          <span style={{
+            fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.06em',
+            border: '1px solid var(--border-light)', padding: '1px 7px', borderRadius: 2,
+            marginLeft: 'auto',
+          }}>
+            {total} sources · {LOADING_REGIONS.length} regions
+          </span>
+        </div>
+
+        {/* Big status line */}
+        <div style={{
+          fontSize: 13, fontWeight: 600, letterSpacing: '0.06em',
+          color: isFinal ? '#27ae60' : 'var(--text-secondary)',
+          minHeight: 20, marginBottom: 16,
+          transition: 'color 0.3s',
+        }}>
+          {msg}
+          {!isFinal && <span className="ftg-cursor" style={{ color: 'var(--accent)', marginLeft: 2 }}>█</span>}
+        </div>
+
+        {/* Progress bar */}
+        <div style={{
+          height: 4, background: 'var(--border-light)',
+          borderRadius: 2, overflow: 'hidden', marginBottom: 18,
+        }}>
+          <div
+            className={isFinal ? 'ftg-progress-bar-done' : 'ftg-progress-bar'}
+            style={{
+              height: '100%',
+              background: isFinal
+                ? '#27ae60'
+                : 'linear-gradient(90deg, #c93a20, #e67e22)',
+              borderRadius: 2,
+            }}
+          />
+        </div>
+
+        {/* Region chips */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 22 }}>
+          {LOADING_REGIONS.map((r, i) => {
+            const lit = i <= regionIdx;
+            return (
+              <span
+                key={r}
+                style={{
+                  fontFamily:    'var(--font-mono)',
+                  fontSize:      9,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  padding:       '2px 8px',
+                  borderRadius:  2,
+                  border:        `1px solid ${lit ? '#c93a2055' : 'var(--border-light)'}`,
+                  background:    lit ? 'rgba(201,58,32,0.06)' : 'transparent',
+                  color:         lit ? '#c93a20' : 'var(--text-muted)',
+                  transition:    'background 0.3s, color 0.3s, border-color 0.3s',
+                }}
+              >
+                {r}
+              </span>
+            );
+          })}
+        </div>
+
+        {/* Sub-message */}
+        <div style={{
+          fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.05em',
+        }}>
+          Feeds are fetched on-demand and cached · typical load 3–6 s · {dots || '…'}
+        </div>
+      </div>
+
+      {/* Ghost skeleton cards below — give the page a sense of incoming content */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, opacity: 0.4 }}>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} style={{
+            background:  'var(--surface)',
+            padding:     '14px 18px',
+            borderTop:   '1px solid var(--border-light)',
+            borderRight: '1px solid var(--border-light)',
+            borderBottom:'1px solid var(--border-light)',
+            borderLeft:  '3px solid var(--border)',
+            opacity:     1 - i * 0.16,
+          }}>
+            <div className="skeleton" style={{ height: 13, width: `${70 - i * 4}%`, marginBottom: 8 }} />
+            <div className="skeleton" style={{ height: 9,  width: '85%', marginBottom: 5, opacity: 0.6 }} />
+            <div className="skeleton" style={{ height: 9,  width: '45%', opacity: 0.35 }} />
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
 // ── Feed Status Panel ──────────────────────────────────────────────────────────
 // Shows sources that errored on last fetch. Hidden when all feeds are healthy.
 const REGION_ORDER = [
@@ -1471,28 +1669,9 @@ export default function Home() {
             )}
           </div>
 
-          {/* ── LOADING skeleton ───────────────────────────────────────── */}
+          {/* ── LOADING screen ─────────────────────────────────────────── */}
           {loading ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {Array.from({ length: 10 }).map((_, i) => (
-                <div
-                  key={i}
-                  style={{
-                    background:   'var(--surface)',
-                    padding:      '14px 18px',
-                    borderTop:    '1px solid var(--border-light)',
-                    borderRight:  '1px solid var(--border-light)',
-                    borderBottom: '1px solid var(--border-light)',
-                    borderLeft:   '3px solid var(--border)',
-                    opacity:      1 - i * 0.07,
-                  }}
-                >
-                  <div className="skeleton" style={{ height: 14, width: `${68 - i * 3}%`, marginBottom: 8 }} />
-                  <div className="skeleton" style={{ height: 10, width: '88%', marginBottom: 5, opacity: 0.65 }} />
-                  <div className="skeleton" style={{ height: 10, width: '52%', opacity: 0.4 }} />
-                </div>
-              ))}
-            </div>
+            <FeedLoadingScreen sourceCount={SOURCES.length} />
 
           /* ── EMPTY state ──────────────────────────────────────────── */
           ) : visibleItems.length === 0 ? (
