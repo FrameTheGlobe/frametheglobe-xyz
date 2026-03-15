@@ -6,6 +6,7 @@ import { SOURCES, REGION_LABELS, Source } from '@/lib/sources';
 import TopStorylines   from './components/TopStorylines';
 import LensPulse       from './components/LensPulse';
 import BreakingTicker  from './components/BreakingTicker';
+import LiveVideoWidget from './components/LiveVideoWidget';
 
 // MapView uses Leaflet (browser-only) — load with no SSR
 const MapView = dynamic(() => import('./components/MapView'), { ssr: false });
@@ -1003,7 +1004,8 @@ export default function Home() {
 
         {/* Sidebar */}
         <aside className={`sidebar-col${sidebarOpen ? ' open' : ''}`}>
-          <div style={{ position: 'sticky', top: 80 }}>
+          <div style={{ position: 'sticky', top: 80, display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {!loading && <LiveVideoWidget />}
             <SidebarPanel
               search={search}
               onSearch={setSearch}
