@@ -79,7 +79,7 @@ export default function RapidResponse({ items, limit = 4, onViewAll }: Props) {
         {trumpNews.map((item, idx) => (
           <a
             key={`${item.link}-${idx}`}
-            href={item.link}
+            href={item.link || undefined}
             target="_blank"
             rel="noopener noreferrer"
             style={{ 

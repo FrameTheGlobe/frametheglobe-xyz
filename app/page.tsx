@@ -1405,7 +1405,7 @@ export default function Home() {
                               </span>
                             )}
                             <a
-                              href={item.link}
+                              href={item.link || undefined}
                               target="_blank"
                               rel="noopener noreferrer"
                               data-article-idx={i}
@@ -1540,7 +1540,7 @@ export default function Home() {
                           {regItems.map(item => (
                             <li key={keyForItem(item)}>
                               <a
-                                href={item.link}
+                                href={item.link || undefined}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 style={{

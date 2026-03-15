@@ -32,7 +32,7 @@ const CACHE_TTL_MS = 3 * 60 * 1000; // 3 minutes
 const parser = new Parser({
   timeout: 10000,
   headers: {
-    'User-Agent': 'Mozilla/5.0 (compatible; FrameTheGlobe/3.1.2; +https://frametheglobe.xyz)',
+    'User-Agent': 'Mozilla/5.0 (compatible; FrameTheGlobe/3.1.3; +https://frametheglobe.xyz)',
     'Accept': 'application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
     'Accept-Language': 'en-US,en;q=0.9',
   },
@@ -194,7 +194,7 @@ export async function fetchFeed(source: {
 
         return {
           title,
-          link:        item.link || '#',
+          link:        item.link || '',
           pubDate:     item.pubDate || item.isoDate || new Date().toISOString(),
           summary:     (item.contentSnippet || item.summary || '').replace(/<[^>]*>/g, '').trim(),
           sourceId:    source.id,

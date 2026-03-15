@@ -72,7 +72,7 @@ export default function BreakingTicker({ items }: Props) {
         {doubled.map((item, idx) => (
           <span key={idx} style={{ display: 'inline-flex', alignItems: 'center' }}>
             <a
-              href={item.link}
+              href={item.link || undefined}
               target="_blank"
               rel="noopener noreferrer"
               style={{

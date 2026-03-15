@@ -355,9 +355,12 @@ export default function IranWarSection({ items, sourceCountMap }: Props) {
                     {/* 2 latest headlines for this front */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                       {frontItems.length > 0 ? frontItems.map(item => (
-                        <div key={item.link} style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        <div
+                          key={(item.link && item.link.startsWith('http') ? item.link : null) ?? `${item.sourceId}::${item.title}::${item.pubDate}`}
+                          style={{ display: 'flex', flexDirection: 'column', gap: 1 }}
+                        >
                           <a
-                            href={item.link}
+                            href={item.link || undefined}
                             target="_blank"
                             rel="noopener noreferrer"
                             style={{
@@ -565,7 +568,7 @@ export default function IranWarSection({ items, sourceCountMap }: Props) {
                           </span>
                         )}
                         <a
-                          href={item.link}
+                          href={item.link || undefined}
                           target="_blank"
                           rel="noopener noreferrer"
                           style={{

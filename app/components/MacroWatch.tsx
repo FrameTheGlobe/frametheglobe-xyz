@@ -94,7 +94,7 @@ export default function MacroWatch({ items, limit = 4 }: Props) {
         {macroNews.map((item, idx) => (
           <a
             key={`${item.link}-${idx}`}
-            href={item.link}
+            href={item.link || undefined}
             target="_blank"
             rel="noopener noreferrer"
             style={{ 
