@@ -92,7 +92,7 @@ export const SOURCES: Source[] = [
   { id: 'eurasiareview',  name: 'Eurasia Review',         url: 'https://www.eurasiareview.com/feed/',                          region: 'global',   color: '#9b59b6' },
   { id: 'naturalgasworld',name: 'Natural Gas World',      url: 'https://www.naturalgasworld.com/feed/',                        region: 'global',   color: '#e67e22' },
   { id: 'energymonitor',  name: 'Energy Monitor',         url: 'https://www.energymonitor.ai/feed/',                           region: 'global',   color: '#f1c40f' },
-  { id: 'zerohedge',      name: 'ZeroHedge',              url: 'http://feeds.feedburner.com/zerohedge/feed',                   region: 'global',   color: '#000000' },
+  { id: 'zerohedge',      name: 'ZeroHedge',              url: 'http://feeds.feedburner.com/zerohedge/feed',                   region: 'global',   color: '#000000', prefiltered: true },
   { id: 'zerohedge-geo',  name: 'ZeroHedge Geopolitics',   url: 'https://www.zerohedge.com/rss/geopolitics',                   region: 'global',   color: '#000000', prefiltered: true },
 
   // ── GDELT Project (free, no key needed) ─────────────────────────────────────

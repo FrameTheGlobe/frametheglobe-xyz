@@ -34,7 +34,10 @@ export default function OilTicker({ items = [] }: Props) {
     return items
       .filter(item => {
         const text = (item.title + ' ' + (item.summary || '')).toLowerCase();
-        return text.includes('oil') || text.includes('crude') || text.includes('brent') || text.includes('wti') || text.includes('opec');
+        return text.includes('oil price') || text.includes('crude oil') || 
+               text.includes('brent crude') || text.includes('wti') || 
+               text.includes('opec') || text.includes('energy output') ||
+               text.includes('natural gas');
       })
       .sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime())
       .slice(0, 3);

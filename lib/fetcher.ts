@@ -32,7 +32,7 @@ const CACHE_TTL_MS = 3 * 60 * 1000; // 3 minutes
 const parser = new Parser({
   timeout: 10000,
   headers: {
-    'User-Agent': 'Mozilla/5.0 (compatible; FrameTheGlobe/3.1.0; +https://frametheglobe.xyz)',
+    'User-Agent': 'Mozilla/5.0 (compatible; FrameTheGlobe/3.1.1; +https://frametheglobe.xyz)',
     'Accept': 'application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
     'Accept-Language': 'en-US,en;q=0.9',
   },
@@ -174,6 +174,13 @@ export async function fetchFeed(source: {
     const items: FeedItem[] = filtered
       .slice(0, 15)
       .map(item => {
+        let title = (item.title || '').trim();
+        if (!title || title.toLowerCase() === 'no title') {
+          // Fallback to summary if title is blank or generic
+          const summary = (item.contentSnippet || item.summary || '').replace(/<[^>]*>/g, '').trim();
+          title = summary ? (summary.slice(0, 80) + (summary.length > 80 ? '…' : '')) : 'Untitled Update';
+        }
+
         // Simple heuristic to extract images from RSS standard enclosures or media content
         let imageUrl = undefined;
         if (item.enclosure && item.enclosure.url && item.enclosure.type && item.enclosure.type.startsWith('image/')) {
@@ -186,7 +193,7 @@ export async function fetchFeed(source: {
         }
 
         return {
-          title:       item.title || 'No title',
+          title,
           link:        item.link || '#',
           pubDate:     item.pubDate || item.isoDate || new Date().toISOString(),
           summary:     (item.contentSnippet || item.summary || '').replace(/<[^>]*>/g, '').trim(),

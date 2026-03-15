@@ -17,9 +17,9 @@ interface Props {
 }
 
 const MACRO_KEYWORDS = [
-  'zerohedge', 'oil', 'fed', 'interest rate', 'inflation', 'commodity', 
-  'market', 'stocks', 'gold', 'crude', 'brent', 'supply chain',
-  'sanction', 'treasury', 'yield', 'petrodollar', 'dollar'
+  'zerohedge', 'oil price', 'crude oil', 'brent', 'wti', 'fed ', 'interest rate', 'inflation', 
+  'commodity', 'equities', 'stock market', 'nasdaq', 's&p 500', 'gold price', 'silver price',
+  'treasury yield', 'petrodollar', 'us dollar', 'forex', 'global market', 'sanctions'
 ];
 
 export default function MacroWatch({ items, limit = 4 }: Props) {
@@ -31,7 +31,15 @@ export default function MacroWatch({ items, limit = 4 }: Props) {
         const hasKeyword = MACRO_KEYWORDS.some(kw => text.includes(kw));
         return isZH || hasKeyword;
       })
-      .sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime())
+      .sort((a, b) => {
+        // Prioritize ZeroHedge
+        const aZH = a.sourceId?.startsWith('zerohedge');
+        const bZH = b.sourceId?.startsWith('zerohedge');
+        if (aZH && !bZH) return -1;
+        if (!aZH && bZH) return 1;
+        // Then by date
+        return new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime();
+      })
       .slice(0, limit);
   }, [items, limit]);
 

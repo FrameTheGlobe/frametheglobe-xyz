@@ -17,7 +17,7 @@ interface Props {
   onViewAll?: () => void;
 }
 
-const TRUMP_KEYWORDS = ['trump', 'white house', 'rapid 47', 'vance', 'maga', 'administration', 'executive order', 'mar-a-lago'];
+const TRUMP_KEYWORDS = ['trump', 'white house', 'rapid 47', 'vance', 'maga', 'mar-a-lago', 'trump administration', '47th president'];
 
 export default function RapidResponse({ items, limit = 4, onViewAll }: Props) {
   const trumpNews = useMemo(() => {
