@@ -1,6 +1,5 @@
 node_modules
 .next
-_next
 .DS_Store
 dist
 coverage

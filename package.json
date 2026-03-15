@@ -7,10 +7,9 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build && rm -rf _next && mkdir -p _next && cp -r .next/static _next/static",
+    "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "postinstall": "next build && rm -rf _next && mkdir -p _next && cp -r .next/static _next/static"
+    "lint": "eslint"
   },
   "dependencies": {
     "@types/leaflet": "^1.9.21",
