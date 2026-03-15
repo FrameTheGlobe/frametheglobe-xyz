@@ -32,7 +32,7 @@ const CACHE_TTL_MS = 3 * 60 * 1000; // 3 minutes
 const parser = new Parser({
   timeout: 10000,
   headers: {
-    'User-Agent': 'Mozilla/5.0 (compatible; FrameTheGlobe/3.0.7; +https://frametheglobe.xyz)',
+    'User-Agent': 'Mozilla/5.0 (compatible; FrameTheGlobe/3.1.0; +https://frametheglobe.xyz)',
     'Accept': 'application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
     'Accept-Language': 'en-US,en;q=0.9',
   },
@@ -103,6 +103,11 @@ const IRAN_KEYWORDS = [
   'north waziristan', 'south waziristan', 'khyber pakhtunkhwa',
   'line of control', 'loc pakistan', 'pakistan india border',
   'karachi attack', 'pakistan terrorism', 'pakistan operation',
+
+  // Superpower Pivot (China / Russia)
+  'russia', 'russian', 'moscow', 'putin', 'kremlin', 'lavrov', 'tass',
+  'china', 'chinese', 'beijing', 'xi jinping', 'brics', 'belt and road',
+  'superpower', 'multiplex', 'global south',
 
   // Geopolitics
   'us military', 'pentagon', 'centcom', 'nato', 'russia iran', 'china iran',

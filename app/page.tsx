@@ -30,7 +30,7 @@ type LensId =
   | 'all' | 'gaza' | 'lebanon' | 'afghanistan' | 'pakistan'
   | 'nuclear' | 'naval' | 'proxy' | 'domestic'
   | 'oil' | 'commodities' | 'finance' | 'shipping' | 'supply'
-  | 'trump';
+  | 'trump' | 'china-pivot' | 'russia-news';
 
 type Theme = 'light' | 'dark';
 type ViewMode = 'list' | 'clusters' | 'map';
@@ -60,6 +60,8 @@ const LENSES: { id: LensId; label: string; hint: string; keywords: string[] }[] 
   { id: 'finance',     label: 'Markets / Finance', hint: 'Stocks, bonds, FX, risk premiums, sanctions.',             keywords: ['market','markets','stocks','equities','bonds','yields','currency','fx','rally','selloff','sanctions','war premium'] },
   { id: 'shipping',    label: 'Shipping',          hint: 'Tankers, freight rates, insurance, chokepoints.',          keywords: ['tanker','freight','shipping','vessel','container','bulk carrier','insurance','suez','red sea','bab el-mandeb'] },
   { id: 'trump',       label: 'Rapid 47',          hint: 'Trump administration, White House response, policy shifts.', keywords: ['trump','white house','rapid 47','vance','maga','administration','executive order','mar-a-lago'] },
+  { id: 'china-pivot', label: 'China Pivot',       hint: 'China influence, Beijing, BRICS, Belt & Road.',           keywords: ['china','beijing','xi jinping','brics','belt and road','pla','south china sea','shanghai'] },
+  { id: 'russia-news', label: 'Russia Pivot',      hint: 'Russia influence, Moscow, Kremlin, Energy ties.',          keywords: ['russia','moscow','putin','kremlin','lavrov','wagner','ukraine','donbas','gazprom'] },
 ];
 
 // ── Region colours ─────────────────────────────────────────────────────────────
@@ -72,6 +74,8 @@ const REGION_DOTS: Record<string, string> = {
   analysis:     '#16a085',
   osint:        '#f0b429',
   global:       '#7f8c8d',
+  china:        '#de2910',
+  russia:       '#34495e',
 };
 
 // ── Sources grouped by region (module-level, stable) ──────────────────────────
@@ -862,7 +866,7 @@ export default function Home() {
                   textTransform: 'uppercase',
                   fontWeight: 500,
                 }}>
-                  ME · South Asia
+                  Global Pivot
                 </span>
 
                 {/* Live / connection indicator */}

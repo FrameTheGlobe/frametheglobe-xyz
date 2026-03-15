@@ -2,7 +2,7 @@ export type Source = {
   id: string;
   name: string;
   url: string;
-  region: 'western' | 'iranian' | 'gulf' | 'south-asian' | 'global' | 'osint' | 'levant' | 'analysis';
+  region: 'western' | 'iranian' | 'gulf' | 'south-asian' | 'global' | 'osint' | 'levant' | 'analysis' | 'china' | 'russia';
   color: string;
   /** Skip the Iran keyword filter — source is already topically filtered */
   prefiltered?: boolean;
@@ -207,6 +207,18 @@ export const SOURCES: Source[] = [
     url: 'https://liveuamap.com/rss',
     region: 'osint', color: '#e67e22', prefiltered: true,
   },
+
+  // ── China ─────────────────────────────────────────────────────────────
+  { id: 'xinhua',         name: 'Xinhua News Agency',     url: 'https://www.xinhuanet.com/english/rss/worldrss.xml',           region: 'china',    color: '#de2910' },
+  { id: 'globaltimes',    name: 'Global Times (CN)',      url: 'https://www.globaltimes.cn/rss/world.xml',                     region: 'china',    color: '#de2910' },
+  { id: 'scmp',           name: 'SCMP (Politics)',        url: 'https://www.scmp.com/rss/2/feed',                              region: 'china',    color: '#ffcc00' },
+  { id: 'chinadaily',     name: 'China Daily',            url: 'https://www.chinadaily.com.cn/rss/world.xml',                  region: 'china',    color: '#8b0000' },
+
+  // ── Russia ────────────────────────────────────────────────────────────
+  { id: 'tass',           name: 'TASS (English)',         url: 'https://tass.com/rss/v2.xml',                                  region: 'russia',   color: '#1f355e' },
+  { id: 'rtnews',         name: 'RT News',                url: 'https://www.rt.com/rss/news/',                                 region: 'russia',   color: '#1f355e' },
+  { id: 'sputnik',        name: 'Sputnk Globe',           url: 'https://sputnikglobe.com/export/rss2/archive/index.xml',       region: 'russia',   color: '#e67e22' },
+  { id: 'moscowtimes',    name: 'The Moscow Times',       url: 'https://www.themoscowtimes.com/rss/news',                      region: 'russia',   color: '#333333' },
   {
     id: 'unsc-press',
     name: 'UN Security Council',
@@ -224,4 +236,6 @@ export const REGION_LABELS: Record<Source['region'], string> = {
   analysis:     'Analysis',
   osint:        'OSINT',
   global:       'Markets & Logistics',
+  china:        'China',
+  russia:       'Russia',
 };
