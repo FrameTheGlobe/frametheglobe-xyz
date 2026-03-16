@@ -212,7 +212,7 @@ export const SOURCES: Source[] = [
   { id: 'xinhua',         name: 'Xinhua News Agency',     url: 'https://www.xinhuanet.com/english/rss/worldrss.xml',           region: 'china',    color: '#de2910' },
   { id: 'globaltimes',    name: 'Global Times (CN)',      url: 'https://www.globaltimes.cn/rss/world.xml',                     region: 'china',    color: '#de2910' },
   { id: 'scmp',           name: 'SCMP (Politics)',        url: 'https://www.scmp.com/rss/2/feed',                              region: 'china',    color: '#ffcc00' },
-  { id: 'chinadaily',     name: 'China Daily',            url: 'https://www.chinadaily.com.cn/rss/world.xml',                  region: 'china',    color: '#8b0000' },
+  { id: 'rfa',            name: 'Radio Free Asia',        url: 'https://www.rfa.org/english/news/rss2.xml',                    region: 'china',    color: '#005a9c' },
 
   // ── Russia ────────────────────────────────────────────────────────────
   { id: 'tass',           name: 'TASS (English)',         url: 'https://tass.com/rss/v2.xml',                                  region: 'russia',   color: '#1f355e' },

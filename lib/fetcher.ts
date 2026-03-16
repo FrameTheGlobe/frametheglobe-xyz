@@ -240,9 +240,8 @@ export async function fetchFeed(source: {
           }
         }
 
-        // Prefer item.link; fall back to item.guid (many feeds use <guid> as
-        // the canonical permalink — e.g. China Daily has empty <link> elements
-        // but puts the full URL in <guid>).
+        // Prefer item.link; fall back to item.guid (some feeds use <guid> as
+        // the canonical permalink with an empty or relative <link> element).
         const rawLink = (item.link || item.guid || '').trim();
         let resolvedLink = rawLink;
         if (rawLink && !rawLink.startsWith('http')) {
