@@ -55,7 +55,7 @@ const BLOCKED_UA_FRAGMENTS = [
   'Dalvik/',
 ];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Only apply to the protected API paths
