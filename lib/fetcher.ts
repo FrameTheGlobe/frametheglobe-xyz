@@ -48,7 +48,7 @@ export const CACHE_TTL_MS = 15 * 60 * 1000;
 const parser = new Parser({ timeout: 10000 });
 
 const BASE_HEADERS = {
-  'User-Agent': 'Mozilla/5.0 (compatible; FrameTheGlobe/4.0.7; +https://frametheglobe.xyz)',
+  'User-Agent': 'Mozilla/5.0 (compatible; FrameTheGlobe/4.0.8; +https://frametheglobe.xyz)',
   'Accept':     'application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
   'Accept-Language': 'en-US,en;q=0.9',
 } as const;
