@@ -32,7 +32,7 @@ type LensId =
   | 'all' | 'gaza' | 'lebanon' | 'afghanistan' | 'pakistan'
   | 'nuclear' | 'naval' | 'proxy' | 'domestic'
   | 'oil' | 'commodities' | 'finance' | 'shipping' | 'supply'
-  | 'trump' | 'china-pivot' | 'russia-news';
+  | 'trump' | 'china-pivot' | 'russia-news' | 'epstein';
 
 type Theme = 'light' | 'dark';
 type ViewMode = 'list' | 'clusters' | 'map';
@@ -62,6 +62,7 @@ const LENSES: { id: LensId; label: string; hint: string; keywords: string[] }[] 
   { id: 'finance',     label: 'Markets / Finance', hint: 'Stocks, bonds, FX, risk premiums, sanctions.',             keywords: ['market','markets','stocks','equities','bonds','yields','currency','fx','rally','selloff','sanctions','war premium'] },
   { id: 'shipping',    label: 'Shipping',          hint: 'Tankers, freight rates, insurance, chokepoints.',          keywords: ['tanker','freight','shipping','vessel','container','bulk carrier','insurance','suez','red sea','bab el-mandeb'] },
   { id: 'trump',       label: 'Rapid 47',          hint: 'Trump administration, White House response, policy shifts.', keywords: ['trump','white house','rapid 47','vance','maga','administration','executive order','mar-a-lago'] },
+  { id: 'epstein',     label: 'Epstein Files',     hint: 'Jeffrey Epstein document releases, EFTA files, Ghislaine Maxwell, investigations.', keywords: ['epstein','jeffrey epstein','ghislaine','maxwell','efta','epstein files','lolita express','little saint james','sex trafficking','pedophile network','jmail','epstein documents','epstein emails','epstein estate','epstein network'] },
   { id: 'china-pivot', label: 'China Pivot',       hint: 'China influence, Beijing, BRICS, Belt & Road.',           keywords: ['china','beijing','xi jinping','brics','belt and road','pla','south china sea','shanghai'] },
   { id: 'russia-news', label: 'Russia Pivot',      hint: 'Russia influence, Moscow, Kremlin, Energy ties.',          keywords: ['russia','moscow','putin','kremlin','lavrov','wagner','ukraine','donbas','gazprom'] },
 ];

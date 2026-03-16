@@ -82,6 +82,7 @@ export const SOURCES: Source[] = [
   { id: 'dropsite',       name: 'DropSite News',          url: 'https://www.dropsitenews.com/feed',                            region: 'osint',    color: '#f1c40f' },
   { id: 'bellingcat',     name: 'Bellingcat',             url: 'https://www.bellingcat.com/feed/',                             region: 'osint',    color: '#f39c12' },
   { id: 'theintercept',   name: 'The Intercept',          url: 'https://theintercept.com/feed/?lang=en',                       region: 'osint',    color: '#e67e22' },
+  { id: 'propublica',     name: 'ProPublica',             url: 'https://www.propublica.org/feeds/propublica/main',             region: 'osint',    color: '#5d6d7e' },
   { id: 'antiwar',        name: 'Antiwar.com',            url: 'https://www.antiwar.com/updates.rss',                          region: 'osint',    color: '#e74c3c', prefiltered: true },
   { id: 'middleeastmonitor', name: 'Middle East Monitor', url: 'https://www.middleeastmonitor.com/feed/',                      region: 'osint',    color: '#f0b429', prefiltered: true },
   { id: 'mintpress',      name: 'MintPress News',         url: 'https://www.mintpressnews.com/feed/',                          region: 'osint',    color: '#d4ac0d', prefiltered: true },
