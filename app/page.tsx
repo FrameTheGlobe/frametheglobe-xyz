@@ -11,6 +11,8 @@ import RapidResponse   from './components/RapidResponse';
 import MacroWatch     from './components/MacroWatch';
 import OilTicker      from './components/OilTicker';
 import IranWarSection  from './components/IranWarSection';
+import DailyBriefing, { BriefCluster } from './components/DailyBriefing';
+import CrossSourceComparison, { CompItem } from './components/CrossSourceComparison';
 
 // MapView uses Leaflet (browser-only) — load with no SSR
 const MapView = dynamic(() => import('./components/MapView'), { ssr: false });
@@ -790,6 +792,16 @@ export default function Home() {
   const lastFetchedAtRef                 = useRef<number>(0);
   const [imageErrors, setImageErrors]    = useState<Set<string>>(new Set());
 
+  // ── Addict-loop features ──────────────────────────────────────────────
+  const [readKeys, setReadKeys]               = useState<Set<string>>(new Set());
+  const [lastVisitTime, setLastVisitTime]     = useState<number>(0);
+  const [newCount, setNewCount]               = useState(0);
+  const [watchlistKeywords, setWatchlistKeywords] = useState<string[]>([]);
+  const [watchlistInput, setWatchlistInput]   = useState('');
+  const [expandedComparisons, setExpandedComparisons] = useState<Set<string>>(new Set());
+  const [briefingOpen, setBriefingOpen]       = useState(true);
+  const [briefingDismissed, setBriefingDismissed] = useState(false);
+
   // ── Debounce search ───────────────────────────────────────────────────────
   // Avoids re-running the O(n) itemMatchesSearch filter on every keystroke.
   // The displayed value (search) updates immediately; the value that feeds
@@ -910,6 +922,64 @@ export default function Home() {
     if (typeof window === 'undefined') return;
     try { window.localStorage.setItem('ftg_pins', JSON.stringify(pinnedKeys)); } catch { /* ignore */ }
   }, [pinnedKeys]);
+
+  // ── Read/unread persistence ───────────────────────────────────────────────
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = window.localStorage.getItem('ftg_read');
+      if (raw) { const r = JSON.parse(raw); if (Array.isArray(r)) setReadKeys(new Set(r)); }
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      // Keep only most recent 500 read keys to avoid unbounded growth
+      const arr = [...readKeys].slice(-500);
+      window.localStorage.setItem('ftg_read', JSON.stringify(arr));
+    } catch { /* ignore */ }
+  }, [readKeys]);
+
+  // ── Last-visit timestamp (for new-story counter) ──────────────────────────
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const saved = window.localStorage.getItem('ftg_last_visit');
+      const ts = saved ? parseInt(saved, 10) : 0;
+      setLastVisitTime(ts);
+      // Save current time as the last-visit time so next visit sees a delta
+      const handleHide = () => {
+        try { window.localStorage.setItem('ftg_last_visit', String(Date.now())); } catch { /* ignore */ }
+      };
+      document.addEventListener('visibilitychange', handleHide);
+      return () => document.removeEventListener('visibilitychange', handleHide);
+    } catch { /* ignore */ }
+  }, []);
+
+  // ── Watchlist persistence ─────────────────────────────────────────────────
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = window.localStorage.getItem('ftg_watchlist');
+      if (raw) { const w = JSON.parse(raw); if (Array.isArray(w)) setWatchlistKeywords(w); }
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try { window.localStorage.setItem('ftg_watchlist', JSON.stringify(watchlistKeywords)); } catch { /* ignore */ }
+  }, [watchlistKeywords]);
+
+  // ── Briefing dismissed-today persistence ──────────────────────────────────
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const today = new Date().toDateString();
+      const dismissed = window.localStorage.getItem('ftg_briefing_dismissed');
+      if (dismissed === today) setBriefingDismissed(true);
+    } catch { /* ignore */ }
+  }, []);
 
   // ── Close sidebar when clicking outside (escape key) ─────────────────────
   useEffect(() => {
@@ -1110,6 +1180,35 @@ export default function Home() {
   // De-duplicate first: some sources (e.g. China Daily) emit multiple items
   // with identical titles and timestamps, and GDELT/syndication can produce
   // the same URL from two different source IDs.
+  const markRead = useCallback((key: string) => {
+    setReadKeys(prev => { const next = new Set(prev); next.add(key); return next; });
+  }, []);
+
+  const addWatchword = useCallback((word: string) => {
+    const trimmed = word.trim().toLowerCase();
+    if (!trimmed) return;
+    setWatchlistKeywords(prev => prev.includes(trimmed) ? prev : [...prev, trimmed]);
+    setWatchlistInput('');
+  }, []);
+
+  const removeWatchword = useCallback((word: string) => {
+    setWatchlistKeywords(prev => prev.filter(k => k !== word));
+  }, []);
+
+  const toggleComparison = useCallback((key: string) => {
+    setExpandedComparisons(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  }, []);
+
+  const dismissBriefing = useCallback(() => {
+    setBriefingDismissed(true);
+    setBriefingOpen(false);
+    try { window.localStorage.setItem('ftg_briefing_dismissed', new Date().toDateString()); } catch { /* ignore */ }
+  }, []);
+
   const filteredBySource = useMemo(() => {
     const seen = new Set<string>();
     return items.filter(i => {
@@ -1192,6 +1291,107 @@ export default function Home() {
     [visibleItems]
   );
 
+  // ── New-story counter (items newer than last visit) ──────────────────────
+  useEffect(() => {
+    if (!lastVisitTime || loading) return;
+    const count = items.filter(i => new Date(i.pubDate).getTime() > lastVisitTime).length;
+    setNewCount(count);
+  }, [items, lastVisitTime, loading]);
+
+  // ── Coverage map: how many sources cover same event ───────────────────────
+  const coverageMap = useMemo(() => {
+    const map = new Map<string, number>();
+    clusters.forEach(cluster => {
+      const sources = new Set(cluster.items.map(i => i.sourceId));
+      cluster.items.forEach(item => {
+        const key = item.link || `${item.sourceId}::${item.title}`;
+        map.set(key, sources.size);
+      });
+    });
+    return map;
+  }, [clusters]);
+
+  // ── Developing stories: cluster has 3+ items AND activity in last 2h ─────
+  const developingSet = useMemo(() => {
+    const TWO_HOURS = 2 * 3600_000;
+    const set = new Set<string>();
+    clusters.forEach(cluster => {
+      if (cluster.items.length < 3) return;
+      const hasRecent = cluster.items.some(i =>
+        Date.now() - new Date(i.pubDate).getTime() < TWO_HOURS
+      );
+      if (!hasRecent) return;
+      cluster.items.forEach(i => set.add(i.link || `${i.sourceId}::${i.title}`));
+    });
+    return set;
+  }, [clusters]);
+
+  // ── Surprising consensus: Western + (China/Russia/Iranian) same cluster ───
+  const surprisingSet = useMemo(() => {
+    const WESTERN = new Set(['western']);
+    const COUNTER  = new Set(['china', 'russia', 'iranian']);
+    const set = new Set<string>();
+    clusters.forEach(cluster => {
+      if (cluster.items.length < 2) return;
+      const regions = new Set(cluster.items.map(i => i.region));
+      const hasWest = [...regions].some(r => WESTERN.has(r));
+      const hasCounter = [...regions].some(r => COUNTER.has(r));
+      if (!hasWest || !hasCounter) return;
+      cluster.items.forEach(i => set.add(i.link || `${i.sourceId}::${i.title}`));
+    });
+    return set;
+  }, [clusters]);
+
+  // ── Watchlist matches ─────────────────────────────────────────────────────
+  const watchlistMatches = useMemo(() => {
+    if (!watchlistKeywords.length) return [];
+    const lower = watchlistKeywords.map(k => k.toLowerCase());
+    return visibleItems.filter(item => {
+      const text = `${item.title} ${item.summary}`.toLowerCase();
+      return lower.some(kw => text.includes(kw));
+    });
+  }, [visibleItems, watchlistKeywords]);
+
+  // ── Comparison map: per item key → sibling items in same cluster ──────────
+  const comparisonMap = useMemo(() => {
+    const map = new Map<string, CompItem[]>();
+    clusters.forEach(cluster => {
+      if (cluster.items.length < 2) return;
+      const compItems: CompItem[] = cluster.items.map(i => ({
+        sourceName: i.sourceName,
+        sourceColor: i.sourceColor,
+        region: i.region,
+        title: i.title,
+        summary: i.summary,
+        link: i.link,
+        pubDate: i.pubDate,
+      }));
+      cluster.items.forEach(i => {
+        const key = i.link || `${i.sourceId}::${i.title}`;
+        map.set(key, compItems);
+      });
+    });
+    return map;
+  }, [clusters]);
+
+  // ── Brief clusters for daily briefing ─────────────────────────────────────
+  const briefClusters = useMemo((): BriefCluster[] => {
+    return clusters.slice(0, 8).map(cluster => ({
+      id: cluster.id,
+      title: cluster.title,
+      sourceCount: new Set(cluster.items.map(i => i.sourceId)).size,
+      regionCount: new Set(cluster.items.map(i => i.region)).size,
+      regions: [...new Set(cluster.items.map(i => i.region))],
+      latestPubDate: cluster.items[0]?.pubDate || '',
+      topItems: cluster.items.slice(0, 3).map(i => ({
+        sourceName: i.sourceName,
+        sourceColor: i.sourceColor,
+        title: i.title,
+        link: i.link,
+      })),
+    }));
+  }, [clusters]);
+
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
@@ -1253,6 +1453,25 @@ export default function Home() {
                 }}>
                   Global Pivot
                 </span>
+
+                {/* New-story counter badge */}
+                {newCount > 0 && !loading && (
+                  <span style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 10,
+                    fontWeight: 600,
+                    letterSpacing: '0.06em',
+                    color: '#f39c12',
+                    background: 'rgba(243,156,18,0.12)',
+                    border: '1px solid rgba(243,156,18,0.4)',
+                    padding: '2px 7px',
+                    borderRadius: 999,
+                    whiteSpace: 'nowrap',
+                    animation: 'fadeUp 0.3s ease both',
+                  }}>
+                    +{newCount} new
+                  </span>
+                )}
 
                 {/* Live / connection indicator.
                     Stay amber until BOTH the SSE handshake and the initial
@@ -1453,6 +1672,58 @@ export default function Home() {
               onTogglePin={togglePin}
               keyForItem={keyForItem}
             />
+
+            {/* ── Keyword Watchlist ───────────────────────────────────── */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                ⚑ Watchlist
+              </div>
+              <div style={{ display: 'flex', gap: 5 }}>
+                <input
+                  value={watchlistInput}
+                  onChange={e => setWatchlistInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') addWatchword(watchlistInput); }}
+                  placeholder="Add keyword…"
+                  style={{
+                    flex: 1, fontFamily: 'var(--font-mono)', fontSize: 11,
+                    background: 'var(--bg)', border: '1px solid var(--border)',
+                    borderRadius: 3, padding: '5px 8px', color: 'var(--text-primary)',
+                    outline: 'none',
+                  }}
+                />
+                <button
+                  onClick={() => addWatchword(watchlistInput)}
+                  style={{
+                    fontFamily: 'var(--font-mono)', fontSize: 11, padding: '5px 10px',
+                    background: 'var(--accent)', color: '#fff', border: 'none',
+                    borderRadius: 3, cursor: 'pointer',
+                  }}
+                >+</button>
+              </div>
+              {watchlistKeywords.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                  {watchlistKeywords.map(kw => (
+                    <span key={kw} style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 4,
+                      fontFamily: 'var(--font-mono)', fontSize: 10,
+                      background: 'rgba(243,156,18,0.12)', border: '1px solid rgba(243,156,18,0.35)',
+                      color: '#f39c12', padding: '2px 7px', borderRadius: 999,
+                    }}>
+                      {kw}
+                      <button onClick={() => removeWatchword(kw)} style={{
+                        border: 'none', background: 'transparent', cursor: 'pointer',
+                        color: '#f39c12', fontSize: 12, lineHeight: 1, padding: 0,
+                      }}>×</button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              {watchlistKeywords.length === 0 && (
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)' }}>
+                  Track any term — &ldquo;ceasefire&rdquo;, &ldquo;Natanz&rdquo;, &ldquo;IAEA&rdquo;…
+                </div>
+              )}
+            </div>
           </div>
         </aside>
 
@@ -1483,6 +1754,58 @@ export default function Home() {
           </div>
 
           <RegionStatsStrip items={visibleItems} />
+
+          {/* ── DAILY BRIEFING ─────────────────────────────────────────────── */}
+          {!loading && briefClusters.length > 0 && !briefingDismissed && briefingOpen && (
+            <DailyBriefing
+              clusters={briefClusters}
+              onDismiss={dismissBriefing}
+            />
+          )}
+
+          {/* ── WATCHLIST ALERT STRIP ──────────────────────────────────────── */}
+          {watchlistMatches.length > 0 && watchlistKeywords.length > 0 && (
+            <div style={{
+              background: 'rgba(243,156,18,0.08)',
+              border: '1px solid rgba(243,156,18,0.35)',
+              borderLeft: '3px solid #f39c12',
+              borderRadius: 3,
+              padding: '10px 14px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 6,
+              animation: 'fadeUp 0.3s ease both',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#f39c12', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600 }}>
+                  ⚑ Watchlist — {watchlistMatches.length} match{watchlistMatches.length !== 1 ? 'es' : ''}
+                </span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)' }}>
+                  {watchlistKeywords.map(k => `"${k}"`).join(' · ')}
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {watchlistMatches.slice(0, 5).map(item => {
+                  const key = item.link || `${item.sourceId}::${item.title}`;
+                  return (
+                    <a key={key} href={item.link || undefined} target="_blank" rel="noopener noreferrer"
+                      onClick={() => markRead(key)}
+                      style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-primary)', textDecoration: 'none', lineHeight: 1.4 }}
+                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
+                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-primary)')}>
+                      <span style={{ color: item.sourceColor, fontFamily: 'var(--font-mono)', fontSize: 10, marginRight: 6 }}>{item.sourceName}</span>
+                      {item.title}
+                    </a>
+                  );
+                })}
+                {watchlistMatches.length > 5 && (
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)' }}>
+                    +{watchlistMatches.length - 5} more — activate the lens to see all
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* ── FILTER + VIEW CONTROLS ─────────────────────────────────────── */}
           <div style={{ marginBottom: 10, display: 'flex', flexDirection: 'column', gap: 7 }}>
@@ -1706,6 +2029,13 @@ export default function Home() {
                 const badge = getAgeBadge(item.pubDate);
                 const isPinned = pinnedKeys.includes(keyForItem(item));
                 const isFocused = focusedIdx === i;
+                const itemKey = item.link || `${item.sourceId}::${item.title}`;
+                const isRead = readKeys.has(itemKey);
+                const coverageCount = coverageMap.get(itemKey) ?? 1;
+                const isDeveloping = developingSet.has(itemKey);
+                const hasCrossConsensus = surprisingSet.has(itemKey);
+                const compSiblings = comparisonMap.get(itemKey);
+                const compExpanded = expandedComparisons.has(itemKey);
                 return (
                   <article
                     key={keyForItem(item)}
@@ -1718,6 +2048,8 @@ export default function Home() {
                       borderLeft:   `3px solid ${REGION_DOTS[item.region] || '#999'}`,
                       padding:      '14px 18px',
                       animation:    `fadeUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) ${Math.min(i, 12) * 0.03}s both`,
+                      opacity: isRead ? 0.6 : 1,
+                      transition: 'opacity 0.2s',
                     }}
                     onMouseEnter={() => setFocusedIdx(i)}
                   >
@@ -1770,12 +2102,44 @@ export default function Home() {
                                 New
                               </span>
                             )}
+                            {isDeveloping && (
+                              <span style={{
+                                fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: '0.1em',
+                                textTransform: 'uppercase', flexShrink: 0, marginTop: 2,
+                                color: '#27ae60', background: 'rgba(39,174,96,0.1)',
+                                border: '1px solid rgba(39,174,96,0.35)', padding: '1px 5px', borderRadius: 2,
+                              }}>
+                                ↑ Developing
+                              </span>
+                            )}
+                            {hasCrossConsensus && (
+                              <span
+                                title="Western and counter-narrative sources both covering this"
+                                style={{
+                                  fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: '0.1em',
+                                  textTransform: 'uppercase', flexShrink: 0, marginTop: 2,
+                                  color: '#9b59b6', background: 'rgba(155,89,182,0.1)',
+                                  border: '1px solid rgba(155,89,182,0.35)', padding: '1px 5px', borderRadius: 2,
+                                }}>
+                                ⚑ Cross-divide
+                              </span>
+                            )}
+                            {coverageCount > 2 && (
+                              <span style={{
+                                fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: '0.06em',
+                                flexShrink: 0, marginTop: 3,
+                                color: 'var(--text-muted)',
+                              }}>
+                                ● {coverageCount} sources
+                              </span>
+                            )}
                             <a
                               href={item.link || undefined}
                               target="_blank"
                               rel="noopener noreferrer"
                               data-article-idx={i}
                               className="ftg-article-title"
+                              onClick={() => markRead(itemKey)}
                               style={{
                                 fontFamily: 'var(--font-display)',
                                 fontSize: 16,
@@ -1840,7 +2204,29 @@ export default function Home() {
                       <span>{REGION_LABELS[item.region as Source['region']] || item.region}</span>
                       <span style={{ color: 'var(--border-light)' }}>/</span>
                       <span>{timeAgo(item.pubDate)}</span>
+                      {compSiblings && compSiblings.length > 1 && (
+                        <>
+                          <span style={{ color: 'var(--border-light)' }}>/</span>
+                          <button
+                            onClick={() => toggleComparison(itemKey)}
+                            style={{
+                              border: 'none', background: 'transparent', cursor: 'pointer',
+                              fontFamily: 'var(--font-mono)', fontSize: 11, padding: 0,
+                              color: compExpanded ? 'var(--accent)' : 'var(--text-muted)',
+                              transition: 'color 0.1s',
+                            }}
+                          >
+                            {compExpanded ? '× close' : `⊞ ${compSiblings.length} views`}
+                          </button>
+                        </>
+                      )}
                     </div>
+                    {compExpanded && compSiblings && (
+                      <CrossSourceComparison
+                        items={compSiblings}
+                        onClose={() => toggleComparison(itemKey)}
+                      />
+                    )}
                   </article>
                 );
               })}
@@ -1884,6 +2270,65 @@ export default function Home() {
                       {cluster.items.length} reports · {new Set(cluster.items.map(i => i.region)).size} regions
                     </span>
                   </div>
+
+                  {/* ── Story arc timeline ─────────────────────────────── */}
+                  {(() => {
+                    const sorted = [...cluster.items].sort(
+                      (a, b) => new Date(a.pubDate).getTime() - new Date(b.pubDate).getTime()
+                    );
+                    if (sorted.length < 2) return null;
+                    const oldestMs = new Date(sorted[0].pubDate).getTime();
+                    const newestMs = new Date(sorted[sorted.length - 1].pubDate).getTime();
+                    const span = newestMs - oldestMs || 1;
+                    return (
+                      <div style={{ position: 'relative', height: 30, marginBottom: 10 }}>
+                        {/* Rail */}
+                        <div style={{
+                          position: 'absolute', left: 8, right: 8, top: 7,
+                          height: 1, background: 'var(--border-light)',
+                        }} />
+                        {/* Dots — one per article ordered by time */}
+                        {sorted.map((item, idx) => {
+                          const frac = (new Date(item.pubDate).getTime() - oldestMs) / span;
+                          const dotColor = REGION_DOTS[item.region] || '#999';
+                          return (
+                            <div
+                              key={idx}
+                              title={`${item.sourceName}: ${item.title}`}
+                              style={{
+                                position: 'absolute',
+                                top: 3,
+                                left: `calc(8px + ${frac.toFixed(4)} * (100% - 16px))`,
+                                width: 8,
+                                height: 8,
+                                borderRadius: '50%',
+                                background: dotColor,
+                                border: '1px solid var(--surface)',
+                                transform: 'translateX(-50%)',
+                                cursor: 'default',
+                                zIndex: 1,
+                              }}
+                            />
+                          );
+                        })}
+                        {/* Oldest / newest labels */}
+                        <span style={{
+                          position: 'absolute', left: 8, top: 17,
+                          fontFamily: 'var(--font-mono)', fontSize: 9,
+                          color: 'var(--text-muted)', whiteSpace: 'nowrap',
+                        }}>
+                          {timeAgo(sorted[0].pubDate)}
+                        </span>
+                        <span style={{
+                          position: 'absolute', right: 8, top: 17,
+                          fontFamily: 'var(--font-mono)', fontSize: 9,
+                          color: 'var(--text-muted)', whiteSpace: 'nowrap',
+                        }}>
+                          {timeAgo(sorted[sorted.length - 1].pubDate)}
+                        </span>
+                      </div>
+                    );
+                  })()}
 
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
                     {Object.entries(

@@ -672,6 +672,11 @@ body {
   pointer-events: none;
 }
 
+/* Second ring for very-recent items (<30 min) — offset by half a cycle */
+.radar-ring--delayed {
+  animation-delay: 1.25s;
+}
+
 /* Wider popup for flight cards */
 .ftg-leaflet-popup.ftg-flight-popup .leaflet-popup-content-wrapper {
   min-width: 220px;

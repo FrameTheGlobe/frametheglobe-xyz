@@ -737,11 +737,13 @@ function paintMarkers(L: LType, map: LeafletMap, items: FeedItem[]) {
     const color = REGION_DOTS[item.region] || '#7f8c8d';
 
     const diffMins = Math.floor((Date.now() - new Date(item.pubDate).getTime()) / 60_000);
-    const isBreaking = diffMins < 30; // 30 mins window for breaking
+    const isBreaking = diffMins < 30;  // double-ring pulse (very recent)
+    const isHot      = diffMins < 60;  // single-ring pulse (last hour)
 
     const markerHtml = `
       <div style="position:relative; width:100%; height:100%;">
-        ${isBreaking ? `<div class="radar-ring" style="border-color: ${color}"></div>` : ''}
+        ${isHot      ? `<div class="radar-ring" style="border-color: ${color}"></div>` : ''}
+        ${isBreaking ? `<div class="radar-ring radar-ring--delayed" style="border-color: ${color}"></div>` : ''}
         <div style="position: absolute; top:0; left:0; width:100%; height:100%; border-radius:50%; background:${color}; opacity:0.9; border: 1px solid rgba(0,0,0,0.5);"></div>
       </div>
     `;
