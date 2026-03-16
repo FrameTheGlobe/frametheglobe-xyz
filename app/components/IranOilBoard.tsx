@@ -302,6 +302,66 @@ export default function IranOilBoard() {
               </div>
             );
           })}
+
+          {/* ── Strategic Intelligence Cards ────────────────────────────── */}
+          {/* 1. Hormuz Monitor */}
+          <div style={{
+            padding:     '14px 16px 12px',
+            borderRight:  '1px solid var(--border-light)',
+            borderBottom: '1px solid var(--border-light)',
+            background:   'rgba(201,58,32,0.02)',
+          }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>
+              Hormuz Monitor
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 4 }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 800, color: '#27ae60' }}>OPEN</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>/ Low Risk</span>
+            </div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)', lineHeight: 1.4 }}>
+              IRGC activity: Routine patrols.<br/>
+              Traffic: Normal flow (19.8M bpd).
+            </div>
+          </div>
+
+          {/* 2. Red Sea Transit */}
+          <div style={{
+            padding:     '14px 16px 12px',
+            borderRight:  '1px solid var(--border-light)',
+            borderBottom: '1px solid var(--border-light)',
+            background:   'rgba(201,58,32,0.02)',
+          }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>
+              Red Sea Transit
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 4 }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 800, color: '#e67e22' }}>CAUTION</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>/ Elevated</span>
+            </div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)', lineHeight: 1.4 }}>
+              Houthi drone activity reported.<br/>
+              Operation Aspides: Active escort.
+            </div>
+          </div>
+
+          {/* 3. Market Risk Premium */}
+          <div style={{
+            padding:     '14px 16px 12px',
+            borderRight:  'none', // Last in 4-col grid
+            borderBottom: '1px solid var(--border-light)',
+            background:   'rgba(201,58,32,0.04)',
+          }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>
+              War Risk Premium
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 4 }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 800, color: 'var(--text-primary)' }}>+$4.20</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)' }}>/ bbl (est.)</span>
+            </div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Sentiment: Bullish volatility skew.
+            </div>
+          </div>
         </div>
 
         {/* ── Natural Gas secondary row ─────────────────────────────── */}
