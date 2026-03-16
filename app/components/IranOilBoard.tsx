@@ -68,6 +68,9 @@ export default function IranOilBoard() {
   const brent   = prices.find(p => p.symbol === 'CB.F');
   const wti     = prices.find(p => p.symbol === 'CL.F');
   const natgas  = prices.find(p => p.symbol === 'NG.F');
+  const dubai   = prices.find(p => p.symbol === 'DUBAI');
+  const urals   = prices.find(p => p.symbol === 'REBCO');
+  const wcs     = prices.find(p => p.symbol === 'WCS');
 
   const upColor   = '#27ae60';
   const downColor = '#c93a20';
@@ -206,20 +209,22 @@ export default function IranOilBoard() {
         {/* ── Main price board ─────────────────────────────────────── */}
         <div className="ftg-oil-grid" style={{
           display:  'grid',
-          gridTemplateColumns: brent && wti ? '1fr 1fr' : '1fr',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
           gap:      0,
         }}>
-          {[brent, wti].filter(Boolean).map((p, idx) => {
+          {[brent, wti, dubai, urals, wcs].filter(Boolean).map((p, idx) => {
             if (!p) return null;
             const color  = priceColor(p.change);
-            const isLast = idx === 1;
+            // Border logic: right border except last item in row, bottom border except last row
+            // Simplified: give everyone right/bottom border and we clip the container or use inner borders.
+            const isRightmost = (idx + 1) % 2 === 0; 
             return (
               <div
                 key={p.symbol}
                 style={{
                   padding:     '14px 16px 12px',
-                  borderRight: isLast ? 'none' : '1px solid var(--border-light)',
-                  borderBottom: natgas ? '1px solid var(--border-light)' : 'none',
+                  borderRight:  '1px solid var(--border-light)',
+                  borderBottom: '1px solid var(--border-light)',
                 }}
               >
                 {/* Commodity label */}
