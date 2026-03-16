@@ -112,7 +112,16 @@ export default function OilTicker({ items = [] }: Props) {
       </div>
 
       {/* Price Section */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: 0, 
+        maxHeight: 400, 
+        overflowY: 'auto',
+        paddingRight: 4,
+        scrollbarWidth: 'thin',
+        scrollbarColor: 'var(--border-light) transparent'
+      }}>
         {loading && prices.length === 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {[1, 2, 3].map(i => (
@@ -135,50 +144,68 @@ export default function OilTicker({ items = [] }: Props) {
 
         {prices.map((p) => {
           const isUp = p.change >= 0;
+          let Icon = "🛢️";
+          if (p.symbol === 'NG.F' || p.symbol === 'TG.F') Icon = "🔥";
+          if (p.symbol === 'RB.F' || p.symbol === 'HO.F') Icon = "⛽";
+          if (p.symbol === 'UX.F') Icon = "⚛️";
+          if (p.symbol === 'LU.F') Icon = "🪨";
+
           return (
             <div key={p.symbol} style={{ 
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'space-between',
-              padding: '6px 0',
-              borderBottom: '1px solid var(--border-light)'
+              padding: '10px 0',
+              borderBottom: '1px solid var(--border-light)',
+              transition: 'background 0.2s'
             }}>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ 
-                  fontFamily: 'var(--font-mono)', 
-                  fontSize: 11, 
-                  fontWeight: 600, 
-                  color: 'var(--text-primary)' 
-                }}>
-                  {p.name.replace(' Future', '').replace('Crude Oil WTI', 'WTI Crude').replace('ICE Brent Crude', 'Brent Crude')}
-                </span>
-                <span style={{ 
-                  fontFamily: 'var(--font-mono)', 
-                  fontSize: 8, 
-                  color: 'var(--text-muted)',
-                  textTransform: 'uppercase'
-                }}>
-                  {p.symbol}
-                </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 16 }}>{Icon}</span>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ 
+                    fontFamily: 'var(--font-mono)', 
+                    fontSize: 12, 
+                    fontWeight: 700, 
+                    color: 'var(--text-primary)' 
+                  }}>
+                    {p.name}
+                  </span>
+                  <span style={{ 
+                    fontFamily: 'var(--font-mono)', 
+                    fontSize: 9, 
+                    color: 'var(--text-muted)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.02em'
+                  }}>
+                    {p.symbol} · {p.currency}
+                  </span>
+                </div>
               </div>
               
               <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <span style={{ 
                   fontFamily: 'var(--font-mono)', 
-                  fontSize: 13, 
-                  fontWeight: 700,
-                  color: 'var(--text-primary)'
+                  fontSize: 15, 
+                  fontWeight: 800,
+                  color: 'var(--text-primary)',
+                  letterSpacing: '-0.02em'
                 }}>
-                  ${p.price.toFixed(2)}
+                  {p.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
-                <span style={{ 
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 4, 
+                  justifyContent: 'flex-end',
                   fontFamily: 'var(--font-mono)', 
-                  fontSize: 9, 
+                  fontSize: 10, 
                   fontWeight: 600,
                   color: isUp ? '#27ae60' : '#c93a20'
                 }}>
-                  {isUp ? '+' : ''}{p.change.toFixed(2)} ({p.changePercent.toFixed(2)}%)
-                </span>
+                   <span>{isUp ? '▲' : '▼'}</span>
+                   <span>{Math.abs(p.change).toFixed(2)}</span>
+                   <span style={{ opacity: 0.8 }}>({Math.abs(p.changePercent).toFixed(2)}%)</span>
+                </div>
               </div>
             </div>
           );

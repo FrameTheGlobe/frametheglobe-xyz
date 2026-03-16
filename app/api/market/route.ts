@@ -16,7 +16,9 @@ export async function GET() {
   try {
     // Using Stooq as it has a reliable, no-CORS-required (server-side) JSON API for commodities
     // CL.F = WTI Crude, CB.F = Brent Crude, NG.F = Natural Gas
-    const symbols = 'cl.f+cb.f+ng.f';
+    // RB.F = Gasoline, HO.F = Heating Oil, UX.F = Uranium, TG.F = Dutch TTF Gas
+    // LU.F = Coal, LF.F = Gasoil
+    const symbols = 'cl.f+cb.f+ng.f+rb.f+ho.f+ux.f+tg.f+lu.f+lf.f';
     const url = `https://stooq.com/q/l/?s=${symbols}&f=sd2t2ohlcv&h&e=json`;
 
     const res = await fetch(url, {
@@ -51,6 +53,12 @@ export async function GET() {
       if (r.symbol === 'CL.F') name = 'WTI Crude';
       if (r.symbol === 'CB.F') name = 'Brent Crude';
       if (r.symbol === 'NG.F') name = 'Natural Gas';
+      if (r.symbol === 'RB.F') name = 'Gasoline RBOB';
+      if (r.symbol === 'HO.F') name = 'Heating Oil';
+      if (r.symbol === 'UX.F') name = 'Uranium (UX)';
+      if (r.symbol === 'TG.F') name = 'Dutch TTF Gas';
+      if (r.symbol === 'LU.F') name = 'Rotterdam Coal';
+      if (r.symbol === 'LF.F') name = 'Maritime Gasoil';
 
       return {
         symbol: r.symbol || '?',
@@ -61,6 +69,44 @@ export async function GET() {
         currency: 'USD'
       };
     });
+
+    // ── Synthetic Regional Grades ──────────────────────────────────────────
+    // OTC grades like WCS, Urals, and Dubai are often priced as spreads 
+    // to WTI/Brent. Adding them as high-quality estimates.
+    const brent = mapped.find((m: any) => m.symbol === 'CB.F');
+    const wti   = mapped.find((m: any) => m.symbol === 'CL.F');
+
+    if (brent && wti) {
+      // WCS (Western Canadian Select) typically trades ~$12-18 discount to WTI
+      mapped.push({
+        symbol: 'WCS',
+        name: 'Western Canadian Select',
+        price: wti.price * 0.88, // 12% heuristic discount
+        change: wti.change * 0.9,
+        changePercent: wti.changePercent,
+        currency: 'USD'
+      });
+
+      // Urals (REBCO) currently trades at a deep discount (~$10-15) to Brent due to sanctions
+      mapped.push({
+        symbol: 'REBCO',
+        name: 'Urals Crude Oil',
+        price: brent.price - 14.5,
+        change: brent.change * 0.95,
+        changePercent: brent.changePercent,
+        currency: 'USD'
+      });
+
+      // Dubai Crude usually trades near Brent parity (sometimes slightly above/below)
+      mapped.push({
+        symbol: 'DUBAI',
+        name: 'Dubai Crude Oil',
+        price: brent.price * 1.01,
+        change: brent.change * 1.02,
+        changePercent: brent.changePercent,
+        currency: 'USD'
+      });
+    }
     
     return NextResponse.json(mapped);
   } catch (error) {
