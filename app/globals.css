@@ -84,8 +84,8 @@ html {
   background: var(--bg);
   color: var(--text-primary);
   font-family: var(--font-body);
-  font-size: 15px;
-  line-height: 1.6;
+  font-size: 16px;
+  line-height: 1.65;
   -webkit-font-smoothing: antialiased;
   transition: background 0.2s, color 0.2s;
   /* Prevent any single wide element from causing horizontal page scroll */

@@ -617,7 +617,7 @@ export default function IranWarSection({ items, sourceCountMap }: Props) {
                           rel="noopener noreferrer"
                           style={{
                             fontFamily:    'var(--font-display)',
-                            fontSize:      14,
+                            fontSize:      15,
                             fontWeight:    600,
                             color:         'var(--text-primary)',
                             textDecoration:'none',
@@ -636,9 +636,9 @@ export default function IranWarSection({ items, sourceCountMap }: Props) {
                       {item.summary && (
                         <p className="ftg-article-summary" style={{
                           fontFamily: 'var(--font-body)',
-                          fontSize:   12,
+                          fontSize:   13,
                           color:      'var(--text-secondary)',
-                          lineHeight: 1.5,
+                          lineHeight: 1.55,
                           marginBottom: 6,
                         }}>
                           {trunc(item.summary, 200)}
@@ -651,7 +651,7 @@ export default function IranWarSection({ items, sourceCountMap }: Props) {
                         alignItems: 'center',
                         gap:        7,
                         fontFamily: 'var(--font-mono)',
-                        fontSize:   10,
+                        fontSize:   11,
                         color:      'var(--text-muted)',
                         letterSpacing: '0.03em',
                         flexWrap:   'wrap',
@@ -687,7 +687,7 @@ export default function IranWarSection({ items, sourceCountMap }: Props) {
                   marginTop:     8,
                   width:         '100%',
                   fontFamily:    'var(--font-mono)',
-                  fontSize:      10,
+                  fontSize:      11,
                   letterSpacing: '0.07em',
                   textTransform: 'uppercase',
                   color:         '#c93a20',

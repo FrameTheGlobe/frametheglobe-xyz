@@ -1498,7 +1498,7 @@ export default function Home() {
                   onClick={() => { setActiveLenses(new Set()); setActiveRegions(new Set()); }}
                   style={{
                     fontFamily: 'var(--font-mono)',
-                    fontSize: 11,
+                    fontSize: 12,
                     padding: '3px 10px',
                     borderRadius: 999,
                     border: `1px solid ${activeLenses.size === 0 ? 'transparent' : 'var(--border-light)'}`,
@@ -1511,7 +1511,7 @@ export default function Home() {
                   }}
                 >
                   All Topics
-                  <span style={{ fontSize: 9, opacity: 0.75 }}>{lensCountMap['all'] ?? 0}</span>
+                  <span style={{ fontSize: 10, opacity: 0.75 }}>{lensCountMap['all'] ?? 0}</span>
                 </button>
 
                 {/* Individual topic lenses (skip index 0 = 'all') */}
@@ -1530,7 +1530,7 @@ export default function Home() {
                       })}
                       style={{
                         fontFamily: 'var(--font-mono)',
-                        fontSize: 11,
+                        fontSize: 12,
                         padding: '3px 10px',
                         borderRadius: 999,
                         border: `1px solid ${active ? 'transparent' : 'var(--border-light)'}`,
@@ -1545,7 +1545,7 @@ export default function Home() {
                     >
                       {l.label}
                       {count > 0 && (
-                        <span style={{ fontSize: 9, opacity: 0.7 }}>{count}</span>
+                        <span style={{ fontSize: 10, opacity: 0.7 }}>{count}</span>
                       )}
                     </button>
                   );
@@ -1567,7 +1567,7 @@ export default function Home() {
                       onClick={() => setSortMode(mode)}
                       style={{
                         fontFamily: 'var(--font-mono)',
-                        fontSize: 10,
+                        fontSize: 11,
                         letterSpacing: '0.04em',
                         padding: '4px 8px',
                         borderRadius: 3,
@@ -1592,7 +1592,7 @@ export default function Home() {
                     onClick={() => setViewMode(mode)}
                     style={{
                       fontFamily: 'var(--font-mono)',
-                      fontSize: 11,
+                      fontSize: 12,
                       letterSpacing: '0.04em',
                       padding: '4px 9px',
                       borderRadius: 3,
@@ -1613,7 +1613,7 @@ export default function Home() {
             {/* Region quick-filter strip (shown when ≥2 regions have items) */}
             {availableRegions.size >= 2 && (
               <div className="ftg-region-strip" style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', marginRight: 4 }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', marginRight: 4 }}>
                   Region
                 </span>
                 {[...availableRegions].sort().map(reg => {
@@ -1629,7 +1629,7 @@ export default function Home() {
                       })}
                       style={{
                         fontFamily: 'var(--font-mono)',
-                        fontSize: 10,
+                        fontSize: 11,
                         padding: '2px 8px',
                         borderRadius: 999,
                         border: `1px solid ${active ? dotColor : 'var(--border-light)'}`,
@@ -1650,7 +1650,7 @@ export default function Home() {
 
             {/* Active filter summary + clear */}
             {(activeLenses.size > 0 || activeRegions.size > 0 || search) && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.03em', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.03em', flexWrap: 'wrap' }}>
                 <span>{visibleItems.length} stories shown</span>
                 {activeLenses.size > 0 && (
                   <span>
@@ -1798,9 +1798,9 @@ export default function Home() {
                           {item.summary && (
                             <p className="ftg-article-summary" style={{
                               fontFamily: 'var(--font-body)',
-                              fontSize: 13,
+                              fontSize: 14,
                               color: 'var(--text-secondary)',
-                              lineHeight: 1.55,
+                              lineHeight: 1.6,
                               fontWeight: 400,
                               marginBottom: 8,
                             }}>
@@ -1816,16 +1816,16 @@ export default function Home() {
                       alignItems: 'center',
                       gap: 7,
                       fontFamily: 'var(--font-mono)',
-                      fontSize: 11,
+                      fontSize: 12,
                       color: 'var(--text-muted)',
-                      letterSpacing: '0.04em',
+                      letterSpacing: '0.03em',
                       flexWrap: 'wrap',
                     }}>
                       <button
                         onClick={() => togglePin(item)}
                         style={{
                           border: 'none', background: 'transparent',
-                          cursor: 'pointer', fontSize: 11, padding: 0,
+                          cursor: 'pointer', fontSize: 12, padding: 0,
                           color: isPinned ? 'var(--pin-active)' : 'var(--text-muted)',
                           transition: 'color 0.1s',
                         }}
