@@ -1253,32 +1253,40 @@ export default function Home() {
                   Global Pivot
                 </span>
 
-                {/* Live / connection indicator */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <span
-                    className="live-dot"
-                    style={{
-                      background: liveStatus === 'live'
-                        ? '#27ae60'
-                        : liveStatus === 'connecting'
-                        ? '#f39c12'
-                        : '#7f8c8d',
-                    }}
-                  />
-                  <span style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: 9,
-                    color: liveStatus === 'live'
-                      ? '#27ae60'
-                      : liveStatus === 'connecting'
-                      ? '#f39c12'
-                      : 'var(--text-muted)',
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
-                  }}>
-                    {liveStatus === 'live' ? 'Live' : liveStatus === 'connecting' ? 'Connecting…' : 'Polling'}
-                  </span>
-                </div>
+                {/* Live / connection indicator.
+                    Stay amber until BOTH the SSE handshake and the initial
+                    data fetch are done — SSE opens fast but the feed HTTP
+                    request takes longer, so we gate green on !loading too. */}
+                {(() => {
+                  const effectiveStatus = loading ? 'connecting' : liveStatus;
+                  return (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <span
+                        className="live-dot"
+                        style={{
+                          background: effectiveStatus === 'live'
+                            ? '#27ae60'
+                            : effectiveStatus === 'connecting'
+                            ? '#f39c12'
+                            : '#7f8c8d',
+                        }}
+                      />
+                      <span style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: 9,
+                        color: effectiveStatus === 'live'
+                          ? '#27ae60'
+                          : effectiveStatus === 'connecting'
+                          ? '#f39c12'
+                          : 'var(--text-muted)',
+                        letterSpacing: '0.08em',
+                        textTransform: 'uppercase',
+                      }}>
+                        {effectiveStatus === 'live' ? 'Live' : effectiveStatus === 'connecting' ? 'Connecting…' : 'Polling'}
+                      </span>
+                    </div>
+                  );
+                })()}
 
                 {/* Trump / Rapid 47 indicator */}
                 {(() => {
