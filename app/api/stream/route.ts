@@ -17,7 +17,52 @@ export const dynamic  = 'force-dynamic'; // never cache this route
 
 let _clientSeq = 0;
 
+// ── Per-IP connection tracking ────────────────────────────────────────────────
+// Best-effort within a warm Node.js instance. Prevents a single IP from
+// opening hundreds of concurrent SSE connections and exhausting memory /
+// file descriptors. Legitimate users need at most 2-3 tabs open at once.
+const _ipConnections = new Map<string, number>();
+const MAX_SSE_PER_IP = 10; // generous limit — covers power users with many tabs
+
+function getClientIP(req: NextRequest): string {
+  // Vercel forwards the real client IP in x-forwarded-for
+  return (
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+    req.headers.get('x-real-ip') ??
+    '127.0.0.1'
+  );
+}
+
+function incrementIP(ip: string): void {
+  _ipConnections.set(ip, (_ipConnections.get(ip) ?? 0) + 1);
+}
+
+function decrementIP(ip: string): void {
+  const n = (_ipConnections.get(ip) ?? 1) - 1;
+  if (n <= 0) _ipConnections.delete(ip);
+  else _ipConnections.set(ip, n);
+}
+
 export async function GET(request: NextRequest) {
+  // ── Connection cap ──────────────────────────────────────────────────────
+  const ip = getClientIP(request);
+  const currentCount = _ipConnections.get(ip) ?? 0;
+
+  if (currentCount >= MAX_SSE_PER_IP) {
+    return new Response(
+      JSON.stringify({ error: 'Too many concurrent connections from this IP.' }),
+      {
+        status: 429,
+        headers: {
+          'Content-Type': 'application/json',
+          'Retry-After':  '60',
+        },
+      }
+    );
+  }
+
+  incrementIP(ip);
+
   const clientId = `sse-${++_clientSeq}-${Date.now()}`;
   const encoder  = new TextEncoder();
 
@@ -62,6 +107,7 @@ export async function GET(request: NextRequest) {
         } catch {
           clearInterval(heartbeatTimer);
           removeSSESubscriber(clientId);
+          decrementIP(ip);
         }
       }, 25_000);
 
@@ -69,6 +115,7 @@ export async function GET(request: NextRequest) {
       request.signal.addEventListener('abort', () => {
         clearInterval(heartbeatTimer);
         removeSSESubscriber(clientId);
+        decrementIP(ip);
         try { controller.close(); } catch { /* already closed */ }
       });
     },
@@ -76,15 +123,16 @@ export async function GET(request: NextRequest) {
     cancel() {
       clearInterval(heartbeatTimer);
       removeSSESubscriber(clientId);
+      decrementIP(ip);
     },
   });
 
   return new Response(stream, {
     headers: {
-      'Content-Type':  'text/event-stream',
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Connection':    'keep-alive',
-      'X-Accel-Buffering': 'no',   // Disable nginx buffering for SSE
+      'Content-Type':      'text/event-stream',
+      'Cache-Control':     'no-cache, no-store, must-revalidate',
+      'Connection':        'keep-alive',
+      'X-Accel-Buffering': 'no', // Disable nginx buffering for SSE
     },
   });
 }

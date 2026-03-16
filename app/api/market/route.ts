@@ -1,5 +1,14 @@
 import { NextResponse } from 'next/server';
 
+// Shape returned by Stooq's JSON endpoint (/q/l/?f=sd2t2ohlcv)
+interface StooqSymbol {
+  symbol:  string;
+  open:    number | null;
+  close:   number | null;
+  // Other fields (date, time, high, low, volume) are present but unused
+  [key: string]: unknown;
+}
+
 export const runtime = 'nodejs';
 export const revalidate = 60; 
 
@@ -31,7 +40,7 @@ export async function GET() {
     const results = rawData.symbols || [];
     
     // Map Stooq data to our component format
-    const mapped = results.map((r: any) => {
+    const mapped = results.map((r: StooqSymbol) => {
       // Handle missing data gracefully
       const price = r.close || r.open || 0;
       const open = r.open || price || 1; // avoid div by zero
@@ -55,7 +64,9 @@ export async function GET() {
     
     return NextResponse.json(mapped);
   } catch (error) {
+    // Log internally but never expose stack traces or upstream error details
+    // to the client — they reveal infrastructure information.
     console.error('[FTG-Market] API Exception:', error);
-    return NextResponse.json({ error: 'Failed to fetch market data', details: error instanceof Error ? error.message : String(error) }, { status: 500 });
+    return NextResponse.json({ error: 'Market data temporarily unavailable.' }, { status: 500 });
   }
 }

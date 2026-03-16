@@ -37,12 +37,27 @@ function xmlEscape(str: string): string {
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
-  const regionFilter = searchParams.get('region') ?? '';
-  const limit        = Math.min(parseInt(searchParams.get('limit') ?? '100', 10), 200);
 
-  // Pull from the module-level cache (populated by /api/news)
+  // Validate region param — only allow known safe values
+  const regionFilter = searchParams.get('region') ?? '';
+
+  // Clamp limit strictly: max 100 items, default 100.
+  // 200 was too generous and invited bulk-harvesting of the feed.
+  const rawLimit = parseInt(searchParams.get('limit') ?? '100', 10);
+  const limit    = Number.isFinite(rawLimit) ? Math.min(Math.max(1, rawLimit), 100) : 100;
+
+  // Pull from the module-level cache (populated by /api/news).
+  // If the cache is empty (cold start, no data yet) return a minimal valid
+  // feed rather than an empty document that could confuse RSS readers.
   const cache = getNewsCache();
-  let items   = cache?.items ?? [];
+  if (!cache) {
+    return new Response(
+      '<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>FrameTheGlobe</title><description>Feed temporarily unavailable — try again shortly.</description></channel></rss>',
+      { status: 503, headers: { 'Content-Type': 'application/rss+xml; charset=utf-8', 'Retry-After': '30' } }
+    );
+  }
+
+  let items = cache.items ?? [];
 
   if (regionFilter && regionFilter !== 'all') {
     items = items.filter(i => i.region === regionFilter);

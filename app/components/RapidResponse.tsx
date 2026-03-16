@@ -30,6 +30,10 @@ function RapidResponse({ items, limit = 4, onViewAll }: Props) {
       .slice(0, limit);
   }, [items, limit]);
 
+  // Date.now() inside useMemo is intentional: refreshes once per trumpNews change.
+  // eslint-disable-next-line react-hooks/purity, react-hooks/exhaustive-deps
+  const now = useMemo(() => Date.now(), [trumpNews]);
+
   if (trumpNews.length === 0) return null;
 
   return (
@@ -114,7 +118,7 @@ function RapidResponse({ items, limit = 4, onViewAll }: Props) {
             }}>
               <span style={{ fontWeight: 600 }}>{item.sourceName}</span>
               <span>·</span>
-              <span>{Math.floor((Date.now() - new Date(item.pubDate).getTime()) / 60000)}m ago</span>
+              <span>{Math.floor((now - new Date(item.pubDate).getTime()) / 60000)}m ago</span>
             </div>
           </a>
         ))}

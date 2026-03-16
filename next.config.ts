@@ -4,6 +4,9 @@ const nextConfig: NextConfig = {
   // Compress responses in production
   compress: true,
 
+  // Remove the "X-Powered-By: Next.js" header — no need to advertise the stack.
+  poweredByHeader: false,
+
   // Security & caching headers
   async headers() {
     return [
@@ -18,32 +21,45 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        // All pages/API routes
+        // All pages and API routes
         source: "/:path*",
         headers: [
-          // Override any host-level CSP that blocks Next.js chunk loading.
-          // 'unsafe-eval' is needed by some Next.js internals in certain
-          // hosting environments; 'unsafe-inline' covers injected styles.
+          // ── Content Security Policy ──────────────────────────────────────
+          // 'unsafe-eval' is required by Next.js/Turbopack internals.
+          // 'unsafe-inline' is required by Leaflet (injected style) and
+          // next/font (inlined @font-face). Both could be replaced with
+          // nonces in a future hardening pass.
+          // Google Fonts URLs removed — fonts now self-hosted via next/font.
           {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self' https://www.youtube.com https://*.ytimg.com",
-              // Scripts: self + Next.js chunks + YouTube
               "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.youtube.com https://s.ytimg.com",
-              // Styles: self + inline + Fonts + YouTube
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.youtube.com",
-              // Fonts
-              "font-src 'self' https://fonts.gstatic.com",
-              // Images: self + data URIs + tile servers + RSS thumbnails + YouTube
+              // Google Fonts no longer needed here (self-hosted via next/font)
+              "style-src 'self' 'unsafe-inline' https://www.youtube.com",
+              "font-src 'self'",
+              // Images: external RSS thumbnails + tile servers + YouTube
               "img-src 'self' data: blob: https: http:",
-              // Connections: self + all feeds + ADS-B APIs + SSE
-              "connect-src 'self' https://adsb.lol https://opensky-network.org https://fonts.googleapis.com https://fonts.gstatic.com",
-              // Frames: allow embedding YouTube
+              // Connections: SSE + ADS-B flight data APIs
+              "connect-src 'self' https://adsb.lol https://opensky-network.org",
+              // Frames: YouTube embeds only
               "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com",
-              // Prevent others from framing us
+              // Block anyone from framing this site
               "frame-ancestors 'none'",
+              // Upgrade any accidental http:// sub-resource requests to https
+              "upgrade-insecure-requests",
             ].join("; "),
           },
+
+          // ── Transport security ───────────────────────────────────────────
+          // Tell browsers to use HTTPS for the next 2 years, include
+          // subdomains, and submit to the HSTS preload list.
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
+          },
+
+          // ── Leak / sniff prevention ──────────────────────────────────────
           {
             key: "X-Content-Type-Options",
             value: "nosniff",
@@ -55,6 +71,28 @@ const nextConfig: NextConfig = {
           {
             key: "Referrer-Policy",
             value: "strict-origin-when-cross-origin",
+          },
+          // Prevent the browser from pre-fetching DNS for third-party links
+          // clicked in the news feed — minor privacy + security improvement.
+          {
+            key: "X-DNS-Prefetch-Control",
+            value: "off",
+          },
+
+          // ── Cross-Origin policies ────────────────────────────────────────
+          // Prevents other origins from being able to open popups to this site
+          // and read cross-origin data via window references.
+          {
+            key: "Cross-Origin-Opener-Policy",
+            value: "same-origin",
+          },
+
+          // ── Feature / permissions policy ─────────────────────────────────
+          // Explicitly deny access to sensitive browser APIs. The app only
+          // needs the location API (for the Leaflet map, which is optional).
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), payment=(), usb=(), bluetooth=(), interest-cohort=()",
           },
         ],
       },

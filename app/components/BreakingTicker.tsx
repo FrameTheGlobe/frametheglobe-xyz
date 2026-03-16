@@ -8,7 +8,7 @@
  * set of recent article titles actually changes, not on every parent update.
  */
 
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 
 type FeedItem = {
   title: string;
@@ -25,7 +25,10 @@ interface Props {
 const WINDOW_MS = 30 * 60 * 1000; // 30 minutes
 
 function BreakingTicker({ items }: Props) {
-  const now = Date.now();
+  // Date.now() inside useMemo is intentional: it runs once per items change,
+  // not on every render, keeping the timestamp stable within a render pass.
+  // eslint-disable-next-line react-hooks/purity, react-hooks/exhaustive-deps
+  const now = useMemo(() => Date.now(), [items]);
 
   const breaking = items.filter(
     i => now - new Date(i.pubDate).getTime() < WINDOW_MS

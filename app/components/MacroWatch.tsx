@@ -43,6 +43,10 @@ function MacroWatch({ items, limit = 4 }: Props) {
       .slice(0, limit);
   }, [items, limit]);
 
+  // Date.now() inside useMemo is intentional: refreshes once per macroNews change.
+  // eslint-disable-next-line react-hooks/purity, react-hooks/exhaustive-deps
+  const now = useMemo(() => Date.now(), [macroNews]);
+
   if (macroNews.length === 0) return null;
 
   return (
@@ -131,7 +135,7 @@ function MacroWatch({ items, limit = 4 }: Props) {
                 {item.sourceName}
               </span>
               <span>·</span>
-              <span>{Math.floor((Date.now() - new Date(item.pubDate).getTime()) / 60000)}m ago</span>
+              <span>{Math.floor((now - new Date(item.pubDate).getTime()) / 60000)}m ago</span>
             </div>
           </a>
         ))}

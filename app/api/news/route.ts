@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { SOURCES } from '@/lib/sources';
-import { fetchAllFeeds, FeedItem, SourceHealth } from '@/lib/fetcher';
+import { fetchAllFeeds } from '@/lib/fetcher';
 import {
   setNewsCache,
   getNewsCache,

@@ -1,0 +1,35 @@
+# FrameTheGlobe — robots.txt
+# https://frametheglobe.xyz
+
+# ── Well-behaved search engine crawlers ──────────────────────────────────────
+# Allow full indexing of the main site.
+User-agent: Googlebot
+Allow: /
+Disallow: /api/news
+Disallow: /api/stream
+Disallow: /api/flights
+Disallow: /api/market
+
+User-agent: Bingbot
+Allow: /
+Disallow: /api/news
+Disallow: /api/stream
+Disallow: /api/flights
+Disallow: /api/market
+
+# ── General rule for all other bots ──────────────────────────────────────────
+# The /api/rss endpoint is intentionally public — RSS readers are welcome.
+# All other API routes return live data feeds not meant for crawling.
+User-agent: *
+Allow: /
+Allow: /api/rss
+Disallow: /api/news
+Disallow: /api/stream
+Disallow: /api/flights
+Disallow: /api/market
+
+# Polite crawl delay for bots that respect it
+Crawl-delay: 10
+
+# Sitemap (add once you create one)
+# Sitemap: https://frametheglobe.xyz/sitemap.xml

@@ -89,6 +89,7 @@ export default function IranWarCostBoard() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setNow(new Date());
     timerRef.current = setInterval(() => setNow(new Date()), 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };

@@ -14,6 +14,10 @@ import { useEffect, useRef, useMemo, useState, useCallback } from 'react';
 import type { Aircraft } from '@/lib/flights';
 import { headingToCompass, altToFL, SQUAWK_LABELS } from '@/lib/flights';
 
+// ── Leaflet type aliases (L is loaded dynamically in useEffect) ───────────────
+type LType      = typeof import('leaflet');
+type LeafletMap = import('leaflet').Map & Record<string, import('leaflet').LayerGroup | undefined>;
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 type FeedItem = {
   title: string;
@@ -394,8 +398,7 @@ const FLIGHT_POLL_MS = 60_000; // re-fetch flights every 60 s (server caches for
 
 export default function MapView({ items }: MapViewProps) {
   const containerRef  = useRef<HTMLDivElement>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const mapRef        = useRef<any>(null);
+  const mapRef        = useRef<LeafletMap | null>(null);
   const mapReadyRef   = useRef(false);
 
   // ── Flight layer state ────────────────────────────────────────────────────
@@ -476,14 +479,14 @@ export default function MapView({ items }: MapViewProps) {
         }
       ).addTo(map);
 
-      mapRef.current      = map;
+      mapRef.current      = map as LeafletMap;
       mapReadyRef.current = true;
 
       // invalidateSize ensures Leaflet recalculates container dimensions
       // after React finishes painting (needed when inside flex/grid layouts)
       requestAnimationFrame(() => {
         map.invalidateSize();
-        paintMarkers(L, map, items);
+        paintMarkers(L, map as LeafletMap, items);
       });
     }
 
@@ -714,15 +717,15 @@ export default function MapView({ items }: MapViewProps) {
 // ── Marker painting (called on init + every items update) ─────────────────────
 const MARKER_LAYER_KEY = '__ftg_markers__';
 
-function paintMarkers(L: any, map: any, items: FeedItem[]) {
+function paintMarkers(L: LType, map: LeafletMap, items: FeedItem[]) {
   // Remove existing marker layer group if present
-  if ((map as any)[MARKER_LAYER_KEY]) {
-    (map as any)[MARKER_LAYER_KEY].clearLayers();
+  if (map[MARKER_LAYER_KEY]) {
+    map[MARKER_LAYER_KEY].clearLayers();
   } else {
-    (map as any)[MARKER_LAYER_KEY] = L.layerGroup().addTo(map);
+    map[MARKER_LAYER_KEY] = L.layerGroup().addTo(map);
   }
 
-  const group = (map as any)[MARKER_LAYER_KEY];
+  const group = map[MARKER_LAYER_KEY];
 
   items.forEach(item => {
     const loc = extractLocation(item);
@@ -784,12 +787,12 @@ function esc(str: string): string {
 // ── Flight layer painting ─────────────────────────────────────────────────────
 const FLIGHT_LAYER_KEY = '__ftg_flights__';
 
-function paintFlights(L: any, map: any, aircraft: Aircraft[]) {
+function paintFlights(L: LType, map: LeafletMap, aircraft: Aircraft[]) {
   // Ensure layer group exists
-  if (!(map as any)[FLIGHT_LAYER_KEY]) {
-    (map as any)[FLIGHT_LAYER_KEY] = L.layerGroup().addTo(map);
+  if (!map[FLIGHT_LAYER_KEY]) {
+    map[FLIGHT_LAYER_KEY] = L.layerGroup().addTo(map);
   }
-  const group: any = (map as any)[FLIGHT_LAYER_KEY];
+  const group = map[FLIGHT_LAYER_KEY]!;
   group.clearLayers();
 
   aircraft.forEach(a => {
@@ -846,8 +849,8 @@ function paintFlights(L: any, map: any, aircraft: Aircraft[]) {
   });
 }
 
-function clearFlightLayer(map: any) {
-  if ((map as any)[FLIGHT_LAYER_KEY]) {
-    (map as any)[FLIGHT_LAYER_KEY].clearLayers();
+function clearFlightLayer(map: LeafletMap) {
+  if (map[FLIGHT_LAYER_KEY]) {
+    map[FLIGHT_LAYER_KEY].clearLayers();
   }
 }

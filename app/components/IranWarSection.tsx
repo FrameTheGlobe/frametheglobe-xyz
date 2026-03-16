@@ -250,6 +250,10 @@ export default function IranWarSection({ items, sourceCountMap }: Props) {
 
   const displayed = showAll ? lensedItems : lensedItems.slice(0, 18);
 
+  // Date.now() inside useMemo is intentional: refreshes once per displayed-list change.
+  // eslint-disable-next-line react-hooks/purity, react-hooks/exhaustive-deps
+  const nowMs = useMemo(() => Date.now(), [displayed]);
+
   const iranSourceCount = SOURCES.filter(s => s.region === 'iranian').length;
 
   if (items.length === 0) return null;
@@ -565,7 +569,7 @@ export default function IranWarSection({ items, sourceCountMap }: Props) {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                 {displayed.map(item => {
-                  const ageMs     = Date.now() - new Date(item.pubDate).getTime();
+                  const ageMs     = nowMs - new Date(item.pubDate).getTime();
                   const isBreaking = ageMs < 30 * 60_000;
                   const isNew      = ageMs < 2 * 3600_000;
 
