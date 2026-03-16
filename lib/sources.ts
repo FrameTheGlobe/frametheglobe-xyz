@@ -213,6 +213,9 @@ export const SOURCES: Source[] = [
   { id: 'globaltimes',    name: 'Global Times (CN)',      url: 'https://www.globaltimes.cn/rss/world.xml',                     region: 'china',    color: '#de2910' },
   { id: 'scmp',           name: 'SCMP (Politics)',        url: 'https://www.scmp.com/rss/2/feed',                              region: 'china',    color: '#ffcc00' },
   { id: 'rfa',            name: 'Radio Free Asia',        url: 'https://www.rfa.org/english/news/rss2.xml',                    region: 'china',    color: '#005a9c' },
+  { id: 'caixin',         name: 'Caixin Global',          url: 'https://www.caixinglobal.com/rss/',                            region: 'china',    color: '#c0392b' },
+  { id: 'sixthtone',      name: 'Sixth Tone',             url: 'https://www.sixthtone.com/feed/',                              region: 'china',    color: '#e67e22' },
+  { id: 'asiatimes',      name: 'Asia Times',             url: 'https://asiatimes.com/feed/',                                  region: 'china',    color: '#2c3e50' },
 
   // ── Russia ────────────────────────────────────────────────────────────
   { id: 'tass',           name: 'TASS (English)',         url: 'https://tass.com/rss/v2.xml',                                  region: 'russia',   color: '#1f355e' },
