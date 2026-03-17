@@ -207,7 +207,7 @@ export default function IranOilBoard() {
         </div>
 
         {/* ── Main price board ─────────────────────────────────────── */}
-        <div className="ftg-oil-grid" style={{
+          <div className="ftg-oil-grid" style={{
           display:  'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
           gap:      0,

@@ -45,7 +45,7 @@ export const CACHE_TTL_MS = 15 * 60 * 1000;
 
 // rss-parser instance — used only for parseString() now; headers are on the
 // manual fetch() call so we can inject conditional-GET headers per request.
-const parser = new Parser({ timeout: 10000 });
+const parser = new Parser({ timeout: 6000 });
 
 const BASE_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (compatible; FrameTheGlobe/4.1.3; +https://frametheglobe.xyz)',
@@ -180,7 +180,7 @@ export async function fetchFeed(source: {
 
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10_000);
+    const timeout = setTimeout(() => controller.abort(), 6_000);
 
     let res: Response;
     try {
@@ -319,8 +319,8 @@ export async function fetchFeed(source: {
  * which can look like abuse to smaller feed providers. Cached sources return
  * instantly from memory so batching adds no meaningful latency for them.
  */
-const BATCH_SIZE  = 10;
-const BATCH_DELAY = 150; // ms between batches
+const BATCH_SIZE  = 20;
+const BATCH_DELAY = 50; // ms between batches
 
 export async function fetchAllFeeds(sources: Parameters<typeof fetchFeed>[0][]): Promise<{
   items: FeedItem[];

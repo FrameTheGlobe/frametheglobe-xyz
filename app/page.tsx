@@ -590,18 +590,25 @@ const LOADING_MESSAGES = [
   'WAR THEATER READY',
 ];
 
-function FeedLoadingScreen({ sourceCount }: { sourceCount: number }) {
+function FeedLoadingScreen({ sourceCount, isDone }: { sourceCount: number; isDone: boolean }) {
   const [msgIdx,    setMsgIdx]    = useState(0);
   const [regionIdx, setRegionIdx] = useState(-1);
   const [dots,      setDots]      = useState('');
 
-  // Cycle through status messages
+  // Cycle through status messages — hold at second-to-last until isDone,
+  // so the screen never falsely shows "WAR THEATER READY" on a timer.
   useEffect(() => {
+    const maxIdx = isDone ? LOADING_MESSAGES.length - 1 : LOADING_MESSAGES.length - 2;
     const t = setInterval(() => {
-      setMsgIdx(i => Math.min(i + 1, LOADING_MESSAGES.length - 1));
+      setMsgIdx(i => Math.min(i + 1, maxIdx));
     }, 380);
     return () => clearInterval(t);
-  }, []);
+  }, [isDone]);
+
+  // When real data arrives, jump immediately to the final message.
+  useEffect(() => {
+    if (isDone) setMsgIdx(LOADING_MESSAGES.length - 1);
+  }, [isDone]);
 
   // Light up region chips one by one
   useEffect(() => {
@@ -619,7 +626,8 @@ function FeedLoadingScreen({ sourceCount }: { sourceCount: number }) {
   // Progress bar: CSS animation fills to ~88% over ~5s then holds
   const total = sourceCount || SOURCES.length;
   const msg   = LOADING_MESSAGES[msgIdx];
-  const isFinal = msg === 'WAR THEATER READY';
+  // isFinal is driven by real load state, not by the message timer.
+  const isFinal = isDone;
 
   return (
     <>
@@ -767,6 +775,11 @@ function FeedLoadingScreen({ sourceCount }: { sourceCount: number }) {
 export default function Home() {
   const [items, setItems]               = useState<FeedItem[]>([]);
   const [loading, setLoading]           = useState(true);
+  // Controls the loading screen visibility independently so we can show
+  // the green "WAR THEATER READY" completion flash before unmounting.
+  const [showLoadingScreen, setShowLoadingScreen] = useState(true);
+  const [loadingDone, setLoadingDone]             = useState(false);
+  const loadingScreenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [lastUpdated, setLastUpdated]   = useState<string | null>(null);
   const [total, setTotal]               = useState(0);
   const [failedCount, setFailedCount]   = useState(0);
@@ -908,6 +921,23 @@ export default function Home() {
     document.documentElement.setAttribute('data-theme', theme);
     try { window.localStorage.setItem('ftg_theme', theme); } catch { /* ignore */ }
   }, [theme]);
+
+  // ── Loading screen lifecycle ───────────────────────────────────────────────
+  // When loading flips true (initial load or refresh): reset the screen.
+  // When loading flips false (data arrived): show green completion for 650ms then hide.
+  useEffect(() => {
+    if (loading) {
+      if (loadingScreenTimerRef.current) clearTimeout(loadingScreenTimerRef.current);
+      setShowLoadingScreen(true);
+      setLoadingDone(false);
+    } else {
+      setLoadingDone(true);
+      loadingScreenTimerRef.current = setTimeout(() => setShowLoadingScreen(false), 650);
+    }
+    return () => {
+      if (loadingScreenTimerRef.current) clearTimeout(loadingScreenTimerRef.current);
+    };
+  }, [loading]);
 
   // ── Pins persistence ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -2003,8 +2033,8 @@ export default function Home() {
           </div>
 
           {/* ── LOADING screen ─────────────────────────────────────────── */}
-          {loading ? (
-            <FeedLoadingScreen sourceCount={SOURCES.length} />
+          {showLoadingScreen ? (
+            <FeedLoadingScreen sourceCount={SOURCES.length} isDone={loadingDone} />
 
           /* ── EMPTY state ──────────────────────────────────────────── */
           ) : visibleItems.length === 0 ? (
