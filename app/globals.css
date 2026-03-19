@@ -222,13 +222,91 @@ body {
    PAGE LAYOUT
 ══════════════════════════════════════════════════════ */
 .page-layout {
-  max-width: 1200px;
+  max-width: 1800px;
   margin: 0 auto;
   padding: 24px;
   display: grid;
-  grid-template-columns: 236px 1fr;
-  gap: 28px;
+  grid-template-columns: 240px 1fr 340px;
+  gap: 24px;
   align-items: start;
+}
+
+.ftg-mobile-only {
+  display: none !important;
+}
+
+/* Sidebar logic (drawer vs column) */
+.sidebar-col {
+  transition: transform 0.22s ease;
+}
+
+/* ══════════════════════════════════════════════════════
+   RESPONSIVE OVERRIDES
+══════════════════════════════════════════════════════ */
+
+/* TABLET / SMALL LAPTOP (Main Feed + Intel Column) */
+@media (max-width: 1300px) {
+  .page-layout {
+    grid-template-columns: 1fr 340px;
+    gap: 20px;
+  }
+  .sidebar-col {
+    display: none !important;
+  }
+  .sidebar-col.open {
+    display: block !important;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    width: 280px;
+    background: var(--surface);
+    z-index: 500;
+    padding: 20px;
+    border-right: 1px solid var(--border);
+  }
+  .menu-btn {
+    display: flex !important;
+  }
+}
+
+/* MOBILE VIEW - Hide desktop aside, show inline brief inside IranWarSection */
+@media (max-width: 960px) {
+  .page-layout {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    padding: 12px;
+    gap: 16px;
+  }
+  .intel-column {
+    display: none !important;
+  }
+  .ftg-mobile-only {
+    display: block !important;
+  }
+}
+@media (max-width: 1200px) {
+  .page-layout {
+    grid-template-columns: 1fr 340px;
+    gap: 20px;
+  }
+  
+  .sidebar-col:not(.open) {
+    display: none;
+  }
+
+  .sidebar-col.open {
+    display: block;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    width: 280px;
+    background: var(--surface);
+    z-index: 500;
+    padding: 20px;
+    border-right: 1px solid var(--border);
+  }
+
+  .menu-btn {
+    display: flex !important;
+  }
 }
 
 /* ══════════════════════════════════════════════════════
@@ -450,6 +528,8 @@ body {
   .ftg-widgets-section {
     order: 10;
   }
+
+  /* (Merged into 960px responsive logic above) */
 }
 
 /* ══════════════════════════════════════════════════════

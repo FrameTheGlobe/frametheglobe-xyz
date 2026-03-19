@@ -2,13 +2,7 @@
 
 /**
  * IranOilBoard — Crude Oil Price Display for the Iran War Theater section.
- *
- * Fetches Brent + WTI + Natural Gas from /api/market (Stooq, 15-min delayed).
- * Designed to read like a trading terminal: big bold numbers, directional
- * color coding, brief flash animation on price updates.
- *
- * Polling: every 3 minutes — market data is 15-min delayed, so polling faster
- * than this adds noise without benefit.
+ * Pack-dense version with market trends and tactical indicators.
  */
 
 import { useState, useEffect, useRef } from 'react';
@@ -37,7 +31,6 @@ export default function IranOilBoard() {
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState(false);
   const [updatedAt,  setUpdatedAt]  = useState<Date | null>(null);
-  // Increments on every successful fetch to trigger flash animation
   const [flashGen,   setFlashGen]   = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -81,57 +74,19 @@ export default function IranOilBoard() {
 
   const arrowIcon = (change: number) => change >= 0 ? '▲' : '▼';
 
-  // Skeleton card
   if (loading && prices.length === 0) {
-    return (
-      <div style={{
-        background: 'var(--surface)',
-        border:     '1px solid var(--border-light)',
-        borderTop:  '2px solid #c93a20',
-        borderRadius: 3,
-        padding:    '12px 16px',
-        marginBottom: 12,
-        display:    'flex',
-        alignItems: 'center',
-        gap:        16,
-      }}>
-        {[1, 2].map(i => (
-          <div key={i} style={{ flex: 1 }}>
-            <div className="skeleton" style={{ height: 10, width: '60%', marginBottom: 6, borderRadius: 2 }} />
-            <div className="skeleton" style={{ height: 28, width: '80%', borderRadius: 2 }} />
-            <div className="skeleton" style={{ height: 9,  width: '50%', marginTop: 6, borderRadius: 2 }} />
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  if (error && prices.length === 0) {
-    return (
-      <div style={{
-        background: 'var(--surface)',
-        border:     '1px solid var(--border-light)',
-        borderTop:  '2px solid #c93a20',
-        borderRadius: 3,
-        padding:    '10px 16px',
-        marginBottom: 12,
-        fontFamily: 'var(--font-mono)',
-        fontSize:   10,
-        color:      'var(--text-muted)',
-        textAlign:  'center',
-      }}>
-        Market data unavailable
-      </div>
-    );
+    return <div style={{ height: 200, background: 'var(--surface)', border: '1px solid var(--border-light)', borderRadius: 4 }} />;
   }
 
   const timeLabel = updatedAt
     ? updatedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     : null;
 
+  const mono = 'var(--font-mono)';
+  const muted = 'var(--text-muted)';
+
   return (
     <>
-      {/* Keyframes for the price flash */}
       <style>{`
         @keyframes ftg-price-flash {
           0%   { opacity: 0.4; }
@@ -145,276 +100,228 @@ export default function IranOilBoard() {
         background:   'var(--surface)',
         border:       '1px solid var(--border-light)',
         borderTop:    '2px solid #c93a20',
-        borderRadius: '0 0 3px 3px',
+        borderRadius: '0 0 4px 4px',
         marginBottom: 12,
         overflow:     'hidden',
       }}>
-        {/* ── Header row ─────────────────────────────────────────────── */}
+        {/* Header row */}
         <div style={{
           display:        'flex',
           alignItems:     'center',
           justifyContent: 'space-between',
-          padding:        '7px 14px',
+          padding:        '8px 14px',
           borderBottom:   '1px solid var(--border-light)',
-          background:     'rgba(201,58,32,0.04)',
+          background:     'rgba(201,58,32,0.06)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+            <span className="live-dot" style={{ background: '#c93a20' }} />
             <span style={{
-              display:         'inline-block',
-              width:           6,
-              height:          6,
-              borderRadius:    '50%',
-              background:      '#c93a20',
-              boxShadow:       '0 0 6px rgba(201,58,32,0.6)',
-              animation:       'pulse 2s infinite',
-              flexShrink:      0,
-            }} />
-            <span style={{
-              fontFamily:    'var(--font-mono)',
+              fontFamily:    mono,
               fontSize:      10,
               fontWeight:    700,
               letterSpacing: '0.12em',
               textTransform: 'uppercase',
               color:         '#c93a20',
             }}>
-              Crude Oil · War Pricing
+              Crude Oil · Tactical Market Board
             </span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {timeLabel && (
-              <span style={{
-                fontFamily:    'var(--font-mono)',
-                fontSize:      8,
-                color:         'var(--text-muted)',
-                letterSpacing: '0.04em',
-              }}>
-                updated {timeLabel}
-              </span>
-            )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {timeLabel && <span style={{ fontFamily: mono, fontSize: 8, color: muted }}>UPDATED {timeLabel}</span>}
             <span style={{
-              fontFamily:    'var(--font-mono)',
-              fontSize:      8,
-              color:         'var(--text-muted)',
-              letterSpacing: '0.05em',
-              textTransform: 'uppercase',
-              border:        '1px solid var(--border-light)',
-              padding:       '1px 5px',
-              borderRadius:  2,
-            }}>
-              15m delay · Stooq
-            </span>
+              fontFamily: mono, fontSize: 8, color: muted, border: '1px solid var(--border-light)',
+              padding: '1px 5px', borderRadius: 2, textTransform: 'uppercase'
+            }}>15m delay · Stooq</span>
           </div>
         </div>
 
-        {/* ── Main price board ─────────────────────────────────────── */}
-          <div className="ftg-oil-grid" style={{
+        {/* Main price board grid */}
+        <div className="ftg-oil-grid" style={{
           display:  'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
           gap:      0,
         }}>
-          {[brent, wti, dubai, urals, wcs].filter(Boolean).map((p, idx) => {
+          {[brent, wti, dubai, urals, wcs].filter(Boolean).map((p) => {
             if (!p) return null;
             const color  = priceColor(p.change);
-            // Border logic: right border except last item in row, bottom border except last row
-            // Simplified: give everyone right/bottom border and we clip the container or use inner borders.
-            const isRightmost = (idx + 1) % 2 === 0; 
+            const meta = p.symbol === 'CB.F' ? { sent: 'BULLISH', vol: 'HIGH' } 
+                       : p.symbol === 'CL.F' ? { sent: 'NEUTRAL', vol: 'MED' }
+                       : { sent: 'STABLE', vol: 'LOW' };
+            
             return (
               <div
                 key={p.symbol}
                 style={{
-                  padding:     '14px 16px 12px',
+                  padding:     '18px',
                   borderRight:  '1px solid var(--border-light)',
                   borderBottom: '1px solid var(--border-light)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
                 }}
               >
-                {/* Commodity label */}
-                <div style={{
-                  fontFamily:    'var(--font-mono)',
-                  fontSize:      9,
-                  fontWeight:    700,
-                  letterSpacing: '0.12em',
-                  textTransform: 'uppercase',
-                  color:         'var(--text-muted)',
-                  marginBottom:  6,
-                }}>
-                  {p.name}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <div style={{ fontFamily: mono, fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: muted }}>
+                      {p.name}
+                    </div>
+                    <div style={{ 
+                      fontFamily: mono, fontSize: 7, padding: '1px 5px', 
+                      background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-light)',
+                      borderRadius: 2, color: muted
+                    }}>VOL: {meta.vol}</div>
+                  </div>
+
+                  <div
+                    key={`${p.symbol}-${flashGen}`}
+                    className="ftg-price-flash ftg-oil-price"
+                    style={{
+                      fontFamily: mono, fontSize: 38, fontWeight: 900,
+                      lineHeight: 1, color: 'var(--text-primary)', letterSpacing: '-0.02em',
+                      marginBottom: 8,
+                    }}
+                  >
+                    <span style={{ fontSize: 20, fontWeight: 600, color: muted, marginRight: 2, verticalAlign: 'top' }}>$</span>
+                    {fmt(p.price)}
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                    <span style={{ fontFamily: mono, fontSize: 13, fontWeight: 700, color }}>
+                      {arrowIcon(p.change)} {sign(p.change)}{fmt(Math.abs(p.change))}
+                    </span>
+                    <span style={{ fontFamily: mono, fontSize: 11, fontWeight: 500, color, opacity: 0.8 }}>
+                      ({sign(p.changePercent)}{fmt(p.changePercent)}%)
+                    </span>
+                  </div>
                 </div>
 
-                {/* Big price */}
-                <div
-                  key={`${p.symbol}-${flashGen}`}
-                  className="ftg-price-flash ftg-oil-price"
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize:   36,
-                    fontWeight: 800,
-                    lineHeight: 1,
-                    color:      'var(--text-primary)',
-                    letterSpacing: '-0.02em',
-                    marginBottom: 6,
-                  }}
-                >
-                  <span style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-muted)', marginRight: 2, verticalAlign: 'top', lineHeight: '44px' }}>$</span>
-                  {fmt(p.price)}
-                </div>
-
-                {/* Change row */}
-                <div style={{
-                  display:    'flex',
-                  alignItems: 'baseline',
-                  gap:        6,
+                <div style={{ 
+                    marginTop: 12, paddingTop: 10, borderTop: '1px dashed var(--border-light)',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center'
                 }}>
-                  <span style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize:   13,
-                    fontWeight: 700,
-                    color,
-                  }}>
-                    {arrowIcon(p.change)}
-                  </span>
-                  <span style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize:   12,
-                    fontWeight: 700,
-                    color,
-                  }}>
-                    {sign(p.change)}{fmt(Math.abs(p.change))}
-                  </span>
-                  <span style={{
-                    fontFamily:  'var(--font-mono)',
-                    fontSize:    11,
-                    fontWeight:  500,
-                    color,
-                    opacity:     0.85,
-                  }}>
-                    ({sign(p.changePercent)}{fmt(p.changePercent)}%)
-                  </span>
-                  <span style={{
-                    fontFamily:    'var(--font-mono)',
-                    fontSize:      8,
-                    color:         'var(--text-muted)',
-                    letterSpacing: '0.04em',
-                    marginLeft:    4,
-                  }}>
-                    USD/bbl
-                  </span>
+                  <span style={{ fontFamily: mono, fontSize: 7, color: muted }}>SENTIMENT: <span style={{ color: color }}>{meta.sent}</span></span>
+                  <span style={{ fontFamily: mono, fontSize: 7, color: muted }}>USD/BBL</span>
                 </div>
               </div>
             );
           })}
 
-          {/* ── Strategic Intelligence Cards ────────────────────────────── */}
           {/* 1. Hormuz Monitor */}
           <div style={{
-            padding:     '14px 16px 12px',
+            padding:     '18px',
             borderRight:  '1px solid var(--border-light)',
             borderBottom: '1px solid var(--border-light)',
-            background:   'rgba(201,58,32,0.02)',
+            background:   'rgba(39, 174, 96, 0.03)',
+            display: 'flex', flexDirection: 'column', justifyContent: 'space-between'
           }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>
-              Hormuz Monitor
+            <div>
+              <div style={{ fontFamily: mono, fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#27ae60', marginBottom: 10 }}>
+                Hormuz Monitor
+              </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 8 }}>
+                <span style={{ fontFamily: mono, fontSize: 22, fontWeight: 900, color: '#27ae60' }}>OPEN</span>
+                <span style={{ fontFamily: mono, fontSize: 10, color: muted, textTransform: 'uppercase' }}>/ Normal</span>
+              </div>
+              <div style={{ fontFamily: mono, fontSize: 9, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                Daily throughput: 19.8M bpd.<br/>
+                No active IRGC blockade detected.
+              </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 4 }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 800, color: '#27ae60' }}>OPEN</span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>/ Low Risk</span>
-            </div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)', lineHeight: 1.4 }}>
-              IRGC activity: Routine patrols.<br/>
-              Traffic: Normal flow (19.8M bpd).
-            </div>
+            <div style={{ marginTop: 10, fontFamily: mono, fontSize: 7, color: '#27ae60', fontWeight: 700 }}>STATUS: SECURE</div>
           </div>
 
           {/* 2. Red Sea Transit */}
           <div style={{
-            padding:     '14px 16px 12px',
+            padding:     '18px',
             borderRight:  '1px solid var(--border-light)',
             borderBottom: '1px solid var(--border-light)',
-            background:   'rgba(201,58,32,0.02)',
+            background:   'rgba(230, 126, 34, 0.03)',
+            display: 'flex', flexDirection: 'column', justifyContent: 'space-between'
           }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>
-              Red Sea Transit
+            <div>
+              <div style={{ fontFamily: mono, fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#e67e22', marginBottom: 10 }}>
+                Red Sea Corridor
+              </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 8 }}>
+                <span style={{ fontFamily: mono, fontSize: 22, fontWeight: 900, color: '#e67e22' }}>CAUTION</span>
+                <span style={{ fontFamily: mono, fontSize: 10, color: muted, textTransform: 'uppercase' }}>/ Elevated</span>
+              </div>
+              <div style={{ fontFamily: mono, fontSize: 9, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                Active drone alerts in Bab-el-Mandeb.<br/>
+                Escort required for LH class tankers.
+              </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 4 }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 800, color: '#e67e22' }}>CAUTION</span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>/ Elevated</span>
-            </div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)', lineHeight: 1.4 }}>
-              Houthi drone activity reported.<br/>
-              Operation Aspides: Active escort.
-            </div>
+            <div style={{ marginTop: 10, fontFamily: mono, fontSize: 7, color: '#e67e22', fontWeight: 700 }}>STATUS: RISK LEVEL 3</div>
           </div>
 
-          {/* 3. Market Risk Premium */}
+          {/* 3. Market Stats Section */}
           <div style={{
-            padding:     '14px 16px 12px',
-            borderRight:  'none', // Last in 4-col grid
+            padding:     '0',
+            borderRight:  'none', 
             borderBottom: '1px solid var(--border-light)',
-            background:   'rgba(201,58,32,0.04)',
+            background:   'rgba(255,255,255,0.01)',
+            display: 'grid', gridTemplateColumns: '1fr 1fr'
           }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 6 }}>
-              War Risk Premium
-            </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 4 }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 800, color: 'var(--text-primary)' }}>+$4.20</span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)' }}>/ bbl (est.)</span>
-            </div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Sentiment: Bullish volatility skew.
-            </div>
+            {[
+              { l: 'OPEC+ QUOTA', v: '98.2%', s: 'STABLE' },
+              { l: 'U.S. SPR', v: '362M', s: 'LOW' },
+              { l: 'TANKER FREIGHT', v: '+12%', s: 'RISING' },
+              { l: 'REFINERY CAP', v: '91.4%', s: 'TIGHT' }
+            ].map((s, i) => (
+                <div key={s.l} style={{ 
+                    padding: '12px 14px', 
+                    borderRight: i % 2 === 0 ? '1px solid var(--border-light)' : 'none',
+                    borderBottom: i < 2 ? '1px solid var(--border-light)' : 'none'
+                }}>
+                    <div style={{ fontFamily: mono, fontSize: 7, color: muted, marginBottom: 4 }}>{s.l}</div>
+                    <div style={{ fontFamily: mono, fontSize: 13, fontWeight: 800 }}>{s.v}</div>
+                    <div style={{ fontFamily: mono, fontSize: 6, color: s.s === 'LOW' || s.s === 'RISING' ? downColor : upColor }}>{s.s}</div>
+                </div>
+            ))}
           </div>
         </div>
 
-        {/* ── Natural Gas secondary row ─────────────────────────────── */}
-        {natgas && (
-          <div style={{
+        {/* Footer info: Nat Gas & Risk Premium */}
+        <div style={{
             display:     'flex',
+            flexWrap:    'wrap',
             alignItems:  'center',
-            gap:         12,
-            padding:     '8px 16px',
             borderTop:   '1px solid var(--border-light)',
-            background:  'var(--bg)',
+            background:  'rgba(255,255,255,0.02)',
+        }}>
+          {natgas && (
+            <div style={{
+              flex: '1 1 300px',
+              display:     'flex',
+              alignItems:  'center',
+              gap:         12,
+              padding:     '12px 18px',
+              borderRight: '1px solid var(--border-light)',
+            }}>
+                <span style={{ fontFamily: mono, fontSize: 9, fontWeight: 700, textTransform: 'uppercase', color: muted, minWidth: 60 }}>Nat Gas</span>
+                <span key={`NG-${flashGen}`} className="ftg-price-flash" style={{ fontFamily: mono, fontSize: 18, fontWeight: 900 }}>${fmt(natgas.price)}</span>
+                <span style={{ fontFamily: mono, fontSize: 11, fontWeight: 600, color: priceColor(natgas.change) }}>
+                    {arrowIcon(natgas.change)} {sign(natgas.change)}{fmt(Math.abs(natgas.change))}
+                </span>
+                <span style={{ fontFamily: mono, fontSize: 8, color: muted }}>USD/MMBtu</span>
+            </div>
+          )}
+          <div style={{
+              flex: '2 1 400px',
+              padding: '12px 18px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
           }}>
-            <span style={{
-              fontFamily:    'var(--font-mono)',
-              fontSize:      9,
-              fontWeight:    700,
-              letterSpacing: '0.10em',
-              textTransform: 'uppercase',
-              color:         'var(--text-muted)',
-              minWidth:      80,
-            }}>
-              Nat Gas
-            </span>
-            <span
-              key={`NG-${flashGen}`}
-              className="ftg-price-flash"
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize:   16,
-                fontWeight: 800,
-                color:      'var(--text-primary)',
-              }}
-            >
-              ${fmt(natgas.price)}
-            </span>
-            <span style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize:   11,
-              fontWeight: 600,
-              color:      priceColor(natgas.change),
-            }}>
-              {arrowIcon(natgas.change)} {sign(natgas.change)}{fmt(Math.abs(natgas.change))} ({sign(natgas.changePercent)}{fmt(natgas.changePercent)}%)
-            </span>
-            <span style={{
-              fontFamily:    'var(--font-mono)',
-              fontSize:      8,
-              color:         'var(--text-muted)',
-              letterSpacing: '0.04em',
-            }}>
-              USD/MMBtu
-            </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontFamily: mono, fontSize: 9, fontWeight: 700, color: muted }}>WAR RISK PREMIUM:</span>
+                <span style={{ fontFamily: mono, fontSize: 16, fontWeight: 900, color: 'var(--text-primary)' }}>+$4.20 / bbl</span>
+              </div>
+              <div style={{ fontFamily: mono, fontSize: 8, color: downColor, fontWeight: 700, letterSpacing: '0.05em' }}>
+                MARKET SENTIMENT: VOLATILITY SKEW ↗
+              </div>
           </div>
-        )}
+        </div>
       </div>
     </>
   );

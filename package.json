@@ -1,6 +1,6 @@
 {
   "name": "frametheglobe",
-  "version": "4.1.5",
+  "version": "5.0.0",
   "private": true,
   "description": "Iran war theater news aggregator — frametheglobe.xyz",
   "author": "Zeeshan Khan",
@@ -36,6 +36,9 @@
   },
   "devDependencies": {
     "@netlify/plugin-nextjs": "^5.15.9",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@vitejs/plugin-react": "^4.7.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",

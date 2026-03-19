@@ -13,25 +13,26 @@ const IranWarCostBoard = dynamic(() => import('./IranWarCostBoard'), {
   ssr: false,
   loading: () => (
     <div style={{
-      background:   'var(--surface)',
       border:       '1px solid var(--border-light)',
       borderTop:    '2px solid #c93a20',
-      borderRadius: '0 0 3px 3px',
+      borderRadius: '0 0 6px 6px',
       marginBottom: 12,
-      padding:      '14px 16px',
+      height:       420,
       display:      'flex',
-      flexDirection:'column',
-      gap:          10,
+      gap:          1,
+      background:   'var(--border-light)', // To show the divider
     }}>
-      <div className="skeleton" style={{ height: 10, width: '55%', borderRadius: 2 }} />
-      <div className="skeleton" style={{ height: 38, width: '80%', borderRadius: 2 }} />
-      <div className="skeleton" style={{ height: 10, width: '40%', borderRadius: 2 }} />
-      <div style={{ display: 'flex', gap: 8 }}>
-        {[1, 2, 3, 4].map(i => (
-          <div key={i} style={{ flex: 1 }}>
-            <div className="skeleton" style={{ height: 28, borderRadius: 3 }} />
+      <div style={{ flex: '2 1 500px', background: 'var(--surface)', padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div className="skeleton" style={{ height: 12, width: '40%', alignSelf: 'center' }} />
+          <div className="skeleton" style={{ height: 60, width: '90%', alignSelf: 'center' }} />
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+            {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ height: 40, width: 60 }} />)}
           </div>
-        ))}
+          <div className="skeleton" style={{ height: 100, width: '100%' }} />
+      </div>
+      <div style={{ flex: '1 1 300px', background: 'var(--surface)', padding: 16 }}>
+          <div className="skeleton" style={{ height: 12, width: '60%', marginBottom: 20 }} />
+          {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ height: 30, width: '100%', marginBottom: 10 }} />)}
       </div>
     </div>
   ),
@@ -216,9 +217,10 @@ function deriveFrontStatus(iranItems: FeedItem[], keywords: string[]): StatusInf
 interface Props {
   items:          FeedItem[];
   sourceCountMap: Record<string, number>;
+  brief?:         React.ReactNode;
 }
 
-export default function IranWarSection({ items, sourceCountMap }: Props) {
+export default function IranWarSection({ items, sourceCountMap, brief }: Props) {
   const [collapsed,  setCollapsed]  = useState(false);
   const [iranLens,   setIranLens]   = useState<IranLens>('all');
   const [showAll,    setShowAll]    = useState(false);
@@ -338,6 +340,20 @@ export default function IranWarSection({ items, sourceCountMap }: Props) {
 
           {/* ── Crude Oil Price Board ────────────────────────────────────── */}
           <IranOilBoard />
+
+          {/* ── Mobile Injected Brief (Strategic Brief) ─────────────────── */}
+          {brief && (
+            <div className="ftg-mobile-only" style={{
+              marginTop: -4,
+              marginBottom: 4,
+              borderTop: '1px dashed var(--border)',
+              borderBottom: '1px dashed var(--border)',
+              padding: '16px 0'
+            }}>
+              <div style={sectionLabel}>Strategic Intelligence</div>
+              {brief}
+            </div>
+          )}
 
           {/* ── Situation Status ────────────────────────────────────────── */}
           <div>

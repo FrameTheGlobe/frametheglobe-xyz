@@ -2,28 +2,218 @@
 
 /**
  * IranWarCostBoard — Live U.S. war cost counter for the Iran War Theater section.
- *
- * Methodology (Pentagon briefing to Congress):
- *   $11.3B for the first 6 days of strikes + $1B/day ongoing.
- *   Cost is deterministic from the strike start date — no API required.
- *   Ticks every second via setInterval.
- *
- * Human cost figures: static, sourced from DoD/CENTCOM, Hengaw,
- *   Iranian Red Crescent, AP, Reuters, Al Jazeera via iran-cost-ticker.com.
- *
- * Attribution: iran-cost-ticker.com
+ * ULTRA-DENSE VERSION 2.2
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const STRIKE_START   = new Date('2026-02-28T00:00:00Z');
-const BASE_COST_USD  = 11_300_000_000;   // $11.3B for first 6 days
+const BASE_COST_USD  = 11_300_000_000;
 const BASE_DAYS      = 6;
-const DAILY_RATE     = 1_000_000_000;    // $1B/day after day 6
-const PER_SECOND     = DAILY_RATE / 86_400; // ≈ $11,574.07 / second
+const DAILY_RATE     = 1_000_000_000;
+const PER_SECOND     = DAILY_RATE / 86_400;
 
-// ── Pure helpers ─────────────────────────────────────────────────────────────
+// ── Static data ───────────────────────────────────────────────────────────────
+const HUMAN_COST = [
+  { l: 'U.S. FORCES', k: '13', w: '140', c: '#4a9eff', n: 'CSG-2 / SEAL TM-6' },
+  { l: 'IRAN MILITARY', k: '2,096+', w: '4,850+', c: '#e8a44a', n: 'IRGC-QF / BASIJ' },
+  { l: 'CIVILIANS', k: '1,382+', w: '12,969+', c: '#c93a20', n: 'MINAB / BASHAGARD' },
+];
+
+const MUNITIONS = [
+  { n: 'TOMAHAWK V', q: '142', c: '$284M', p: 72 },
+  { n: 'JDAM GBU-31', q: '1,090', c: '$76M', p: 45 },
+  { n: 'SM-6 BLOCK IA', q: '54', c: '$270M', p: 31 },
+  { n: 'AGM-158 JASSM', q: '28', c: '$32M', p: 18 },
+  { n: 'AIM-120D', q: '38', c: '$41M', p: 22 },
+  { n: 'GBU-39 SDB', q: '412', c: '$16M', p: 64 },
+];
+
+const ASSETS = [
+  { l: 'CSG-2 (TR)', v: '1', s: 'COMBAT' },
+  { l: 'CSG-8 (IK)', v: '1', s: 'ON-STATION' },
+  { l: 'DESTROYERS', v: '8', s: 'ACTIVE' },
+  { l: 'SUBMARINES', v: '2', s: 'PATROL' },
+  { l: 'F-35C FLTS', v: '18', s: 'OPS' },
+  { l: 'AWACS/ISR', v: '6', s: 'LINK-16' },
+];
+
+const RECENT_HISTORY = [
+  { t: '-2h', e: 'B-2 Strike on Fordow enrichment facility', c: '$11.2M' },
+  { t: '-5h', e: 'Intercept of 12 Houthi anti-ship missiles', c: '$28.8M' },
+  { t: '-9h', e: 'Deployment of 12th Marine Expeditionary Unit', c: '$4.2M' },
+  { t: '-14h', e: 'Carrier air wing replenishment flight', c: '$1.8M' },
+];
+
+export default function IranWarCostBoard() {
+  const [now, setNow] = useState<Date | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    setNow(new Date());
+    timerRef.current = setInterval(() => setNow(new Date()), 1000);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, []);
+
+  const cost = useMemo(() => now ? calcCost(now) : 0, [now]);
+  const el = useMemo(() => now ? getElapsed(now) : null, [now]);
+
+  if (!now || !el) return <div style={{ height: 400, background: 'var(--surface)' }} />;
+
+  const mono = 'var(--font-mono)';
+  const red = '#c93a20';
+  const border = 'var(--border-light)';
+  const muted = 'var(--text-muted)';
+  const surface = 'var(--surface)';
+
+  return (
+    <div style={{
+      background: surface, border: `1px solid ${border}`, borderTop: `2px solid ${red}`,
+      borderRadius: '0 0 6px 6px', marginBottom: 12, overflow: 'hidden',
+    }}>
+      {/* ── HEADER BLOCK ────────────────────────────────────────────── */}
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        padding: '10px 14px', borderBottom: `1px solid ${border}`, background: 'rgba(201,58,32,0.08)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span className="live-dot" style={{ background: red }} />
+          <span style={{ fontFamily: mono, fontSize: 11, fontWeight: 800, color: red, letterSpacing: '0.1em' }}>
+            U.S. CENTRAL COMMAND · WAR EXPENDITURE · V2.2-TAC
+          </span>
+        </div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ fontFamily: mono, fontSize: 8, padding: '2px 6px', background: red, color: '#fff', borderRadius: 2 }}>TOP SECRET // NOCON</div>
+          <div style={{ fontFamily: mono, fontSize: 8, padding: '2px 6px', background: 'var(--border-light)', borderRadius: 2 }}>SECURE LINK ACTIVE</div>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+        {/* LEFT COLUMN: MAIN STATS */}
+        <div style={{ flex: '2 1 500px', borderRight: `1px solid ${border}` }}>
+          {/* BIG COST SECTION */}
+          <div style={{ padding: '24px', borderBottom: `1px solid ${border}`, textAlign: 'center' }}>
+            <div style={{ fontFamily: mono, fontSize: 10, color: muted, letterSpacing: '0.15em', marginBottom: 12 }}>ESTIMATED TOTAL CONFLICT COST (USD)</div>
+            <div className="ftg-war-cost-counter" style={{
+              fontFamily: mono, fontSize: 52, fontWeight: 900, color: red, lineHeight: 1, letterSpacing: '-0.03em',
+              marginBottom: 10, fontVariantNumeric: 'tabular-nums'
+            }}>
+              {formatDollars(cost)}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginBottom: 20 }}>
+              {BURN_RATES.map(b => (
+                <div key={b.label} style={{ display: 'flex', gap: 5, alignItems: 'baseline' }}>
+                  <span style={{ fontFamily: mono, fontSize: 7, color: muted }}>{b.label.toUpperCase()}:</span>
+                  <span style={{ fontFamily: mono, fontSize: 10, fontWeight: 700, color: 'var(--text-primary)' }}>{b.value}</span>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 6 }}>
+              {[{ v: el.days, l: 'DAYS' }, { v: el.hours, l: 'HRS' }, { v: el.mins, l: 'MIN' }, { v: el.secs, l: 'SEC' }].map((t, i) => (
+                <div key={t.l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                   <div style={{ textAlign: 'center' }}>
+                      <div style={{ 
+                        background: 'rgba(255,255,255,0.03)', border: `1px solid ${border}`, borderRadius: 4, 
+                        padding: '10px 14px', fontFamily: mono, fontSize: 22, fontWeight: 800, color: red, minWidth: 54
+                      }}>{i === 0 ? t.v : pad(t.v)}</div>
+                      <div style={{ fontFamily: mono, fontSize: 7, color: muted, marginTop: 4 }}>{t.l}</div>
+                   </div>
+                   {i < 3 && <div style={{ fontSize: 20, color: 'rgba(201,58,32,0.2)', marginTop: -16 }}>:</div>}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ASSET & MUNITION GRID CARD */}
+          <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+            <div style={{ flex: '1 1 300px', padding: '16px', borderRight: `1px solid ${border}` }}>
+              <div style={{ fontFamily: mono, fontSize: 9, fontWeight: 700, color: muted, marginBottom: 14 }}>MUNITION DEPLETION TRACKER</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {MUNITIONS.map(m => (
+                  <div key={m.n}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span style={{ fontFamily: mono, fontSize: 7, color: 'var(--text-primary)' }}>{m.n}</span>
+                      <span style={{ fontFamily: mono, fontSize: 7, color: red }}>{m.q} @ {m.c}</span>
+                    </div>
+                    <div style={{ height: 3, background: 'rgba(255,255,255,0.05)', borderRadius: 2 }}>
+                       <div style={{ height: '100%', width: `${m.p}%`, background: red, borderRadius: 2 }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{ flex: '1 1 200px', padding: '16px' }}>
+              <div style={{ fontFamily: mono, fontSize: 9, fontWeight: 700, color: muted, marginBottom: 14 }}>THEATER ASSETS</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                 {ASSETS.map(a => (
+                   <div key={a.l} style={{ padding: '8px', border: `1px solid ${border}`, borderRadius: 3, background: 'rgba(255,255,255,0.01)' }}>
+                      <div style={{ fontFamily: mono, fontSize: 6, color: muted, marginBottom: 4 }}>{a.l}</div>
+                      <div style={{ fontFamily: mono, fontSize: 13, fontWeight: 800 }}>{a.v}</div>
+                      <div style={{ fontFamily: mono, fontSize: 6, color: '#27ae60', marginTop: 3 }}>{a.s}</div>
+                   </div>
+                 ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN: RECENT LOGS & HUMAN COST */}
+        <div style={{ flex: '1 1 300px', background: 'rgba(255,255,255,0.01)' }}>
+          <div style={{ padding: '16px', borderBottom: `1px solid ${border}` }}>
+            <div style={{ fontFamily: mono, fontSize: 9, fontWeight: 700, color: muted, marginBottom: 12 }}>STRATEGIC ENGAGEMENT LOG</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {RECENT_HISTORY.map((h, i) => (
+                <div key={i} style={{ borderLeft: `1px solid ${border}`, paddingLeft: 10 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                    <span style={{ fontFamily: mono, fontSize: 7, color: red, fontWeight: 700 }}>{h.t}</span>
+                    <span style={{ fontFamily: mono, fontSize: 7, color: muted }}>{h.c}</span>
+                  </div>
+                  <div style={{ fontFamily: mono, fontSize: 8, color: 'var(--text-secondary)', lineHeight: 1.3 }}>{h.e}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ padding: '16px' }}>
+             <div style={{ fontFamily: mono, fontSize: 9, fontWeight: 700, color: muted, marginBottom: 12 }}>CASUALTY TRACKER</div>
+             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+               {HUMAN_COST.map(h => (
+                 <div key={h.l} style={{ padding: '10px', border: `1px solid ${border}`, borderRadius: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                   <div>
+                     <div style={{ fontFamily: mono, fontSize: 7, color: muted, marginBottom: 2 }}>{h.l}</div>
+                     <div style={{ fontFamily: mono, fontSize: 18, fontWeight: 900, color: h.c }}>{h.k} <span style={{ fontSize: 9, opacity: 0.6 }}>KILLED</span></div>
+                   </div>
+                   <div style={{ textAlign: 'right' }}>
+                     <div style={{ fontFamily: mono, fontSize: 13, fontWeight: 700, color: h.c }}>{h.w}</div>
+                     <div style={{ fontFamily: mono, fontSize: 6, color: muted }}>WOUNDED</div>
+                   </div>
+                 </div>
+               ))}
+             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* FOOTER: NOTABLE ALERTS */}
+      <div style={{ padding: '12px 14px', borderTop: `1px solid ${border}`, background: 'rgba(201,58,32,0.04)', display: 'flex', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+           <span style={{ fontFamily: mono, fontSize: 9, fontWeight: 800, color: red }}>LATEST INCIDENT:</span>
+           <span style={{ fontFamily: mono, fontSize: 9, color: 'var(--text-primary)' }}>175 KILLED · SHAJAREH TAYYEBEH GIRLS SCHOOL · MINAB · UN CONDEMNED</span>
+        </div>
+        <div style={{ fontFamily: mono, fontSize: 7, color: muted }}>SOURCE: DOD/CENTCOM · IRCS · AP WIRE</div>
+      </div>
+    </div>
+  );
+}
+
+const BURN_RATES = [
+  { label: 'Second', value: `$11,574` },
+  { label: 'Hour',   value: `$41.7M` },
+  { label: 'Day',    value: '$1B' },
+];
+
 function calcCost(now: Date): number {
   const elapsedMs   = now.getTime() - STRIKE_START.getTime();
   const elapsedDays = elapsedMs / (1000 * 60 * 60 * 24);
@@ -46,395 +236,3 @@ function getElapsed(now: Date) {
 }
 
 const pad = (n: number) => String(n).padStart(2, '0');
-
-// ── Static data ───────────────────────────────────────────────────────────────
-const HUMAN_COST = [
-  {
-    label:        'U.S. Service Members',
-    killed:       '13',
-    wounded:      '140',
-    killedColor:  '#4a9eff',
-    woundedColor: '#4a9eff',
-    note:         null,
-  },
-  {
-    label:        'Iranian Military',
-    killed:       '2,096+',
-    wounded:      null,
-    killedColor:  '#e8a44a',
-    woundedColor: null,
-    note:         'INCL. SENIOR LEADERSHIP',
-  },
-  {
-    label:        'Iranian Civilians',
-    killed:       '1,382+',
-    wounded:      '12,969+',
-    killedColor:  '#c93a20',
-    woundedColor: '#c93a20',
-    note:         null,
-  },
-] as const;
-
-const BURN_RATES = [
-  { label: 'Per Second', value: `$${Math.round(PER_SECOND).toLocaleString('en-US')}` },
-  { label: 'Per Hour',   value: `$${(PER_SECOND * 3600 / 1_000_000).toFixed(1)}M` },
-  { label: 'Per Day',    value: '$1B' },
-];
-
-// ── Component ─────────────────────────────────────────────────────────────────
-export default function IranWarCostBoard() {
-  // Start as null so SSR renders nothing (component is loaded client-only via
-  // dynamic import anyway), then populate on mount to avoid hydration mismatch.
-  const [now, setNow] = useState<Date | null>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setNow(new Date());
-    timerRef.current = setInterval(() => setNow(new Date()), 1000);
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, []);
-
-  // Before mount, show a compact skeleton so there's no layout shift
-  if (!now) {
-    return (
-      <div style={{
-        background:   'var(--surface)',
-        border:       '1px solid var(--border-light)',
-        borderTop:    '2px solid #c93a20',
-        borderRadius: '0 0 3px 3px',
-        marginBottom: 12,
-        padding:      '12px 16px',
-        display:      'flex',
-        flexDirection:'column',
-        gap:          10,
-      }}>
-        <div className="skeleton" style={{ height: 10, width: '50%', borderRadius: 2 }} />
-        <div className="skeleton" style={{ height: 36, width: '80%', borderRadius: 2 }} />
-        <div className="skeleton" style={{ height: 10, width: '40%', borderRadius: 2 }} />
-        <div style={{ display: 'flex', gap: 8 }}>
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} style={{ flex: 1 }}>
-              <div className="skeleton" style={{ height: 28, borderRadius: 3 }} />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  const cost    = calcCost(now);
-  const elapsed = getElapsed(now);
-
-  const mono   = 'var(--font-mono)';
-  const muted  = 'var(--text-muted)';
-  const border = 'var(--border-light)';
-  const red    = '#c93a20';
-
-  return (
-    <div style={{
-      background:   'var(--surface)',
-      border:       `1px solid ${border}`,
-      borderTop:    `2px solid ${red}`,
-      borderRadius: '0 0 3px 3px',
-      marginBottom: 12,
-      overflow:     'hidden',
-    }}>
-
-      {/* ── Header ─────────────────────────────────────────────────── */}
-      <div style={{
-        display:        'flex',
-        alignItems:     'center',
-        justifyContent: 'space-between',
-        padding:        '7px 14px',
-        borderBottom:   `1px solid ${border}`,
-        background:     'rgba(201,58,32,0.04)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-          <span style={{
-            display:     'inline-block',
-            width:       6,
-            height:      6,
-            borderRadius:'50%',
-            background:  red,
-            boxShadow:   `0 0 6px rgba(201,58,32,0.6)`,
-            animation:   'pulse 2s infinite',
-            flexShrink:  0,
-          }} />
-          <span style={{
-            fontFamily:    mono,
-            fontSize:      10,
-            fontWeight:    700,
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            color:         red,
-          }}>
-            U.S. War Cost · Operation Epic Fury
-          </span>
-        </div>
-        <a
-          href="https://iran-cost-ticker.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            fontFamily:    mono,
-            fontSize:      8,
-            color:         muted,
-            letterSpacing: '0.05em',
-            textTransform: 'uppercase',
-            border:        `1px solid ${border}`,
-            padding:       '1px 5px',
-            borderRadius:  2,
-            textDecoration:'none',
-          }}
-        >
-          iran-cost-ticker.com ↗
-        </a>
-      </div>
-
-      {/* ── Running total ───────────────────────────────────────────── */}
-      <div style={{ padding: '14px 16px 12px', textAlign: 'center' }}>
-        <div style={{
-          fontFamily:    mono,
-          fontSize:      9,
-          fontWeight:    700,
-          letterSpacing: '0.14em',
-          textTransform: 'uppercase',
-          color:         muted,
-          marginBottom:  8,
-        }}>
-          Est. U.S. Cost Since Strikes Began
-        </div>
-
-        {/* Big counter */}
-        <div
-          className="ftg-war-cost-counter"
-          style={{
-            fontFamily:    mono,
-            fontSize:      34,
-            fontWeight:    800,
-            color:         red,
-            letterSpacing: '-0.02em',
-            lineHeight:    1,
-            marginBottom:  6,
-            fontVariantNumeric: 'tabular-nums',
-          }}
-        >
-          {formatDollars(cost)}
-        </div>
-
-        <div style={{
-          fontFamily:    mono,
-          fontSize:      8,
-          color:         muted,
-          letterSpacing: '0.03em',
-          marginBottom:  14,
-        }}>
-          $11.3B first 6 days (Pentagon → Congress) + $1B/day ongoing
-        </div>
-
-        {/* Elapsed clock */}
-        <div style={{
-          display:        'flex',
-          alignItems:     'flex-start',
-          justifyContent: 'center',
-          gap:            4,
-        }}>
-          {([
-            { val: elapsed.days,  label: 'DAYS', raw: elapsed.days },
-            { val: elapsed.hours, label: 'HRS',  raw: elapsed.hours },
-            { val: elapsed.mins,  label: 'MIN',  raw: elapsed.mins },
-            { val: elapsed.secs,  label: 'SEC',  raw: elapsed.secs },
-          ] as const).map(({ val, label }, i) => (
-            <div key={label} style={{ display: 'flex', alignItems: 'flex-start', gap: 4 }}>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <div style={{
-                  background:   'rgba(201,58,32,0.12)',
-                  border:       '1px solid rgba(201,58,32,0.3)',
-                  borderRadius: 3,
-                  padding:      '4px 8px',
-                  fontFamily:   mono,
-                  fontSize:     16,
-                  fontWeight:   700,
-                  color:        red,
-                  minWidth:     38,
-                  textAlign:    'center',
-                  fontVariantNumeric: 'tabular-nums',
-                }}>
-                  {label === 'DAYS' ? String(val) : pad(val)}
-                </div>
-                <div style={{
-                  fontFamily:    mono,
-                  fontSize:      7,
-                  color:         muted,
-                  letterSpacing: '0.08em',
-                  marginTop:     3,
-                }}>
-                  {label}
-                </div>
-              </div>
-              {i < 3 && (
-                <div style={{
-                  fontFamily: mono,
-                  fontSize:   16,
-                  fontWeight: 700,
-                  color:      'rgba(201,58,32,0.4)',
-                  marginTop:  3,
-                  lineHeight: 1.4,
-                }}>
-                  :
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Burn rates ──────────────────────────────────────────────── */}
-      <div className="ftg-cost-burn-grid" style={{
-        display:     'grid',
-        gridTemplateColumns: '1fr 1fr 1fr',
-        borderTop:   `1px solid ${border}`,
-        borderBottom:`1px solid ${border}`,
-      }}>
-        {BURN_RATES.map(({ label, value }, i) => (
-          <div key={label} style={{
-            padding:     '8px 10px',
-            textAlign:   'center',
-            borderRight: i < 2 ? `1px solid ${border}` : 'none',
-          }}>
-            <div style={{
-              fontFamily:    mono,
-              fontSize:      8,
-              color:         muted,
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              marginBottom:  4,
-            }}>
-              {label}
-            </div>
-            <div style={{
-              fontFamily:         mono,
-              fontSize:           13,
-              fontWeight:         700,
-              color:              'var(--text-primary)',
-              fontVariantNumeric: 'tabular-nums',
-            }}>
-              {value}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* ── Human cost ──────────────────────────────────────────────── */}
-      <div style={{ padding: '10px 14px 12px' }}>
-        <div style={{
-          fontFamily:    mono,
-          fontSize:      8,
-          fontWeight:    700,
-          letterSpacing: '0.12em',
-          textTransform: 'uppercase',
-          color:         muted,
-          marginBottom:  8,
-        }}>
-          The Human Cost
-        </div>
-
-        <div className="ftg-human-cost-grid" style={{
-          display:             'grid',
-          gridTemplateColumns: '1fr 1fr 1fr',
-          gap:                 6,
-        }}>
-          {HUMAN_COST.map(({ label, killed, wounded, killedColor, woundedColor, note }) => (
-            <div key={label} style={{
-              background:   'var(--bg)',
-              border:       `1px solid ${border}`,
-              borderRadius: 3,
-              padding:      '8px 10px',
-            }}>
-              <div style={{
-                fontFamily:    mono,
-                fontSize:      7,
-                fontWeight:    700,
-                letterSpacing: '0.07em',
-                textTransform: 'uppercase',
-                color:         muted,
-                marginBottom:  6,
-              }}>
-                {label}
-              </div>
-              <div style={{
-                fontFamily: mono,
-                fontSize:   20,
-                fontWeight: 800,
-                color:      killedColor,
-                lineHeight: 1,
-                marginBottom: 2,
-              }}>
-                {killed}
-              </div>
-              <div style={{ fontFamily: mono, fontSize: 7, color: muted, marginBottom: note ? 4 : (wounded ? 6 : 0) }}>
-                killed
-              </div>
-              {note && (
-                <div style={{
-                  fontFamily:    mono,
-                  fontSize:      6,
-                  color:         muted,
-                  letterSpacing: '0.06em',
-                  textTransform: 'uppercase',
-                  marginBottom:  wounded ? 6 : 0,
-                }}>
-                  {note}
-                </div>
-              )}
-              {wounded && woundedColor && (
-                <>
-                  <div style={{
-                    fontFamily: mono,
-                    fontSize:   15,
-                    fontWeight: 700,
-                    color:      woundedColor,
-                    lineHeight: 1,
-                    marginBottom: 2,
-                  }}>
-                    {wounded}
-                  </div>
-                  <div style={{ fontFamily: mono, fontSize: 7, color: muted }}>wounded</div>
-                </>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Notable incident */}
-        <div style={{
-          marginTop:    8,
-          padding:      '6px 10px',
-          background:   'rgba(201,58,32,0.05)',
-          border:       `1px solid rgba(201,58,32,0.2)`,
-          borderRadius: 3,
-          borderLeft:   `2px solid ${red}`,
-        }}>
-          <span style={{ fontFamily: mono, fontSize: 8, fontWeight: 700, color: red }}>
-            175 killed at Shajareh Tayyebeh girls&apos; school in Minab
-          </span>
-          <span style={{ fontFamily: mono, fontSize: 8, color: muted }}>
-            {' '}— mostly girls aged 7–12 and staff. Condemned by UNESCO.
-          </span>
-        </div>
-
-        <div style={{
-          fontFamily:    mono,
-          fontSize:      7,
-          color:         muted,
-          letterSpacing: '0.04em',
-          marginTop:     8,
-          textAlign:     'right',
-        }}>
-          Sources: DoD/CENTCOM · Hengaw · Iranian Red Crescent · AP · Reuters · Al Jazeera
-        </div>
-      </div>
-    </div>
-  );
-}

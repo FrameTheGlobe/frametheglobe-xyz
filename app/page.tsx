@@ -13,6 +13,7 @@ import OilTicker      from './components/OilTicker';
 import IranWarSection  from './components/IranWarSection';
 import DailyBriefing, { BriefCluster } from './components/DailyBriefing';
 import CrossSourceComparison, { CompItem } from './components/CrossSourceComparison';
+import IntelTimeline from './components/IntelTimeline';
 
 // MapView uses Leaflet (browser-only) — load with no SSR
 const MapView = dynamic(() => import('./components/MapView'), { ssr: false });
@@ -1184,6 +1185,31 @@ export default function Home() {
     );
   }, [keyForItem]);
 
+  const itemsCount = items.length;
+
+  // ── INTEL TIMELINE DATA (GDELT + CRITICAL) ─────────────────────────
+  const intelEvents = useMemo(() => {
+    // Filter for GDELT or other "ops" / conflict style items
+    const opsItems = items.filter(item => 
+      item.sourceId.includes('gdelt') || 
+      item.sourceId === 'liveleak-osint' ||
+      item.title.toLowerCase().includes('strike') ||
+      item.title.toLowerCase().includes('explosion') ||
+      item.title.toLowerCase().includes('intercept') ||
+      item.title.toLowerCase().includes('attack')
+    );
+
+    return opsItems.slice(0, 15).map(item => ({
+      id: item.link + item.pubDate,
+      location: item.region ? item.region.toUpperCase() : 'OPERATIONAL',
+      subLocation: item.sourceName,
+      status: (item.title.toLowerCase().includes('strike') || item.title.toLowerCase().includes('attack') || item.title.toLowerCase().includes('nuclear')) ? 'CRITICAL' : 'ELEVATED' as any,
+      timestamp: new Date(item.pubDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      dateHeader: new Date(item.pubDate).toLocaleDateString([], { month: 'short', day: 'numeric' }),
+      description: item.title
+    }));
+  }, [items]);
+
   const toggleSource = useCallback((id: string) => {
     setActiveSources(prev => {
       const next = new Set(prev);
@@ -1193,10 +1219,12 @@ export default function Home() {
     });
   }, []); // uses only the setter — stable forever
 
-  // Stable handlers for Select-All / Select-None in the sidebar.
-  // Previously these were inline `() => setActiveSources(new Set(...))` arrow
-  // functions that created new references on every render, forcing SidebarPanel
-  // to re-render even when sources hadn't changed.
+  const viewAllByKeyword = useCallback((kw: string) => {
+    setSearch(kw);
+    setActiveLenses(new Set());
+    setActiveRegions(new Set());
+  }, [setSearch, setActiveLenses, setActiveRegions]);
+
   const selectAllSources = useCallback(
     () => setActiveSources(new Set(SOURCES.map(s => s.id))),
     []
@@ -1542,16 +1570,16 @@ export default function Home() {
                 {(() => {
                   const tCount = items.filter(i => itemMatchesLens(i, new Set(['trump']))).length;
                   return tCount > 0 ? (
-                    <div 
+                    <div
                       onClick={() => setActiveLenses(new Set(['trump']))}
-                      style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: 4, 
-                        background: 'var(--brand-blue)', 
-                        color: '#fff', 
-                        padding: '1px 5px', 
-                        borderRadius: 3, 
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        background: 'var(--brand-blue)',
+                        color: '#fff',
+                        padding: '1px 5px',
+                        borderRadius: 3,
                         cursor: 'pointer',
                         fontSize: 9,
                         fontFamily: 'var(--font-mono)',
@@ -1760,9 +1788,13 @@ export default function Home() {
         {/* Main feed */}
         <main className="ftg-main">
           {/* ── Iran War Theater ─────────────────────────────────── */}
-          <IranWarSection items={items} sourceCountMap={sourceCountMap} />
+          <IranWarSection 
+            items={items} 
+            sourceCountMap={sourceCountMap} 
+            brief={<IntelTimeline events={intelEvents} />}
+          />
 
-          {/* ── Widgets row ──────────────────────────────────────── */}
+          {/* ── Widgets row (TopStorylines, RapidResponse, Macro, Oil) ── */}
           <div className="ftg-widgets-section">
             {!loading && items.length > 0 && (
               <div className="widgets-grid" style={{
@@ -2422,6 +2454,66 @@ export default function Home() {
             </div>
           )}
         </main>
+
+        {/* ── THIRD COLUMN: STRATEGIC INTEL ─────────────────────────── */}
+        <aside className="intel-column" style={{
+          position: 'sticky',
+          top: '24px',
+          height: 'calc(100vh - 48px)',
+          overflowY: 'auto',
+          paddingRight: '4px',
+          scrollbarWidth: 'thin'
+        }}>
+          <div style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 4,
+            padding: '16px 20px',
+            boxShadow: 'var(--shadow-sm)'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: 16,
+              paddingBottom: 8,
+              borderBottom: '1px solid var(--border-light)'
+            }}>
+              <h2 style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                color: 'var(--accent)',
+                margin: 0
+              }}>
+                Strategic Brief
+              </h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div className="live-dot" />
+                <span style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Live</span>
+              </div>
+            </div>
+
+            <IntelTimeline events={intelEvents} />
+
+            {intelEvents.length > 0 && (
+              <div style={{
+                marginTop: 20,
+                padding: '10px',
+                background: 'rgba(255, 255, 255, 0.02)',
+                borderRadius: 4,
+                border: '1px dashed var(--border)',
+                textAlign: 'center'
+              }}>
+                <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                  SCANNING GDELT & GCAPTAIN SENSORS
+                </span>
+              </div>
+            )}
+          </div>
+        </aside>
       </div>
 
       {/* ── FOOTER ─────────────────────────────────────────────────────── */}
