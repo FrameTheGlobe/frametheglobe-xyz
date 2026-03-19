@@ -1,0 +1,65 @@
+name: 🚀 Deploy to Hostinger
+
+on:
+  push:
+    branches:
+      - master  # Change this to your deployment branch if different
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🚚 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: 📦 Install Dependencies
+        run: npm install
+
+      - name: 🔨 Build Project
+        run: npm run build
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096" # GH Runners have 7GB RAM, so we can use more for speed
+
+      - name: 🚀 Deploy via SSH (Rsync)
+        uses: easingthemes/ssh-deploy@main
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          ARGS: "-avz --delete"
+          SOURCE: "./"
+          REMOTE_HOST: "82.25.83.156"
+          REMOTE_USER: "u461388193"
+          REMOTE_PORT: "65002"
+          # TARGET is the directory on Hostinger. 
+          # From your deploy.sh, we'll try to find it or use a default.
+          TARGET: "/home/u461388193/domains/frametheglobe.xyz/public_html" 
+          EXCLUDE: "/node_modules/, /.git/, /.github/, /deploy.sh, /deploy.env"
+
+      - name: 🔄 Restart Node.js Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: "82.25.83.156"
+          username: "u461388193"
+          port: "65002"
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            export PATH=/opt/alt/alt-nodejs20/root/usr/bin:$PATH
+            # Navigate to the target directory (adjust if different)
+            cd /home/u461388193/domains/frametheglobe.xyz/public_html
+            
+            echo "Installing production dependencies..."
+            npm install --omit=dev
+            
+            echo "Restarting application..."
+            if command -v pm2 &> /dev/null; then
+              pm2 restart all || pm2 start npm --name "frametheglobe" -- start
+            else
+              mkdir -p tmp
+              touch tmp/restart.txt
+            fi
+            echo "Deployment successful!"

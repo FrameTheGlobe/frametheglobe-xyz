@@ -22,12 +22,6 @@ const nextConfig: NextConfig = {
   // if native libraries like sharp are missing in the server environment.
   images: { unoptimized: true },
 
-  // Limit parallelism during build on Hostinger's constrained server environment
-  experimental: {
-    workerThreads: false,
-    cpus: 1,
-  },
-
   // Security & caching headers
   async headers() {
     return [
