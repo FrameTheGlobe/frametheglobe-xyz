@@ -12,18 +12,21 @@ const nextConfig: NextConfig = {
   // @ts-ignore
   eslint: { ignoreDuringBuilds: true },
   
-  // Clean the build directory before each build to avoid stale assets
-  cleanDistDir: true,
-
   // Compress responses in production
   compress: true,
 
   // Remove the "X-Powered-By: Next.js" header
   poweredByHeader: false,
 
-  // Safety for Hostinger: images are often served better unoptimized 
+  // Safety for Hostinger: images are often served better unoptimized
   // if native libraries like sharp are missing in the server environment.
   images: { unoptimized: true },
+
+  // Limit parallelism during build on Hostinger's constrained server environment
+  experimental: {
+    workerThreads: false,
+    cpus: 1,
+  },
 
   // Security & caching headers
   async headers() {
