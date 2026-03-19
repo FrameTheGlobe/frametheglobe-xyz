@@ -16,3 +16,8 @@ deploy-package.tar.gz
 # local env (never commit secrets)
 .env.local
 
+# test artifacts
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/

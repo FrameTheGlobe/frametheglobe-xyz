@@ -1,6 +1,6 @@
 # FrameTheGlobe Geopolitical Intelligence Hub
 
-**Version:** 3.1.1 — *The Global Pivot Update*  
+**Version:** 4.1.5 — *Netlify Support Update*  
 **Deployment:** [frametheglobe.xyz](https://frametheglobe.xyz)  
 **Stack:** Next.js 16 (App Router), React 19, TypeScript, Vanilla CSS Design System.
 

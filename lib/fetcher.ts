@@ -134,7 +134,7 @@ const IRAN_KEYWORDS = [
   'wheat', 'grain', 'fertilizer', 'commodity', 'commodities', 'metals',
 ];
 
-function matchesIranTheater(item: {
+export function matchesIranTheater(item: {
   title?: string;
   contentSnippet?: string;
   summary?: string;

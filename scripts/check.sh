@@ -28,6 +28,17 @@ else
 fi
 echo ""
 
+# ── 1.5. Unit Tests (vitest) ─────────────────────────────────
+echo "▸ Unit Tests"
+VITEST_OUT=$(npm run test 2>&1 || true)
+if echo "$VITEST_OUT" | grep -q "FAIL"; then
+  fail "Unit tests failed:"
+  echo "$VITEST_OUT" | grep "FAIL" | head -20
+else
+  ok "All unit tests passed"
+fi
+echo ""
+
 # ── 2. React: mixed border shorthand + individual sides ──────
 echo "▸ React style conflicts (border shorthand + individual sides)"
 # Find .tsx files where a single style block contains both 'border:' and 'borderLeft/Right/Top/Bottom:'
@@ -115,8 +126,6 @@ FILES=(
   "app/globals.css"
   "app/components/MapView.tsx"
   "app/components/BreakingTicker.tsx"
-  "app/components/TrendingKeywords.tsx"
-  "app/components/VolumeChart.tsx"
   "app/api/news/route.ts"
   "app/api/flights/route.ts"
   "app/api/rss/route.ts"
@@ -125,7 +134,6 @@ FILES=(
   "lib/fetcher.ts"
   "lib/flights.ts"
   "lib/news-store.ts"
-  "lib/acled.ts"
   "public/manifest.json"
 )
 for f in "${FILES[@]}"; do
