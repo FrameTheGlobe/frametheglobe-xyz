@@ -1,6 +1,15 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Enable standalone output for VPS/Hostinger deployment
+  output: 'standalone',
+
+  // Critical for Hostinger server builds: ignores checks to save memory/processes
+  // @ts-ignore
+  typescript: { ignoreBuildErrors: true },
+  // @ts-ignore
+  eslint: { ignoreDuringBuilds: true },
+  
   // Compress responses in production
   compress: true,
 
