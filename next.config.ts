@@ -1,8 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Enable standalone output for VPS/Hostinger deployment
-  output: 'standalone',
+  // Use a standard build path for the Hostinger Node.js selector. 
+  // Standard building + 'npm start' is more reliable for asset resolution on shared/VPS.
+  trailingSlash: false,
+  reactStrictMode: true,
 
   // Critical for Hostinger server builds: ignores checks to save memory/processes
   // @ts-ignore
@@ -10,11 +12,18 @@ const nextConfig: NextConfig = {
   // @ts-ignore
   eslint: { ignoreDuringBuilds: true },
   
+  // Clean the build directory before each build to avoid stale assets
+  cleanDistDir: true,
+
   // Compress responses in production
   compress: true,
 
-  // Remove the "X-Powered-By: Next.js" header — no need to advertise the stack.
+  // Remove the "X-Powered-By: Next.js" header
   poweredByHeader: false,
+
+  // Safety for Hostinger: images are often served better unoptimized 
+  // if native libraries like sharp are missing in the server environment.
+  images: { unoptimized: true },
 
   // Security & caching headers
   async headers() {
