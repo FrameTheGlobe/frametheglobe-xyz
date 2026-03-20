@@ -1,8 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Let Next.js generate a unique BUILD_ID per build.
-  // A hardcoded ID caused Hostinger to cache the old build manifest across rebuilds.
+  // standalone: bundles the minimal server + node_modules into .next/standalone/.
+  // The standalone server.js handles /_next/static/ serving IN-PROCESS, so
+  // Hostinger's reverse proxy never needs to know about the _next path at all.
+  // Post-build we copy .next/static → .next/standalone/.next/static and
+  // public/ → .next/standalone/public/ so the standalone server finds them.
+  output: 'standalone',
 
   trailingSlash: false,
   reactStrictMode: true,
