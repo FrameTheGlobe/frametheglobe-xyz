@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Hardcoded Build ID: Force Hostinger and Browsers to drop stale HTML/Turbopack caches
+  generateBuildId: async () => 'FTG_V5210',
+  
   // Standard Next.js server build for Hostinger
   trailingSlash: false,
   reactStrictMode: true,
