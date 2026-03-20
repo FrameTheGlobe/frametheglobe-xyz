@@ -14,7 +14,7 @@
   "scripts": {
     "dev": "next dev --webpack",
     "build": "NEXT_CPU_COUNT=1 NODE_OPTIONS='--max-old-space-size=2048' next build --webpack",
-    "start": "node server.js",
+    "start": "NODE_ENV=production node server.js",
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest"
