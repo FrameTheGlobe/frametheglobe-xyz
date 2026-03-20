@@ -31,9 +31,10 @@ export default function CompactHeader({
           className="ftg-compact-brand"
         >
           FrameTheGlobe<span className="ftg-compact-brand-accent">News</span>
+          <span className="ftg-beta-badge">BETA</span>
         </h1>
         <span className="ftg-compact-meta">
-          {storyCount.toLocaleString()} stories · {sourceCount} sources
+          v6.0.1 · {storyCount.toLocaleString()} stories · {sourceCount} sources
         </span>
         <div className="ftg-compact-live">
           <span

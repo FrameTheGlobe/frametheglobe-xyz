@@ -261,6 +261,25 @@ body {
   font-style: italic;
 }
 
+.ftg-beta-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  padding: 2px 6px;
+  border-radius: 3px;
+  margin-left: 8px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  box-shadow: 0 1px 3px rgba(231, 76, 60, 0.3);
+  animation: beta-pulse 3s ease-in-out infinite;
+}
+
+@keyframes beta-pulse {
+  0%, 100% { opacity: 0.9; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
 .ftg-compact-live {
   display: inline-flex;
   align-items: center;
@@ -454,6 +473,12 @@ body {
     font-size: 23px;
   }
 
+  .ftg-beta-badge {
+    font-size: 9px;
+    padding: 1px 4px;
+    margin-left: 6px;
+  }
+
   .ftg-compact-meta {
     font-size: 7px;
   }
@@ -488,6 +513,12 @@ body {
 
   .ftg-compact-brand {
     font-size: 20px;
+  }
+
+  .ftg-beta-badge {
+    font-size: 8px;
+    padding: 1px 3px;
+    margin-left: 5px;
   }
 
   .ftg-compact-live-text,
