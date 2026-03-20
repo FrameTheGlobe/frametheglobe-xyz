@@ -1526,7 +1526,7 @@ export default function Home() {
                   textAlign: 'center'
                 }}>
                   FRAME<span style={{ color: 'var(--accent)' }}>THEGLOBE</span>
-                  <span style={{ display: 'block', fontSize: 10, letterSpacing: '0.45em', color: 'var(--accent)', marginTop: 6, fontWeight: 700 }}>
+                  <span style={{ display: 'block', fontSize: 13, letterSpacing: '0.45em', color: 'var(--accent)', marginTop: 8, fontWeight: 700 }}>
                     INTELLIGENCE OPS // GLOBAL MONITORING
                   </span>
                 </h1>
@@ -2011,7 +2011,7 @@ export default function Home() {
                       borderRight:  '1px solid var(--border-light)',
                       borderBottom: '1px solid var(--border-light)',
                       borderLeft:   `3px solid ${REGION_DOTS[item.region] || '#999'}`,
-                      padding:      '14px 18px',
+                      padding:      '16px 22px',
                       animation:    `fadeUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) ${Math.min(i, 12) * 0.03}s both`,
                       opacity: isRead ? 0.6 : 1,
                       transition: 'opacity 0.2s',
@@ -2047,10 +2047,10 @@ export default function Home() {
                           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7, marginBottom: 5 }}>
                             {badge === 'breaking' && (
                               <span style={{
-                                fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: '0.1em',
+                                fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.1em',
                                 textTransform: 'uppercase', flexShrink: 0, marginTop: 2,
                                 color: 'var(--badge-brk-color)', background: 'var(--badge-brk-bg)',
-                                border: '1px solid var(--badge-brk-border)', padding: '1px 5px', borderRadius: 2,
+                                border: '1px solid var(--badge-brk-border)', padding: '2px 8px', borderRadius: 2,
                                 display: 'inline-flex', alignItems: 'center', gap: 4
                               }}>
                                 <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--badge-brk-color)', animation: 'pulse-dot 1s infinite' }} />
@@ -2107,7 +2107,7 @@ export default function Home() {
                               onClick={() => markRead(itemKey)}
                               style={{
                                 fontFamily: 'var(--font-display)',
-                                fontSize: 16,
+                                fontSize: 18,
                                 fontWeight: 700,
                                 color: 'var(--text-primary)',
                                 textDecoration: 'none',
@@ -2154,7 +2154,7 @@ export default function Home() {
                         onClick={() => togglePin(item)}
                         style={{
                           border: 'none', background: 'transparent',
-                          cursor: 'pointer', fontSize: 12, padding: 0,
+                          cursor: 'pointer', fontSize: 13, padding: 0,
                           color: isPinned ? 'var(--pin-active)' : 'var(--text-muted)',
                           transition: 'color 0.1s',
                         }}

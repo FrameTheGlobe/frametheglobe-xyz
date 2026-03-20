@@ -28,27 +28,21 @@ rm -rf .next
 # Build with memory limit
 NODE_OPTIONS='--max-old-space-size=1024' npm run build
 
-# ── Copy static chunks where Apache can find them ─────────────
-# Hostinger's Apache intercepts /_next/static/ requests before they
-# reach the Node.js process and looks for files on the filesystem.
-# .next/static/ is not the Apache webroot; public/ is.
-# Without this copy, every JS/CSS chunk returns 404, React never
-# hydrates, and the app is frozen in its SSR shell.
-echo "📂  Copying static chunks to public/_next/static/ ..."
-rm -rf public/_next
-mkdir -p public/_next
-cp -r .next/static public/_next/static
-
 # ── Restart the server ────────────────────────────────────────
+# Hostinger App Hosting (GitHub import) uses Passenger for process management.
+# Touching tmp/restart.txt signals Passenger to kill all stale next-server
+# processes on the next incoming request and boot a fresh one that loads
+# the current .next/ manifests.
+#
+# Without this, Hostinger starts new processes on deploy but NEVER kills
+# the old ones. Old processes serve HTML referencing chunks from their
+# build; the new build has different chunk hashes; old chunks are gone → 404.
 echo "🔄  Restarting application..."
-
-# Create /tmp directory if it doesn't exist (used for Passenger restart)
 mkdir -p tmp
 touch tmp/restart.txt
 
 if command -v pm2 &> /dev/null; then
-  # If PM2 is already running, restart; else start
-  pm2 restart all || pm2 start npm --name "frametheglobe" -- start
+  pm2 restart frametheglobe 2>/dev/null || pm2 restart all 2>/dev/null || true
 fi
 
 echo "✅  Restart signal sent (tmp/restart.txt updated)."

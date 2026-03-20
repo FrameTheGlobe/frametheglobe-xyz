@@ -229,27 +229,27 @@ body {
 
 .hud-mini-label {
   font-family: var(--font-ibm-mono);
-  font-size: 7px;
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.25em;
+  letter-spacing: 0.15em;
   color: var(--hud-muted);
-  font-weight: 900;
+  font-weight: 800;
 }
 
 .hud-data-point {
   font-family: var(--font-ibm-mono);
-  font-size: 11px;
-  font-weight: 800;
+  font-size: 13px;
+  font-weight: 700;
   color: #fff;
   letter-spacing: 0.05em;
 }
 
 .hud-value {
   font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 900;
+  font-size: 14px;
+  font-weight: 800;
   color: #fff;
-  text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
 }
 
 .glitch-hover:hover {
@@ -316,7 +316,7 @@ body {
   border-radius: 4px;
   padding: 7px 10px;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-primary);
   letter-spacing: 0.04em;
   outline: none;
@@ -383,7 +383,7 @@ body {
 .newspaper-divider {
   border-top: 1px solid var(--border);
   border-bottom: 4px double var(--border);
-  margin: 10px 0;
+  margin: 15px 0;
 }
 
 .hud-glitch-active {
@@ -627,15 +627,15 @@ body {
 
   /* Lens pills + region chips: bigger touch target */
   .ftg-filter-pill {
-    padding: 6px 12px !important;
-    font-size: 12px !important;
+    padding: 8px 14px !important;
+    font-size: 13px !important;
   }
 
   /* Sort / view mode buttons: bigger targets */
   .ftg-sort-btn,
   .ftg-view-btn {
-    padding: 6px 10px !important;
-    font-size: 11px !important;
+    padding: 8px 12px !important;
+    font-size: 13px !important;
   }
 
   /* Oil board: stack Brent + WTI vertically on very small screens */
@@ -741,18 +741,18 @@ body {
 ══════════════════════════════════════════════════════ */
 @media (max-width: 480px) {
   .page-layout {
-    padding: 8px 10px;
-    gap: 8px;
+    padding: 12px 14px;
+    gap: 12px;
   }
 
   /* Article title: slightly smaller on phones */
   .ftg-article-title {
-    font-size: 14px !important;
+    font-size: 16px !important;
   }
 
   /* Breaking ticker text */
   .ftg-ticker-text {
-    font-size: 11px !important;
+    font-size: 13px !important;
   }
 
   /* Oil price number: fit on 375px */
