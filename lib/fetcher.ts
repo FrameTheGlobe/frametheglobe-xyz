@@ -10,6 +10,8 @@ export type FeedItem = {
   region: string;
   sourceColor: string;
   imageUrl?: string;
+  relevanceScore?: number;
+  noveltyPenalty?: number;
 };
 
 export type SourceHealth = {
@@ -53,83 +55,278 @@ const BASE_HEADERS = {
   'Accept-Language': 'en-US,en;q=0.9',
 } as const;
 
+// ── SOURCE TRUST MAP ───────────────────────────────────────────────────────
+export const SOURCE_TRUST: Record<string, number> = {
+  // High-tier: established wires, state agencies, major outlets
+  reuters: 1.0,
+  ap: 1.0,
+  bloomberg: 0.95,
+  ft: 0.95,
+  wsj: 0.92,
+  bbc: 0.90,
+  aljazeera: 0.88,
+  timesofisrael: 0.85,
+  tass: 0.84,
+  xinhua: 0.84,
+  // Mid-tier: regional specialists, OSINT aggregators
+  gdelt: 0.78,
+  gcaptain: 0.76,
+  acled: 0.75,
+  meir: 0.73,
+  irna: 0.71,
+  tasnim: 0.70,
+  // Lower-tier: opinion-heavy, tabloid, or less vetted
+  presstv: 0.60,
+  fars: 0.58,
+  // Default fallback for unknown sources
+};
+
+// ── WEIGHTED KEYWORDS & PHRASES ───────────────────────────────────────────────
+const WEIGHTED_KEYWORDS: Record<string, number> = {
+  // Critical military/nuclear events (highest weight)
+  'nuclear strike': 3.5,
+  'ballistic missile': 3.2,
+  'hypersonic missile': 3.2,
+  'airstrike': 2.8,
+  'drone strike': 2.7,
+  'intercept': 2.6,
+  'attack': 2.5,
+  'explosion': 2.5,
+  'strike': 2.4,
+  'missile': 2.3,
+  'casualties': 2.3,
+  'dead': 2.3,
+  'war': 2.2,
+  'invasion': 2.2,
+  'combat': 2.1,
+  // Nuclear program (very high)
+  'nuclear': 2.8,
+  'uranium': 2.7,
+  'centrifuge': 2.6,
+  'enrichment': 2.6,
+  'natanz': 3.0,
+  'fordow': 3.0,
+  'arak': 2.9,
+  'bushehr': 2.8,
+  'iaea': 2.5,
+  'jcpoa': 2.4,
+  'breakout': 2.3,
+  // Chokepoints & shipping (high)
+  'hormuz': 2.6,
+  'strait of hormuz': 2.8,
+  'red sea': 2.4,
+  'bab el-mandeb': 2.4,
+  'tanker': 2.4,
+  'vessel seized': 2.7,
+  'piracy': 2.5,
+  'blockade': 2.4,
+  'naval': 2.2,
+  // Oil & energy (high)
+  'oil price': 2.5,
+  'brent crude': 2.4,
+  'wti': 2.4,
+  'opec': 2.3,
+  'opec+': 2.3,
+  'production cut': 2.6,
+  'energy security': 2.2,
+  'pipeline': 2.2,
+  'lng': 2.1,
+  'natural gas': 2.1,
+  // Sanctions & finance (medium-high)
+  'sanctions': 2.1,
+  'oil embargo': 2.4,
+  'financial markets': 1.8,
+  'currency': 1.7,
+  'war premium': 2.2,
+  'risk premium': 2.1,
+  // Proxy/actors (medium)
+  'hezbollah': 1.9,
+  'houthi': 1.9,
+  'houthis': 1.9,
+  'irgc': 2.0,
+  'quds force': 2.0,
+  'id': 1.8,
+  'centcom': 1.8,
+  'nato': 1.7,
+  // Locations (medium)
+  'gaza': 1.8,
+  'rafah': 1.9,
+  'lebanon': 1.7,
+  'beirut': 1.7,
+  'yemen': 1.7,
+  'iran': 1.6,
+  'tehran': 1.5,
+  'israel': 1.6,
+  // Diplomacy (lower)
+  'diplomacy': 1.3,
+  'negotiations': 1.3,
+  'ceasefire': 1.4,
+  'talks': 1.2,
+  'agreement': 1.2,
+  // Negative/downweight terms
+  'says': -0.2,
+  'said': -0.2,
+  'report': -0.1,
+  'reports': -0.1,
+  'according to': -0.1,
+  'sources': -0.1,
+};
+
+// ── PHRASE BOOST MAPS (multi-word) ───────────────────────────────────────────────
+const PHRASE_BOOSTS: [string, number][] = [
+  ['nuclear escalation', 3.5],
+  ['military escalation', 3.2],
+  ['regional war', 3.1],
+  ['full-scale war', 3.3],
+  ['oil price shock', 2.8],
+  ['supply chain disruption', 2.6],
+  ['energy crisis', 2.7],
+  ['security threat', 2.5],
+  ['strategic assets', 2.3],
+  ['critical infrastructure', 2.4],
+  ['proxy war', 2.2],
+  ['axis of resistance', 2.1],
+  ['chokepoint', 2.3],
+  ['maritime security', 2.2],
+  ['economic sanctions', 2.0],
+  ['naval blockade', 2.5],
+  ['missile test', 2.4],
+  ['air defense', 2.1],
+  ['cyber attack', 2.3],
+  ['terrorist attack', 2.2],
+];
+
+function computeRelevanceScore(text: string): number {
+  let score = 0;
+  const lower = text.toLowerCase();
+  // Phrase boosts first (higher weight, exact match)
+  for (const [phrase, boost] of PHRASE_BOOSTS) {
+    if (lower.includes(phrase)) score += boost;
+  }
+  // Token-based weighted keywords
+  const tokens = lower.split(/\s+/);
+  for (const token of tokens) {
+    for (const [kw, weight] of Object.entries(WEIGHTED_KEYWORDS)) {
+      if (token.includes(kw) || kw.includes(token)) {
+        score += weight;
+        break; // avoid double-counting overlapping tokens
+      }
+    }
+  }
+  return Math.max(0, score);
+}
+
+function computeNoveltyPenalty(item: FeedItem, allItems: FeedItem[]): number {
+  // Penalize items that are very similar to many recent items (repetitive narrative)
+  const SIMILARITY_THRESHOLD = 0.45;
+  const TIME_WINDOW_MS = 6 * 60 * 60 * 1000; // 6h
+  const now = Date.now();
+  const recent = allItems.filter(i => Math.abs(now - new Date(i.pubDate).getTime()) < TIME_WINDOW_MS);
+  let similarCount = 0;
+  for (const other of recent) {
+    if (other === item) continue;
+    const sim = jaccardSimilarity(titleToKeySet(item.title), titleToKeySet(other.title));
+    if (sim >= SIMILARITY_THRESHOLD) similarCount++;
+  }
+  // Penalty grows with the number of similar recent stories
+  return similarCount * 0.15; // each duplicate reduces score by 0.15
+}
+
+// Helper: Jaccard similarity (moved from page.tsx to share)
+function titleToKeySet(title: string): Set<string> {
+  const CLUSTER_STOPWORDS = new Set([
+    'a','an','the','and','or','but','in','on','at','to','for','of','with',
+    'by','from','as','is','was','are','were','be','been','being','have','has',
+    'had','do','does','did','will','would','could','should','may','might',
+    'says','said','over','after','before','into','through','about','against',
+    'between','into','during','without','within','along','following','across',
+    'up','down','out','off','over','under','again','its','it','this','that',
+    'these','those','than','then','so','yet','both','each','more','most',
+    'other','some','such','no','nor','not','only','own','same','too','very',
+    'can','just','us','new','amid','amid','report','reports','sources',
+  ]);
+  const RE_NON_ALNUM = /[^a-z0-9\s]/g;
+  const RE_WHITESPACE = /\s+/;
+  return new Set(
+    title
+      .toLowerCase()
+      .replace(RE_NON_ALNUM, '')
+      .split(RE_WHITESPACE)
+      .filter(w => w.length > 2 && !CLUSTER_STOPWORDS.has(w))
+  );
+}
+
+function jaccardSimilarity(a: Set<string>, b: Set<string>): number {
+  if (a.size === 0 && b.size === 0) return 1;
+  let intersection = 0;
+  a.forEach(w => { if (b.has(w)) intersection++; });
+  const union = a.size + b.size - intersection;
+  return union === 0 ? 0 : intersection / union;
+}
+
 // ── War Theater keywords ──────────────────────────────────────────────────────
-// Coverage: Iran · Gaza · Lebanon · Afghanistan · Pakistan — conflict, diplomacy, economics
 const IRAN_KEYWORDS = [
   // Core actors & places
   'iran', 'iranian', 'tehran', 'irgc', 'irgc-qf', 'quds force',
   'islamic republic', 'khamenei', 'rouhani', 'pezeshkian', 'raisi',
   'natanz', 'fordow', 'arak', 'bushehr', 'isfahan',
-
   // Nuclear
   'nuclear', 'uranium', 'centrifuge', 'iaea', 'enrichment',
   'nuclear deal', 'jcpoa', 'snapback', 'breakout',
-
   // Military / Strikes
   'strike', 'airstrike', 'drone strike', 'ballistic missile', 'hypersonic',
   'missile', 'rocket', 'artillery', 'bunker buster',
   'war', 'warfare', 'military operation', 'offensive', 'retaliation',
   'idf', 'israel', 'netanyahu', 'mossad', 'shin bet',
-
   // Gaza / Palestine
   'gaza', 'rafah', 'khan younis', 'jabalia', 'deir al-balah', 'beit lahiya',
   'hamas', 'islamic jihad', 'pij', 'west bank', 'unrwa', 'ramallah',
   'occupation', 'ceasefire', 'hostages', 'genocide', 'displacement', 'famine',
   'siege', 'blockade', 'ground invasion', 'settler violence', 'idf',
-
   // Lebanon
   'lebanon', 'beirut', 'south lebanon', 'litani', 'dahieh',
   'nasrallah', 'unifil', 'lebanese army', 'laf',
-
   // Proxy network / axis of resistance
   'hezbollah', 'houthi', 'houthis', 'ansarallah',
   'yemen', 'proxy', 'militia',
   'popular mobilization', 'pmu', 'hashd',
   'kataib hezbollah', 'axis of resistance',
-
   // Sea lanes & chokepoints
   'hormuz', 'strait of hormuz', 'persian gulf',
   'arabian sea', 'red sea', 'gulf of aden', 'bab el-mandeb',
   'suez', 'sumed pipeline',
   'tanker', 'oil tanker', 'vessel seized', 'maritime',
   'naval', 'frigate', 'destroyer', 'fleet',
-
   // Oil & energy markets
   'oil price', 'oil prices', 'brent crude', 'wti', 'opec', 'opec+',
   'barrel', 'crude oil', 'oil output', 'oil supply', 'oil sanctions',
   'lng', 'natural gas', 'pipeline', 'energy security',
-
   // Sanctions & finance
   'sanctions', 'us sanctions', 'eu sanctions', 'sanctions relief',
   'oil embargo', 'financial markets', 'risk premium', 'war premium',
   'currency', 'forex', 'bonds', 'yields', 'selloff', 'rally',
   'supply chain', 'logistics', 'freight', 'shipping', 'container',
   'chokepoint', 'rerouted', 'port congestion',
-
   // Afghanistan
   'afghanistan', 'afghan', 'taliban', 'kabul', 'kandahar', 'helmand', 'panjshir',
   'haqqani', 'islamic emirate', 'nrf', 'national resistance front',
   'ttp', 'tehrik-i-taliban', 'afghan war', 'afghan civilians',
   'doha agreement', 'afghan refugees',
-
   // Pakistan conflict
   'pakistan military', 'pakistan army', 'ispr', 'isi pakistan',
   'balochistan', 'bla', 'blf', 'ptm', 'pashtun tahafuz',
   'north waziristan', 'south waziristan', 'khyber pakhtunkhwa',
   'line of control', 'loc pakistan', 'pakistan india border',
   'karachi attack', 'pakistan terrorism', 'pakistan operation',
-
   // Superpower Pivot (China / Russia)
   'russia', 'russian', 'moscow', 'putin', 'kremlin', 'lavrov', 'tass',
   'china', 'chinese', 'beijing', 'xi jinping', 'brics', 'belt and road',
   'superpower', 'multiplex', 'global south',
-
   // Geopolitics
   'us military', 'pentagon', 'centcom', 'nato', 'russia iran', 'china iran',
   'gcc', 'arab league', 'normalization', 'abraham accords',
   'diplomacy', 'negotiations', 'ceasefire', 'hostilities',
   'refugee', 'humanitarian',
-
   // Commodities
   'wheat', 'grain', 'fertilizer', 'commodity', 'commodities', 'metals',
 ];
@@ -141,7 +338,21 @@ export function matchesIranTheater(item: {
   content?: string;
 }): boolean {
   const text = `${item.title || ''} ${item.contentSnippet || item.summary || ''}`.toLowerCase();
-  return IRAN_KEYWORDS.some(kw => text.includes(kw));
+  return IRAN_KEYWORDS.some((kw: string) => text.includes(kw));
+}
+
+export function scoreItem(item: FeedItem, allItems: FeedItem[]): {
+  relevanceScore: number;
+  noveltyPenalty: number;
+  trustWeight: number;
+  finalScore: number;
+} {
+  const text = `${item.title} ${item.summary}`.toLowerCase();
+  const relevanceScore = computeRelevanceScore(text);
+  const noveltyPenalty = computeNoveltyPenalty(item, allItems);
+  const trustWeight = SOURCE_TRUST[item.sourceId.toLowerCase()] ?? 0.5;
+  const finalScore = Math.max(0, relevanceScore - noveltyPenalty) * trustWeight;
+  return { relevanceScore, noveltyPenalty, trustWeight, finalScore };
 }
 
 export async function fetchFeed(source: {
@@ -208,74 +419,79 @@ export async function fetchFeed(source: {
     const etag         = res.headers.get('etag')          ?? undefined;
     const lastModified = res.headers.get('last-modified') ?? undefined;
 
-    // Pre-filtered sources (e.g. GDELT topic queries) are already topically
-    // scoped — skip the keyword filter and take the full result.
-    let filtered: typeof rawItems;
-    if (source.prefiltered) {
-      filtered = rawItems;
-    } else {
-      filtered = rawItems.filter(matchesIranTheater);
-      // Fallback: if nothing matched, take a small unfiltered sample
-      if (filtered.length === 0) filtered = rawItems.slice(0, 4);
-    }
+    // Normalize items to FeedItem and apply scoring
+    const items: FeedItem[] = rawItems.map(item => {
+      let title = (item.title || '').trim();
+      if (!title || title.toLowerCase() === 'no title') {
+        const summary = (item.contentSnippet || item.summary || '').replace(/<[^>]*>/g, '').trim();
+        title = summary ? (summary.slice(0, 80) + (summary.length > 80 ? '…' : '')) : 'Untitled Update';
+      }
 
-    const items: FeedItem[] = filtered
-      .slice(0, 15)
-      .map(item => {
-        let title = (item.title || '').trim();
-        if (!title || title.toLowerCase() === 'no title') {
-          // Fallback to summary if title is blank or generic
-          const summary = (item.contentSnippet || item.summary || '').replace(/<[^>]*>/g, '').trim();
-          title = summary ? (summary.slice(0, 80) + (summary.length > 80 ? '…' : '')) : 'Untitled Update';
+      let imageUrl = undefined;
+      if (item.enclosure && item.enclosure.url && item.enclosure.type && item.enclosure.type.startsWith('image/')) {
+        imageUrl = item.enclosure.url;
+      } else if (item['media:content'] && item['media:content'].$) {
+        const media = item['media:content'].$;
+        if (media.url && (media.type?.startsWith('image/') || media.medium === 'image')) {
+          imageUrl = media.url;
         }
+      }
 
-        // Simple heuristic to extract images from RSS standard enclosures or media content
-        let imageUrl = undefined;
-        if (item.enclosure && item.enclosure.url && item.enclosure.type && item.enclosure.type.startsWith('image/')) {
-          imageUrl = item.enclosure.url;
-        } else if (item['media:content'] && item['media:content'].$) {
-          const media = item['media:content'].$;
-          if (media.url && (media.type?.startsWith('image/') || media.medium === 'image')) {
-            imageUrl = media.url;
-          }
+      const rawLink = (item.link || item.guid || '').trim();
+      let resolvedLink = rawLink;
+      if (rawLink && !rawLink.startsWith('http')) {
+        try {
+          const base = new URL(source.url);
+          resolvedLink = new URL(rawLink, `${base.protocol}//${base.host}`).href;
+        } catch {
+          resolvedLink = '';
         }
+      }
+      const link = resolvedLink.startsWith('http') ? resolvedLink : '';
 
-        // Prefer item.link; fall back to item.guid (some feeds use <guid> as
-        // the canonical permalink with an empty or relative <link> element).
-        const rawLink = (item.link || item.guid || '').trim();
-        let resolvedLink = rawLink;
-        if (rawLink && !rawLink.startsWith('http')) {
-          // Relative URL — resolve against the feed's hostname
-          try {
-            const base  = new URL(source.url);
-            resolvedLink = new URL(rawLink, `${base.protocol}//${base.host}`).href;
-          } catch {
-            resolvedLink = '';
-          }
-        }
-        const link = resolvedLink.startsWith('http') ? resolvedLink : '';
+      const feedItem: FeedItem = {
+        title,
+        link,
+        pubDate: item.pubDate || item.isoDate || new Date().toISOString(),
+        summary: (item.contentSnippet || item.summary || '').replace(/<[^>]*>/g, '').trim(),
+        sourceId: source.id,
+        sourceName: source.name,
+        region: source.region,
+        sourceColor: source.color,
+        imageUrl,
+      };
 
-        return {
-          title,
-          link,
-          pubDate:     item.pubDate || item.isoDate || new Date().toISOString(),
-          summary:     (item.contentSnippet || item.summary || '').replace(/<[^>]*>/g, '').trim(),
-          sourceId:    source.id,
-          sourceName:  source.name,
-          region:      source.region,
-          sourceColor: source.color,
-          imageUrl,
-        };
-      });
+      // Apply scoring
+      const scores = scoreItem(feedItem, rawItems.map(i => ({
+        ...i,
+        sourceId: source.id,
+        sourceName: source.name,
+        region: source.region,
+        sourceColor: source.color,
+        title: i.title || '',
+        summary: i.contentSnippet || i.summary || '',
+        link: i.link || i.guid || '',
+        pubDate: i.pubDate || i.isoDate || '',
+      }) as FeedItem));
+      feedItem.relevanceScore = scores.relevanceScore;
+      feedItem.noveltyPenalty = scores.noveltyPenalty;
 
-    SOURCE_CACHE[cacheKey] = { items, timestamp: now, etag, lastModified };
+      return feedItem;
+    });
+
+    // Filter by Iran Theater keywords (if prefiltered is not set)
+    const filteredItems = source.prefiltered
+      ? items
+      : items.filter(matchesIranTheater);
+
+    SOURCE_CACHE[cacheKey] = { items: filteredItems, timestamp: now, etag, lastModified };
 
     return {
-      items,
+      items: filteredItems,
       health: {
         id: source.id, name: source.name, region: source.region,
-        ok: true, itemCount: items.length, fromCache: false,
-        emptyFeed: items.length === 0,
+        ok: true, itemCount: filteredItems.length, fromCache: false,
+        emptyFeed: filteredItems.length === 0,
       },
     };
   } catch (err) {

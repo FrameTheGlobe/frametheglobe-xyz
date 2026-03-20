@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { SOURCES, REGION_LABELS, Source } from '@/lib/sources';
 import type { SourceHealth } from '@/lib/fetcher';
+import { SOURCE_TRUST } from '@/lib/fetcher';
 import TopStorylines   from './components/TopStorylines';
 import BreakingTicker  from './components/BreakingTicker';
 import LiveVideoWidget from './components/LiveVideoWidget';
@@ -28,8 +29,10 @@ type FeedItem = {
   sourceId: string;
   sourceName: string;
   region: string;
-  imageUrl?: string;
   sourceColor: string;
+  imageUrl?: string;
+  relevanceScore?: number;
+  noveltyPenalty?: number;
 };
 
 type LensId =
@@ -37,6 +40,66 @@ type LensId =
   | 'nuclear' | 'naval' | 'proxy' | 'domestic'
   | 'oil' | 'commodities' | 'finance' | 'shipping' | 'supply'
   | 'trump' | 'china-pivot' | 'russia-news' | 'epstein';
+
+type AlertProfile = {
+  id: string;
+  name: string;
+  keywords: string[];
+  lenses: LensId[];
+  regions: string[];
+  threshold?: number; // minimum relevance score
+};
+
+const DEFAULT_ALERT_PROFILES: AlertProfile[] = [
+  {
+    id: 'nuclear-watch',
+    name: 'Nuclear Watch',
+    keywords: ['nuclear', 'uranium', 'centrifuge', 'natanz', 'fordow', 'enrichment', 'iaea', 'jcpoa', 'breakout'],
+    lenses: ['nuclear'],
+    regions: [],
+    threshold: 2.5,
+  },
+  {
+    id: 'oil-markets',
+    name: 'Oil & Energy',
+    keywords: ['oil', 'brent', 'wti', 'opec', 'gas', 'energy', 'sanctions', 'hormuz', 'tanker', 'pipeline', 'lng'],
+    lenses: ['oil', 'commodities', 'shipping'],
+    regions: [],
+    threshold: 2.0,
+  },
+  {
+    id: 'regional-escalation',
+    name: 'Regional Escalation',
+    keywords: ['airstrike', 'missile', 'attack', 'escalation', 'conflict', 'war', 'combat', 'invasion', 'casualties'],
+    lenses: ['gaza', 'lebanon', 'afghanistan', 'pakistan'],
+    regions: [],
+    threshold: 2.8,
+  },
+  {
+    id: 'cyber-threats',
+    name: 'Cyber Threats',
+    keywords: ['cyber', 'hack', 'cyberattack', 'ransomware', 'digital', 'cybersecurity', 'data breach'],
+    lenses: ['all'],
+    regions: [],
+    threshold: 2.2,
+  },
+  {
+    id: 'diplomacy-talks',
+    name: 'Diplomacy & Talks',
+    keywords: ['negotiations', 'ceasefire', 'talks', 'agreement', 'diplomacy', 'summit', 'meeting'],
+    lenses: ['all'],
+    regions: [],
+    threshold: 1.8,
+  },
+  {
+    id: 'economic-impact',
+    name: 'Economic Impact',
+    keywords: ['sanctions', 'currency', 'inflation', 'gdp', 'trade', 'embargo', 'financial markets'],
+    lenses: ['finance', 'commodities'],
+    regions: [],
+    threshold: 2.1,
+  },
+];
 
 type Theme = 'light' | 'dark';
 type ViewMode = 'list' | 'clusters' | 'map';
@@ -48,6 +111,14 @@ type Cluster = {
   title: string;
   items: FeedItem[];
   score: number; // For sorting clusters by size/recency
+  consensus?: number; // 0-1
+  contradiction?: number; // 0-1
+  corroborationCount?: number;
+  avgTrust?: number;
+  avgRelevance?: number;
+  hasMarketSignal?: boolean;
+  marketImpactHint?: string;
+  linkedSymbols?: string[];
 };
 
 // ── Lens definitions ──────────────────────────────────────────────────────────
@@ -225,11 +296,36 @@ function buildClusters(items: FeedItem[]): Cluster[] {
 
       const score = finalItems.length * recency * breakingBoost * diversityBoost * keywordBoost;
 
+      // ── CONSENSUS / CONTRADICTION ENRICHMENT ─────────────────────────────────────
+      const sourceIds = new Set(finalItems.map(i => i.sourceId));
+      const avgTrust = finalItems.reduce((sum, i) => sum + (SOURCE_TRUST[i.sourceId.toLowerCase()] ?? 0.5), 0) / finalItems.length;
+      const avgRelevance = finalItems.reduce((sum, i) => sum + (i.relevanceScore ?? 0), 0) / finalItems.length;
+      const avgNovelty = finalItems.reduce((sum, i) => sum + (i.noveltyPenalty ?? 0), 0) / finalItems.length;
+
+      // Consensus: high source diversity + high avg trust + high corroboration
+      const consensus = Math.min(1, (sourceIds.size / 5) * 0.4 + avgTrust * 0.4 + Math.min(1, finalItems.length / 6) * 0.2);
+
+      // Contradiction: high novelty penalty + low trust + low relevance (proxy for conflicting narratives)
+      const contradiction = Math.min(1, avgNovelty * 0.5 + (1 - avgTrust) * 0.3 + (1 - Math.max(0, avgRelevance / 5)) * 0.2);
+
+      // Corroboration count: number of independent sources
+      const corroborationCount = sourceIds.size;
+
+      // Market linkage hint: simple heuristic based on keywords
+      const marketKeywords = ['oil', 'brent', 'wti', 'opec', 'gas', 'energy', 'sanctions', 'currency'];
+      const hasMarketSignal = marketKeywords.some(k => titleWords.has(k)) || finalItems.some(i => marketKeywords.some(mk => i.title.toLowerCase().includes(mk) || i.summary.toLowerCase().includes(mk)));
+
       return {
-        id:    `cluster-${idx}`,
+        id: `cluster-${idx}`,
         title: finalItems[0]?.title || 'Untitled',
         items: finalItems,
-        score
+        score,
+        consensus,
+        contradiction,
+        corroborationCount,
+        avgTrust,
+        avgRelevance,
+        hasMarketSignal,
       };
     })
     .sort((a, b) => b.score - a.score);
@@ -257,7 +353,162 @@ function getAgeBadge(dateStr: string): 'breaking' | 'new' | null {
   return null;
 }
 
-// ── Region stats bar ───────────────────────────────────────────────────────────
+// ── Market linkage utilities ───────────────────────────────────────────────────────
+function computeMarketSignal(cluster: Cluster, marketData: Array<{ symbol: string; name: string; changePercent: number }>): {
+  hasMarketSignal: boolean;
+  marketImpactHint?: string;
+  linkedSymbols?: string[];
+} {
+  const keywords = new Set(
+    cluster.title.toLowerCase().split(/\s+/).concat(
+      cluster.items.flatMap(i => i.title.toLowerCase().split(/\s+/))
+    )
+  );
+  const linkedSymbols: string[] = [];
+  let impactHint = '';
+
+  // Simple keyword-to-symbol mapping
+  const symbolMap: Record<string, string[]> = {
+    'cl.f': ['oil', 'wti', 'crude'],
+    'cb.f': ['brent', 'oil', 'crude'],
+    'ng.f': ['gas', 'natural', 'lng'],
+    'ux.f': ['uranium', 'nuclear', 'enrichment'],
+    'tg.f': ['gas', 'europe', 'ttf'],
+    'rb.f': ['gasoline'],
+    'ho.f': ['heating', 'oil'],
+    'lu.f': ['coal'],
+    'lf.f': ['gasoil'],
+    // Additional commodity mappings (for future expansion)
+    'gc.f': ['gold', 'precious'],
+    'si.f': ['silver'],
+    'pl.f': ['platinum'],
+    'w.f': ['wheat'],
+    'c.f': ['copper'],
+    's.f': ['soybeans'],
+    // Forex correlations
+    'usdirr': ['iran', 'rial', 'currency'],
+    'usdils': ['israel', 'shekel', 'currency'],
+  };
+
+  for (const item of marketData) {
+    const triggers = symbolMap[item.symbol] || [];
+    if (triggers.some(t => keywords.has(t))) {
+      linkedSymbols.push(item.symbol);
+      if (Math.abs(item.changePercent) > 1) {
+        impactHint = `${item.name} ${item.changePercent > 0 ? 'up' : 'down'} ${Math.abs(item.changePercent).toFixed(1)}%`;
+      }
+    }
+  }
+
+  return {
+    hasMarketSignal: linkedSymbols.length > 0,
+    marketImpactHint: impactHint || undefined,
+    linkedSymbols,
+  };
+}
+
+function generateWhyMatters(item: FeedItem, cluster?: Cluster): string | null {
+  const relevance = item.relevanceScore ?? 0;
+  const keywords = `${item.title} ${item.summary}`.toLowerCase();
+  
+  // Nuclear implications
+  if (keywords.includes('nuclear') || keywords.includes('uranium')) {
+    return 'Nuclear proliferation risk';
+  }
+  
+  // Oil/energy impact
+  if (keywords.includes('oil') || keywords.includes('brent') || keywords.includes('hormuz')) {
+    return 'Energy markets at risk';
+  }
+  
+  // Military escalation
+  if (keywords.includes('airstrike') || keywords.includes('missile') || keywords.includes('attack')) {
+    return 'Military escalation';
+  }
+  
+  // High confidence items
+  if (relevance > 3.0) {
+    return 'High-confidence intelligence';
+  }
+  
+  // Market impact
+  if (cluster?.hasMarketSignal) {
+    return 'Market impact detected';
+  }
+  
+  // Contradiction detected
+  if (cluster && cluster.contradiction && cluster.contradiction > 0.6) {
+    return 'Conflicting narratives';
+  }
+  
+  return null;
+}
+
+function matchesAlertProfile(item: FeedItem, profile: AlertProfile): boolean {
+  const text = `${item.title} ${item.summary}`.toLowerCase();
+  const keywordMatch = profile.keywords.some(kw => text.includes(kw.toLowerCase()));
+  const lensMatch = profile.lenses.length === 0 || profile.lenses.some(lensId => itemMatchesLens(item, new Set([lensId])));
+  const regionMatch = profile.regions.length === 0 || profile.regions.includes(item.region);
+  const thresholdMatch = !profile.threshold || (item.relevanceScore ?? 0) >= profile.threshold;
+  return keywordMatch && lensMatch && regionMatch && thresholdMatch;
+}
+
+// ── Entity extraction and heatmap ───────────────────────────────────────────────
+function extractEntities(items: FeedItem[]): Record<string, number> {
+  const entityCounts: Record<string, number> = {};
+  const entities = [
+    // Core actors & locations
+    'iran', 'israel', 'gaza', 'lebanon', 'hezbollah', 'hamas', 'idf',
+    'tehran', 'beirut', 'rafah', 'khan younis', 'west bank',
+    // Nuclear
+    'nuclear', 'uranium', 'natanz', 'fordow', 'arak', 'bushehr', 'iaea', 'jcpoa',
+    // Energy & shipping
+    'oil', 'brent', 'wti', 'opec', 'hormuz', 'tanker', 'gas', 'lng', 'pipeline',
+    'red sea', 'bab el-mandeb', 'suez', 'strait of hormuz',
+    // Military & security
+    'missile', 'airstrike', 'drone', 'attack', 'explosion', 'casualties',
+    'pentagon', 'centcom', 'nato', 'irgc', 'quds force',
+    // Regional actors
+    'russia', 'china', 'us', 'uk', 'eu', 'un',
+    'afghanistan', 'taliban', 'pakistan', 'ttp',
+    'syria', 'assad', 'turkey', 'erdogan',
+    'yemen', 'houthi', 'houthis',
+    'iraq', 'baghdad',
+    // Economic
+    'sanctions', 'currency', 'inflation', 'dollar', 'euro',
+    'world bank', 'imf', 'gold', 'commodities',
+    // Cyber & tech
+    'cyber', 'hack', 'cyberattack', 'ransomware', 'satellite',
+    // Diplomacy
+    'ceasefire', 'negotiations', 'talks', 'agreement', 'diplomacy', 'summit',
+  ];
+  items.forEach(item => {
+    const text = `${item.title} ${item.summary}`.toLowerCase();
+    entities.forEach(entity => {
+      if (text.includes(entity)) {
+        entityCounts[entity] = (entityCounts[entity] || 0) + 1;
+      }
+    });
+  });
+  return entityCounts;
+}
+
+// ── Timeline cues (activity density over time) ─────────────────────────────────────
+function computeTimelineCues(items: FeedItem[]): Array<{ hour: number; count: number; label: string }> {
+  const now = Date.now();
+  const hourlyBuckets = new Array(24).fill(0).map((_, i) => ({
+    hour: i,
+    count: 0,
+    label: i === 0 ? 'now' : i < 24 ? `-${i}h` : `-${Math.floor(i/24)}d`,
+  }));
+  items.forEach(item => {
+    const ageHours = Math.floor((now - new Date(item.pubDate).getTime()) / (1000 * 60 * 60));
+    if (ageHours < 24) {
+      hourlyBuckets[ageHours].count += 1;
+    }
+  });
+  return hourlyBuckets.slice(0, 12); // Show last 12 hours
+}
 function RegionStatsStrip({ items }: { items: FeedItem[] }) {
   if (!items.length) return null;
   const counts: Record<string, number> = {};
@@ -780,6 +1031,10 @@ export default function Home() {
   const [loadingDone, setLoadingDone]             = useState(false);
   const loadingScreenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [sourceHealth, setSourceHealth] = useState<SourceHealth[]>([]);
+  const [marketData, setMarketData]     = useState<Array<{ symbol: string; name: string; changePercent: number }>>([]);
+  const [alertProfiles, setAlertProfiles] = useState<AlertProfile[]>([]);
+  const [activeAlertProfile, setActiveAlertProfile] = useState<string | null>(null);
+  const [analystMode, setAnalystMode]   = useState<'reader' | 'ops'>('reader');
   const [activeSources, setActiveSources] = useState<Set<string>>(
     new Set(SOURCES.map(s => s.id))
   );
@@ -950,6 +1205,40 @@ export default function Home() {
     try { window.localStorage.setItem('ftg_pins', JSON.stringify(pinnedKeys)); } catch { /* ignore */ }
   }, [pinnedKeys]);
 
+  // ── Alert profiles persistence ─────────────────────────────────────────────
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = window.localStorage.getItem('ftg_alert_profiles');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        setAlertProfiles(Array.isArray(parsed) ? parsed : DEFAULT_ALERT_PROFILES);
+      } else {
+        setAlertProfiles(DEFAULT_ALERT_PROFILES);
+      }
+    } catch {
+      setAlertProfiles(DEFAULT_ALERT_PROFILES);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try { window.localStorage.setItem('ftg_alert_profiles', JSON.stringify(alertProfiles)); } catch { /* ignore */ }
+  }, [alertProfiles]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = window.localStorage.getItem('ftg_analyst_mode');
+      setAnalystMode((raw === 'ops') ? 'ops' : 'reader');
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try { window.localStorage.setItem('ftg_analyst_mode', analystMode); } catch { /* ignore */ }
+  }, [analystMode]);
+
   // ── Read/unread persistence ───────────────────────────────────────────────
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -1003,15 +1292,30 @@ export default function Home() {
   const fetchNews = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/news');
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      setItems(data.items || []);
-      if (Array.isArray(data.health)) setSourceHealth(data.health);
-      lastFetchedAtRef.current = Date.now();
+      const [newsRes, marketRes] = await Promise.allSettled([
+        fetch('/api/news'),
+        fetch('/api/market'),
+      ]);
+      if (newsRes.status === 'fulfilled') {
+        const data = await newsRes.value.json();
+        setItems(data.items || []);
+        if (Array.isArray(data.health)) setSourceHealth(data.health);
+        lastFetchedAtRef.current = Date.now();
+      } else {
+        console.error('[FTG] News fetch error:', newsRes.reason);
+        setItems([]);
+      }
+      if (marketRes.status === 'fulfilled') {
+        const data = await marketRes.value.json();
+        setMarketData(Array.isArray(data) ? data : []);
+      } else {
+        console.warn('[FTG] Market fetch failed, using empty:', marketRes.reason);
+        setMarketData([]);
+      }
     } catch (err) {
-      console.error('[FTG] News fetch error:', err);
+      console.error('[FTG] Fetch error:', err);
       setItems([]);
+      setMarketData([]);
     } finally {
       setLoading(false);
     }
@@ -1305,11 +1609,18 @@ export default function Home() {
   );
 
   const visibleItems = useMemo(() => {
-    const filtered = filteredByRegion.filter(i => itemMatchesSearch(i, debouncedSearch));
-    if (sortMode === 'date-asc') return [...filtered].reverse();
-    if (sortMode === 'source') return [...filtered].sort((a, b) => a.sourceName.localeCompare(b.sourceName));
-    return filtered;
-  }, [filteredByRegion, debouncedSearch, sortMode]);
+  let filtered = filteredByRegion.filter(i => itemMatchesSearch(i, debouncedSearch));
+  // Apply active alert profile if set
+  if (activeAlertProfile) {
+    const profile = alertProfiles.find(p => p.id === activeAlertProfile);
+    if (profile) {
+      filtered = filtered.filter(i => matchesAlertProfile(i, profile));
+    }
+  }
+  if (sortMode === 'date-asc') return [...filtered].reverse();
+  if (sortMode === 'source') return [...filtered].sort((a, b) => a.sourceName.localeCompare(b.sourceName));
+  return filtered;
+}, [filteredByRegion, debouncedSearch, sortMode, activeAlertProfile, alertProfiles]);
 
   const pinnedItems = useMemo(
     () => visibleItems.filter(i => pinnedKeys.includes(keyForItem(i))),
@@ -1345,8 +1656,16 @@ export default function Home() {
   }, [filteredBySource]);
 
   const clusters = useMemo(
-    () => buildClusters(visibleItems),
-    [visibleItems]
+    () => buildClusters(visibleItems).map(cluster => {
+      const marketSignal = computeMarketSignal(cluster, marketData);
+      return {
+        ...cluster,
+        hasMarketSignal: marketSignal.hasMarketSignal,
+        marketImpactHint: marketSignal.marketImpactHint,
+        linkedSymbols: marketSignal.linkedSymbols,
+      };
+    }),
+    [visibleItems, marketData]
   );
 
   // ── Coverage map: how many sources cover same event ───────────────────────
@@ -1402,6 +1721,10 @@ export default function Home() {
       return lower.some(kw => text.includes(kw));
     });
   }, [visibleItems, watchlistKeywords]);
+
+  // ── Entity heatmap and timeline cues ───────────────────────────────────────
+  const entityHeatmap = useMemo(() => extractEntities(visibleItems), [visibleItems]);
+  const timelineCues = useMemo(() => computeTimelineCues(visibleItems), [visibleItems]);
 
   // ── Comparison map: per item key → sibling items in same cluster ──────────
   const comparisonMap = useMemo(() => {
@@ -1555,6 +1878,127 @@ export default function Home() {
                 </div>
               )}
             </div>
+
+            {/* ── Alert Profiles ─────────────────────────────────────────── */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 12, borderTop: '1px solid var(--border-light)' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.12em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                ⚡ Alert Profiles
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {alertProfiles.map(profile => (
+                  <button
+                    key={profile.id}
+                    onClick={() => setActiveAlertProfile(activeAlertProfile === profile.id ? null : profile.id)}
+                    style={{
+                      fontFamily: 'var(--font-mono)', fontSize: 11,
+                      padding: '4px 8px', border: '1px solid var(--border-light)',
+                      background: activeAlertProfile === profile.id ? 'var(--accent)' : 'var(--surface)',
+                      color: activeAlertProfile === profile.id ? '#fff' : 'var(--text-primary)',
+                      cursor: 'pointer', textAlign: 'left',
+                      borderRadius: 3,
+                    }}
+                  >
+                    {profile.name}
+                    {profile.threshold && (
+                      <span style={{ opacity: 0.7, marginLeft: 4 }}>
+                        (≥{profile.threshold})
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Analyst Mode ───────────────────────────────────────────── */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 12, borderTop: '1px solid var(--border-light)' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.12em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                🎯 Analyst Mode
+              </div>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <button
+                  onClick={() => setAnalystMode('reader')}
+                  style={{
+                    flex: 1, fontFamily: 'var(--font-mono)', fontSize: 11,
+                    padding: '4px 8px', border: '1px solid var(--border-light)',
+                    background: analystMode === 'reader' ? 'var(--accent)' : 'var(--surface)',
+                    color: analystMode === 'reader' ? '#fff' : 'var(--text-primary)',
+                    cursor: 'pointer', borderRadius: 3,
+                  }}
+                >
+                  Reader
+                </button>
+                <button
+                  onClick={() => setAnalystMode('ops')}
+                  style={{
+                    flex: 1, fontFamily: 'var(--font-mono)', fontSize: 11,
+                    padding: '4px 8px', border: '1px solid var(--border-light)',
+                    background: analystMode === 'ops' ? 'var(--accent)' : 'var(--surface)',
+                    color: analystMode === 'ops' ? '#fff' : 'var(--text-primary)',
+                    cursor: 'pointer', borderRadius: 3,
+                  }}
+                >
+                  Ops
+                </button>
+              </div>
+            </div>
+
+            {/* ── Entity Heatmap (Ops mode only) ─────────────────────────────── */}
+            {analystMode === 'ops' && Object.entries(entityHeatmap).length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 12, borderTop: '1px solid var(--border-light)' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.12em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                  🔥 Entity Heatmap
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                  {Object.entries(entityHeatmap)
+                    .sort(([, a], [, b]) => b - a)
+                    .slice(0, 12)
+                    .map(([entity, count]) => (
+                      <span key={entity} style={{
+                        fontFamily: 'var(--font-mono)', fontSize: 10,
+                        background: `rgba(231, 76, 60, ${Math.min(1, count / 10)})`,
+                        color: count > 5 ? '#fff' : 'var(--text-primary)',
+                        padding: '2px 5px', borderRadius: 2,
+                      }}>
+                        {entity} ({count})
+                      </span>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── Timeline Activity (Ops mode only) ───────────────────────────── */}
+            {analystMode === 'ops' && timelineCues.some(c => c.count > 0) && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 12, borderTop: '1px solid var(--border-light)' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.12em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                  📈 Activity (12h)
+                </div>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 40 }}>
+                  {timelineCues.map(cue => (
+                    <div key={cue.hour} style={{
+                      flex: 1,
+                      background: cue.count > 0 ? 'var(--accent)' : 'var(--border-light)',
+                      height: `${Math.max(2, (cue.count / Math.max(...timelineCues.map(c => c.count))) * 100)}%`,
+                      borderRadius: 2,
+                      position: 'relative',
+                    }}>
+                      {cue.count > 0 && (
+                        <div style={{
+                          position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
+                          fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)',
+                          marginBottom: 2,
+                        }}>
+                          {cue.count}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)' }}>
+                  <span>now</span>
+                  <span>-12h</span>
+                </div>
+              </div>
+            )}
           </div>
         </aside>
 
@@ -1914,7 +2358,7 @@ export default function Home() {
                         )}
                         <div style={{ flex: 1, minWidth: 0 }}>
                           {/* Title row */}
-                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7, marginBottom: 5 }}>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7, marginBottom: 5, flexWrap: 'wrap' }}>
                             {badge === 'breaking' && (
                               <span style={{
                                 fontFamily: 'var(--font-mono)', fontSize: 14, letterSpacing: '0.1em',
@@ -1937,35 +2381,71 @@ export default function Home() {
                                 New
                               </span>
                             )}
+                            {/* Confidence/Trust badge */}
+                            {analystMode === 'ops' && (item.relevanceScore ?? 0) > 2.5 && (
+                              <span style={{
+                                fontFamily: 'var(--font-mono)', fontSize: 11,
+                                color: '#fff', background: 'rgba(46, 204, 113, 0.9)',
+                                border: '1px solid rgba(46, 204, 113, 0.3)', padding: '2px 6px', borderRadius: 2,
+                              }}>
+                                High Confidence
+                              </span>
+                            )}
+                            {/* Corroboration badge */}
+                            {analystMode === 'ops' && coverageCount > 2 && (
+                              <span style={{
+                                fontFamily: 'var(--font-mono)', fontSize: 11,
+                                color: '#fff', background: 'rgba(52, 152, 219, 0.9)',
+                                border: '1px solid rgba(52, 152, 219, 0.3)', padding: '2px 6px', borderRadius: 2,
+                              }}>
+                                {coverageCount} sources
+                              </span>
+                            )}
+                            {/* Market impact badge */}
+                            {analystMode === 'ops' && (() => {
+                              const cluster = clusters.find(c => c.items.some(i => keyForItem(i) === itemKey));
+                              return cluster?.hasMarketSignal && cluster?.marketImpactHint;
+                            })() && (
+                              <span style={{
+                                fontFamily: 'var(--font-mono)', fontSize: 11,
+                                color: '#fff', background: 'rgba(241, 196, 15, 0.9)',
+                                border: '1px solid rgba(241, 196, 15, 0.3)', padding: '2px 6px', borderRadius: 2,
+                              }}>
+                                {(() => {
+                                  const cluster = clusters.find(c => c.items.some(i => keyForItem(i) === itemKey));
+                                  return cluster?.marketImpactHint || 'Market Signal';
+                                })()}
+                              </span>
+                            )}
+                            {/* Contradiction badge */}
+                            {analystMode === 'ops' && (() => {
+                              const cluster = clusters.find(c => c.items.some(i => keyForItem(i) === itemKey));
+                              return cluster && cluster.contradiction && cluster.contradiction > 0.6;
+                            })() && (
+                              <span style={{
+                                fontFamily: 'var(--font-mono)', fontSize: 11,
+                                color: '#fff', background: 'rgba(231, 76, 60, 0.9)',
+                                border: '1px solid rgba(231, 76, 60, 0.3)', padding: '2px 6px', borderRadius: 2,
+                              }}>
+                                Contradiction
+                              </span>
+                            )}
                             {isDeveloping && (
                               <span style={{
-                                fontFamily: 'var(--font-mono)', fontSize: 13, letterSpacing: '0.1em',
-                                textTransform: 'uppercase', flexShrink: 0, marginTop: 2,
-                                color: '#27ae60', background: 'rgba(39,174,96,0.1)',
-                                border: '1px solid rgba(39,174,96,0.35)', padding: '2px 8px', borderRadius: 2,
+                                fontFamily: 'var(--font-mono)', fontSize: 11,
+                                color: '#fff', background: 'rgba(155, 89, 182, 0.9)',
+                                border: '1px solid rgba(155, 89, 182, 0.3)', padding: '2px 6px', borderRadius: 2,
                               }}>
-                                ↑ Developing
+                                Developing
                               </span>
                             )}
                             {hasCrossConsensus && (
-                              <span
-                                title="Western and counter-narrative sources both covering this"
-                                style={{
-                                  fontFamily: 'var(--font-mono)', fontSize: 13, letterSpacing: '0.1em',
-                                  textTransform: 'uppercase', flexShrink: 0, marginTop: 2,
-                                  color: '#9b59b6', background: 'rgba(155,89,182,0.1)',
-                                  border: '1px solid rgba(155,89,182,0.35)', padding: '2px 8px', borderRadius: 2,
-                                }}>
-                                ⚑ Cross-divide
-                              </span>
-                            )}
-                            {coverageCount > 2 && (
                               <span style={{
-                                fontFamily: 'var(--font-mono)', fontSize: 13, letterSpacing: '0.06em',
-                                flexShrink: 0, marginTop: 4,
-                                color: 'var(--text-muted)',
+                                fontFamily: 'var(--font-mono)', fontSize: 11,
+                                color: '#fff', background: 'rgba(230, 126, 34, 0.9)',
+                                border: '1px solid rgba(230, 126, 34, 0.3)', padding: '2px 6px', borderRadius: 2,
                               }}>
-                                ● {coverageCount} sources
+                                Cross-Consensus
                               </span>
                             )}
                             <a
@@ -2006,6 +2486,22 @@ export default function Home() {
                               {truncate(item.summary, 200)}
                             </p>
                           )}
+
+                          {/* Why this matters (Ops mode only) */}
+                          {analystMode === 'ops' && (() => {
+                            const cluster = clusters.find(c => c.items.some(i => keyForItem(i) === itemKey));
+                            const whyMatters = generateWhyMatters(item, cluster);
+                            return whyMatters ? (
+                              <div style={{
+                                fontFamily: 'var(--font-mono)', fontSize: 11,
+                                color: '#fff', background: 'rgba(52, 73, 94, 0.9)',
+                                border: '1px solid rgba(52, 73, 94, 0.3)', padding: '3px 8px', borderRadius: 3,
+                                display: 'inline-block', marginBottom: 8,
+                              }}>
+                                🎯 {whyMatters}
+                              </div>
+                            ) : null;
+                          })()}
                         </div>
                       </div>
 
@@ -2095,15 +2591,34 @@ export default function Home() {
                     }}>
                       {cluster.title}
                     </h2>
-                    <span style={{
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: 10,
-                      color: 'var(--text-muted)',
-                      letterSpacing: '0.04em',
-                      flexShrink: 0,
-                    }}>
-                      {cluster.items.length} reports · {new Set(cluster.items.map(i => i.region)).size} regions
-                    </span>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
+                      {cluster.corroborationCount && cluster.corroborationCount > 2 && (
+                        <span style={{
+                          fontFamily: 'var(--font-mono)', fontSize: 10,
+                          color: '#fff', background: 'rgba(52, 152, 219, 0.9)',
+                          border: '1px solid rgba(52, 152, 219, 0.3)', padding: '2px 5px', borderRadius: 2,
+                        }}>
+                          {cluster.corroborationCount} sources
+                        </span>
+                      )}
+                      {cluster.hasMarketSignal && (
+                        <span style={{
+                          fontFamily: 'var(--font-mono)', fontSize: 10,
+                          color: '#fff', background: 'rgba(241, 196, 15, 0.9)',
+                          border: '1px solid rgba(241, 196, 15, 0.3)', padding: '2px 5px', borderRadius: 2,
+                        }}>
+                          Market
+                        </span>
+                      )}
+                      <span style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: 10,
+                        color: 'var(--text-muted)',
+                        letterSpacing: '0.04em',
+                      }}>
+                        {cluster.items.length} reports · {new Set(cluster.items.map(i => i.region)).size} regions
+                      </span>
+                    </div>
                   </div>
 
                   {/* ── Story arc timeline ─────────────────────────────── */}
