@@ -56,12 +56,12 @@ function BreakingTicker({ items }: Props) {
         bottom:         0,
         display:        'flex',
         alignItems:     'center',
-        padding:        '0 14px',
+        padding:        '0 16px',
         background:     'var(--accent-hover)',
         fontFamily:     'var(--font-mono)',
-        fontSize:       9,
-        fontWeight:     700,
-        letterSpacing:  '0.18em',
+        fontSize:       11,
+        fontWeight:     800,
+        letterSpacing:  '0.14em',
         color:          '#fff',
         textTransform:  'uppercase',
         zIndex:         2,
@@ -86,22 +86,22 @@ function BreakingTicker({ items }: Props) {
               rel="noopener noreferrer"
               style={{
                 fontFamily:    'var(--font-body)',
-                fontSize:      13,
+                fontSize:      14,
                 fontWeight:    500,
                 color:         'rgba(255,255,255,0.95)',
                 textDecoration:'none',
-                padding:       '6px 0',
+                padding:       '8px 0',
                 transition:    'color 0.1s',
               }}
               onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
               onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.95)')}
             >
-              <span style={{ fontWeight: 600, marginRight: 5, color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              <span style={{ fontWeight: 700, marginRight: 6, color: 'rgba(255,255,255,0.7)', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                 {item.sourceName}
               </span>
               {item.title}
             </a>
-            <span style={{ margin: '0 25px', color: 'rgba(255,255,255,0.25)', fontSize: 9 }}>◆</span>
+            <span style={{ margin: '0 30px', color: 'rgba(255,255,255,0.25)', fontSize: 11 }}>◆</span>
           </span>
         ))}
       </div>

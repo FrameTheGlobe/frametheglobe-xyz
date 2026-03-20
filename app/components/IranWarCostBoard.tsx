@@ -83,9 +83,9 @@ export default function IranWarCostBoard() {
             U.S. CENTRAL COMMAND · WAR EXPENDITURE · V2.2-TAC
           </span>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <div style={{ fontFamily: mono, fontSize: 8, padding: '2px 6px', background: red, color: '#fff', borderRadius: 2 }}>TOP SECRET // NOCON</div>
-          <div style={{ fontFamily: mono, fontSize: 8, padding: '2px 6px', background: 'var(--border-light)', borderRadius: 2 }}>SECURE LINK ACTIVE</div>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ fontFamily: mono, fontSize: 11, padding: '3px 8px', background: red, color: '#fff', borderRadius: 2, fontWeight: 700 }}>TOP SECRET // NOCON</div>
+          <div style={{ fontFamily: mono, fontSize: 11, padding: '3px 8px', background: 'var(--border-light)', borderRadius: 2, fontWeight: 700 }}>SECURE LINK ACTIVE</div>
         </div>
       </div>
 
@@ -101,11 +101,11 @@ export default function IranWarCostBoard() {
             }}>
               {formatDollars(cost)}
             </div>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginBottom: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 18, marginBottom: 24 }}>
               {BURN_RATES.map(b => (
-                <div key={b.label} style={{ display: 'flex', gap: 5, alignItems: 'baseline' }}>
-                  <span style={{ fontFamily: mono, fontSize: 7, color: muted }}>{b.label.toUpperCase()}:</span>
-                  <span style={{ fontFamily: mono, fontSize: 10, fontWeight: 700, color: 'var(--text-primary)' }}>{b.value}</span>
+                <div key={b.label} style={{ display: 'flex', gap: 6, alignItems: 'baseline' }}>
+                  <span style={{ fontFamily: mono, fontSize: 11, color: muted, fontWeight: 600 }}>{b.label.toUpperCase()}:</span>
+                  <span style={{ fontFamily: mono, fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>{b.value}</span>
                 </div>
               ))}
             </div>
@@ -130,15 +130,15 @@ export default function IranWarCostBoard() {
           <div style={{ display: 'flex', flexWrap: 'wrap', borderTop: `1px solid ${border}` }}>
             <div style={{ flex: '1 1 240px', padding: '10px', borderRight: `1px solid ${border}` }}>
               <div style={{ fontFamily: mono, fontSize: 8, fontWeight: 700, color: muted, marginBottom: 8, letterSpacing: '0.05em' }}>MUNITIONS</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px' }}>
                 {MUNITIONS.slice(0, 4).map(m => (
                   <div key={m.n}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-                      <span style={{ fontFamily: mono, fontSize: 7, opacity: 0.9 }}>{m.n}</span>
-                      <span style={{ fontFamily: mono, fontSize: 7, color: red }}>{m.q}</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span style={{ fontFamily: mono, fontSize: 11, opacity: 0.9, fontWeight: 500 }}>{m.n}</span>
+                      <span style={{ fontFamily: mono, fontSize: 11, color: red, fontWeight: 700 }}>{m.q}</span>
                     </div>
-                    <div style={{ height: 2, background: 'rgba(255,255,255,0.05)', borderRadius: 1 }}>
-                       <div style={{ height: '100%', width: `${m.p}%`, background: red, borderRadius: 1 }} />
+                    <div style={{ height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2 }}>
+                       <div style={{ height: '100%', width: `${m.p}%`, background: red, borderRadius: 2 }} />
                     </div>
                   </div>
                 ))}
@@ -146,11 +146,11 @@ export default function IranWarCostBoard() {
             </div>
             <div style={{ flex: '1 1 200px', padding: '10px' }}>
               <div style={{ fontFamily: mono, fontSize: 8, fontWeight: 700, color: muted, marginBottom: 8, letterSpacing: '0.05em' }}>THEATER ASSETS</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
                  {ASSETS.slice(0, 6).map(a => (
-                   <div key={a.l} style={{ padding: '4px', border: `1px solid ${border}`, borderRadius: 2, background: 'rgba(255,255,255,0.01)', textAlign: 'center' }}>
-                      <div style={{ fontFamily: mono, fontSize: 5, color: muted, whiteSpace: 'nowrap' }}>{a.l}</div>
-                      <div style={{ fontFamily: mono, fontSize: 10, fontWeight: 800, lineHeight: 1 }}>{a.v}</div>
+                   <div key={a.l} style={{ padding: '6px', border: `1px solid ${border}`, borderRadius: 4, background: 'rgba(255,255,255,0.01)', textAlign: 'center' }}>
+                      <div style={{ fontFamily: mono, fontSize: 10, color: muted, whiteSpace: 'nowrap', textTransform: 'uppercase', fontWeight: 600 }}>{a.l}</div>
+                      <div style={{ fontFamily: mono, fontSize: 14, fontWeight: 900, lineHeight: 1.2 }}>{a.v}</div>
                    </div>
                  ))}
               </div>
@@ -162,14 +162,14 @@ export default function IranWarCostBoard() {
         <div style={{ flex: '1 1 300px', background: 'rgba(255,255,255,0.01)' }}>
           <div style={{ padding: '16px', borderBottom: `1px solid ${border}` }}>
             <div style={{ fontFamily: mono, fontSize: 9, fontWeight: 700, color: muted, marginBottom: 12 }}>STRATEGIC ENGAGEMENT LOG</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {RECENT_HISTORY.map((h, i) => (
-                <div key={i} style={{ borderLeft: `1px solid ${border}`, paddingLeft: 10 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-                    <span style={{ fontFamily: mono, fontSize: 7, color: red, fontWeight: 700 }}>{h.t}</span>
-                    <span style={{ fontFamily: mono, fontSize: 7, color: muted }}>{h.c}</span>
+                <div key={i} style={{ borderLeft: `2px solid ${red}33`, paddingLeft: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontFamily: mono, fontSize: 11, color: red, fontWeight: 800 }}>{h.t}</span>
+                    <span style={{ fontFamily: mono, fontSize: 11, color: muted, fontWeight: 600 }}>{h.c}</span>
                   </div>
-                  <div style={{ fontFamily: mono, fontSize: 8, color: 'var(--text-secondary)', lineHeight: 1.3 }}>{h.e}</div>
+                  <div style={{ fontFamily: mono, fontSize: 12, color: 'var(--text-primary)', lineHeight: 1.4, fontWeight: 500 }}>{h.e}</div>
                 </div>
               ))}
             </div>
@@ -178,18 +178,18 @@ export default function IranWarCostBoard() {
           <div style={{ padding: '16px' }}>
              <div style={{ fontFamily: mono, fontSize: 9, fontWeight: 700, color: muted, marginBottom: 12 }}>CASUALTY TRACKER</div>
              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-               {HUMAN_COST.map(h => (
-                 <div key={h.l} style={{ padding: '10px', border: `1px solid ${border}`, borderRadius: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                   <div>
-                     <div style={{ fontFamily: mono, fontSize: 7, color: muted, marginBottom: 2 }}>{h.l}</div>
-                     <div style={{ fontFamily: mono, fontSize: 18, fontWeight: 900, color: h.c }}>{h.k} <span style={{ fontSize: 9, opacity: 0.6 }}>KILLED</span></div>
-                   </div>
-                   <div style={{ textAlign: 'right' }}>
-                     <div style={{ fontFamily: mono, fontSize: 13, fontWeight: 700, color: h.c }}>{h.w}</div>
-                     <div style={{ fontFamily: mono, fontSize: 6, color: muted }}>WOUNDED</div>
-                   </div>
-                 </div>
-               ))}
+                {HUMAN_COST.map(h => (
+                  <div key={h.l} style={{ padding: '12px', border: `1px solid ${border}`, borderRadius: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontFamily: mono, fontSize: 11, color: muted, marginBottom: 4, fontWeight: 700 }}>{h.l}</div>
+                      <div style={{ fontFamily: mono, fontSize: 22, fontWeight: 900, color: h.c, letterSpacing: '-0.01em' }}>{h.k} <span style={{ fontSize: 11, opacity: 0.7, fontWeight: 800 }}>KILLED</span></div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontFamily: mono, fontSize: 16, fontWeight: 800, color: h.c }}>{h.w}</div>
+                      <div style={{ fontFamily: mono, fontSize: 9, color: muted, fontWeight: 700 }}>WOUNDED</div>
+                    </div>
+                  </div>
+                ))}
              </div>
           </div>
         </div>

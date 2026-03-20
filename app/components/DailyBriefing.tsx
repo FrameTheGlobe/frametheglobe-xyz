@@ -65,10 +65,10 @@ export default function DailyBriefing({ clusters, onDismiss }: Props) {
     >
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-primary)' }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-primary)' }}>
           📋 DAILY BRIEFING
         </div>
-        <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{todayDate}</div>
+        <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>{todayDate}</div>
         <button
           onClick={onDismiss}
           style={{
@@ -87,7 +87,7 @@ export default function DailyBriefing({ clusters, onDismiss }: Props) {
       </div>
 
       {/* Subtitle */}
-      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '16px' }}>
+      <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '18px', lineHeight: 1.5 }}>
         Top stories from the past 12 hours across {totalSources} sources
       </div>
 
@@ -101,10 +101,10 @@ export default function DailyBriefing({ clusters, onDismiss }: Props) {
                 style={{
                   background: 'var(--accent)',
                   color: '#fff',
-                  fontSize: '10px',
-                  fontWeight: 600,
-                  padding: '2px 8px',
-                  borderRadius: '12px',
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  padding: '3px 10px',
+                  borderRadius: '4px',
                   whiteSpace: 'nowrap',
                   minWidth: 'fit-content',
                 }}
@@ -114,10 +114,11 @@ export default function DailyBriefing({ clusters, onDismiss }: Props) {
               <div
                 style={{
                   fontFamily: 'var(--font-display)',
-                  fontSize: '14px',
-                  fontWeight: 600,
+                  fontSize: '16px',
+                  fontWeight: 700,
                   color: 'var(--text-primary)',
                   flex: 1,
+                  lineHeight: 1.4
                 }}
               >
                 {cluster.title}
@@ -149,10 +150,10 @@ export default function DailyBriefing({ clusters, onDismiss }: Props) {
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{
-                    fontSize: '12px',
+                    fontSize: '13px',
                     color: 'var(--text-secondary)',
                     textDecoration: 'none',
-                    lineHeight: '1.4',
+                    lineHeight: '1.5',
                   }}
                   onMouseEnter={e => {
                     (e.currentTarget as HTMLAnchorElement).style.color = 'var(--accent)';

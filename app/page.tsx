@@ -1488,12 +1488,12 @@ export default function Home() {
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              fontSize: 9,
+              fontSize: 12,
               fontFamily: 'var(--font-mono)',
-              letterSpacing: '0.15em',
+              letterSpacing: '0.12em',
               background: 'var(--surface)',
               color: 'var(--text-secondary)',
-              fontWeight: 600
+              fontWeight: 700
             }}>
               <div style={{ display: 'flex', gap: 30 }}>
                 <span>NODE: <span style={{ color: 'var(--accent)', fontWeight: 800 }}>HORMUZ-SECTOR-7</span></span>
@@ -1544,9 +1544,9 @@ export default function Home() {
               {/* Left Comms Block */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                   <span className="hud-mini-label" style={{ fontSize: 8, color: 'var(--text-primary)', fontWeight: 800, letterSpacing: '0.1em' }}>COMM LINK</span>
+                   <span className="hud-mini-label" style={{ fontSize: 11, color: 'var(--text-primary)', fontWeight: 800, letterSpacing: '0.12em' }}>COMM LINK</span>
                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ color: loading ? 'var(--neon-amber)' : 'var(--neon-green)', fontSize: 11, fontWeight: 900 }}>{loading ? 'SYNCING' : 'ONLINE'}</span>
+                      <span style={{ color: loading ? 'var(--neon-amber)' : 'var(--neon-green)', fontSize: 13, fontWeight: 900 }}>{loading ? 'SYNCING' : 'ONLINE'}</span>
                       <div className={!loading ? "live-dot hud-glitch-active" : ""} style={{ width: 6, height: 6, background: loading ? 'var(--neon-amber)' : 'var(--neon-green)' }} />
                    </div>
                 </div>
@@ -1565,10 +1565,10 @@ export default function Home() {
               {/* Right Temporal Block */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                   <span className="hud-mini-label" style={{ fontSize: 8, color: 'var(--text-primary)', fontWeight: 800, letterSpacing: '0.1em' }}>MISSION CHRONO</span>
-                   <span style={{ fontSize: 16, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontWeight: 900 }}>
+                   <span className="hud-mini-label" style={{ fontSize: 11, color: 'var(--text-primary)', fontWeight: 800, letterSpacing: '0.12em' }}>MISSION CHRONO</span>
+                   <span style={{ fontSize: 18, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontWeight: 900 }}>
                       {hasMounted ? (missionTime || '--:--:--') : '--:--:--'}
-                      <span style={{ fontSize: 9, color: 'var(--accent)', marginLeft: 4, fontWeight: 900 }}>UTC</span>
+                      <span style={{ fontSize: 11, color: 'var(--accent)', marginLeft: 4, fontWeight: 900 }}>UTC</span>
                    </span>
                  </div>
                  <div style={{ width: 1, height: 24, background: 'var(--border)' }} />
@@ -2107,7 +2107,7 @@ export default function Home() {
                               onClick={() => markRead(itemKey)}
                               style={{
                                 fontFamily: 'var(--font-display)',
-                                fontSize: 18,
+                                fontSize: 20,
                                 fontWeight: 700,
                                 color: 'var(--text-primary)',
                                 textDecoration: 'none',
