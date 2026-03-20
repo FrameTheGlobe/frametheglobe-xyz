@@ -19,8 +19,15 @@ AddType font/woff2                  .woff2
 AddType font/woff                   .woff
 AddType application/manifest+json   .webmanifest
 
-# ── Cache headers for immutable Next.js static assets ─────────────────────────
+# ── Cache headers ──────────────────────────────────────────────────────────────
+# Next.js already sends the right Cache-Control headers via next.config.ts.
+# Apache must not override them for HTML responses (stale HTML → chunk 404s).
+# We only reinforce immutable caching here for static assets served directly
+# by Apache (fonts, images in /public), NOT for proxied Next.js responses.
 <IfModule mod_headers.c>
+  # JS, CSS, fonts, and images are all served directly by Apache from
+  # public/_next/static/ (content-hashed filenames — safe to cache forever).
+  # Apache never touches HTML responses, so this rule cannot cause stale-HTML issues.
   <FilesMatch "\.(js|css|woff2|woff|png|jpg|jpeg|webp|ico|svg)$">
     Header set Cache-Control "public, max-age=31536000, immutable"
   </FilesMatch>

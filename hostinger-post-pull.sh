@@ -25,8 +25,19 @@ npm install --omit=dev
 echo "🔨  Cleaning and Building Next.js application..."
 # Remove old build and cache to prevent stale asset issues
 rm -rf .next
-# Build with memory limit 
+# Build with memory limit
 NODE_OPTIONS='--max-old-space-size=1024' npm run build
+
+# ── Copy static chunks where Apache can find them ─────────────
+# Hostinger's Apache intercepts /_next/static/ requests before they
+# reach the Node.js process and looks for files on the filesystem.
+# .next/static/ is not the Apache webroot; public/ is.
+# Without this copy, every JS/CSS chunk returns 404, React never
+# hydrates, and the app is frozen in its SSR shell.
+echo "📂  Copying static chunks to public/_next/static/ ..."
+rm -rf public/_next
+mkdir -p public/_next
+cp -r .next/static public/_next/static
 
 # ── Restart the server ────────────────────────────────────────
 echo "🔄  Restarting application..."
