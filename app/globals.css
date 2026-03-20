@@ -655,7 +655,17 @@ body {
 
   /* Header wordmark: slightly smaller on mobile */
   .ftg-wordmark {
-    font-size: 17px !important;
+    font-size: 28px !important;
+  }
+
+  .ftg-branding-subtitle {
+     font-size: 8px !important;
+     letter-spacing: 0.15em !important;
+     margin-top: 4px !important;
+  }
+
+  .command-header-hud {
+     min-height: 80px !important;
   }
 
   /* Section headers and labels: slightly tighter padding */

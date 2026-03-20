@@ -148,12 +148,19 @@ function titleToKeySet(title: string): Set<string> {
 
 function jaccardSimilarity(a: Set<string>, b: Set<string>): number {
   if (a.size === 0 && b.size === 0) return 1;
-  // Count intersection without spreading either Set into a temporary array.
   let intersection = 0;
   a.forEach(w => { if (b.has(w)) intersection++; });
-  const union = a.size + b.size - intersection; // |A∪B| = |A| + |B| - |A∩B|
+  const union = a.size + b.size - intersection;
   return union === 0 ? 0 : intersection / union;
 }
+
+// Key terms that define the "War Theater" focus for briefing priority
+const THEATER_KEYWORDS = new Set([
+  'iran','tehran','khamenei','irgc','nuclear','enrichment','hormuz','tanker','ship',
+  'israel','idf','gaza','rafah','hamas','hezbollah','lebanon','beirut','nasrallah',
+  'houthi','houthis','yemen','red sea','strike','airstrike','missile','drone','intercept',
+  'proxy','axis','resistance','escalation','conflict','war','combat','deployment'
+]);
 
 function buildClusters(items: FeedItem[]): Cluster[] {
   // Deduplicate: group articles whose titles share ≥40% Jaccard similarity
@@ -191,12 +198,31 @@ function buildClusters(items: FeedItem[]): Cluster[] {
 
   return clusters
     .map((clusterItems, idx) => {
-      // Simplistic recency/size score for sorting
+      // ── ADVANCED SCORING ALGORITHM 2.0 ─────────────────────────────────────
       const finalItems = clusterItems.sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
       const newestTime = new Date(finalItems[0]?.pubDate || 0).getTime();
       const hoursOld = (Date.now() - newestTime) / (1000 * 60 * 60);
-      const recencyMultiplier = Math.max(0.1, 1 - (hoursOld / 48));
-      const score = finalItems.length * recencyMultiplier;
+
+      // 1. Time decay: exponential drop-off after 12h
+      const recency = Math.exp(-hoursOld / 18);
+
+      // 2. Breaking news bonus: heavy boost for anything < 30m old
+      const isBreaking = (Date.now() - newestTime) < (30 * 60_000);
+      const breakingBoost = isBreaking ? 2.5 : 1.0;
+
+      // 3. Narrative Diversity: Boost clusters with Western + Regional sources
+      const regions = new Set(finalItems.map(i => i.region));
+      const diversityBoost = 1 + (regions.size * 0.15); // +15% per unique region
+
+      // 4. Keyword Relevance: Boost "War Theater" topics
+      let keywordBoost = 1.0;
+      const titleWords = titleToKeySet(finalItems[0]?.title || '');
+      titleWords.forEach(w => {
+        if (THEATER_KEYWORDS.has(w)) keywordBoost += 0.25;
+      });
+      keywordBoost = Math.min(2.5, keywordBoost); // Cap keyword boost
+
+      const score = finalItems.length * recency * breakingBoost * diversityBoost * keywordBoost;
 
       return {
         id:    `cluster-${idx}`,
@@ -1482,8 +1508,8 @@ export default function Home() {
             <div className="scanning-bar" />
             
             {/* Top Tactical Metadata - Higher Contrast */}
-            <div style={{
-              borderBottom: '1px solid var(--border)',
+            <div className="ftg-hide-mobile" style={{
+              borderBottom: '1px solid var(--border-light)',
               padding: '8px 25px',
               display: 'flex',
               justifyContent: 'space-between',
@@ -1526,39 +1552,42 @@ export default function Home() {
                   textAlign: 'center'
                 }}>
                   FRAME<span style={{ color: 'var(--accent)' }}>THEGLOBE</span>
-                  <span style={{ display: 'block', fontSize: 13, letterSpacing: '0.45em', color: 'var(--accent)', marginTop: 8, fontWeight: 700 }}>
+                  <span className="ftg-branding-subtitle" style={{ 
+                    display: 'block', 
+                    fontSize: 13, 
+                    letterSpacing: '0.45em', 
+                    color: 'var(--accent)', 
+                    marginTop: 8, 
+                    fontWeight: 700 
+                  }}>
                     INTELLIGENCE OPS // GLOBAL MONITORING
                   </span>
                 </h1>
             </div>
 
             {/* Bottom HUD Command Row */}
-            <div style={{ 
+            <div className="ftg-controls-row" style={{ 
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'space-between',
               padding: '10px 25px',
               background: 'var(--surface)',
-              borderBottom: '4px double var(--border)'
+              borderBottom: '4px double var(--border)',
+              gap: 15
             }}>
               {/* Left Comms Block */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                    <span className="hud-mini-label" style={{ fontSize: 11, color: 'var(--text-primary)', fontWeight: 800, letterSpacing: '0.12em' }}>COMM LINK</span>
                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ color: loading ? 'var(--neon-amber)' : 'var(--neon-green)', fontSize: 13, fontWeight: 900 }}>{loading ? 'SYNCING' : 'ONLINE'}</span>
+                      <span className="ftg-hide-mobile" style={{ color: loading ? 'var(--neon-amber)' : 'var(--neon-green)', fontSize: 13, fontWeight: 900 }}>{loading ? 'SYNCING' : 'ONLINE'}</span>
                       <div className={!loading ? "live-dot hud-glitch-active" : ""} style={{ width: 6, height: 6, background: loading ? 'var(--neon-amber)' : 'var(--neon-green)' }} />
                    </div>
                 </div>
-                <div style={{ width: 1, height: 24, background: 'var(--border)' }} />
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <a href="https://x.com/FrameTheGlobe" target="_blank" className="icon-btn" title="X WIRE" style={{ transform: 'scale(0.9)', color: 'var(--text-primary)' }}><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.842L2.25 2.25h6.993l4.261 5.633L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z"/></svg></a>
-                  <a href="https://www.frametheglobenews.com/" target="_blank" className="icon-btn" title="SUBSTACK" style={{ transform: 'scale(0.9)', color: 'var(--text-primary)' }}><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z"/></svg></a>
-                  <a href="https://www.threads.com/@echoesofstreet" target="_blank" className="icon-btn" title="THREADS" style={{ transform: 'scale(0.9)', color: 'var(--text-primary)' }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm6.842 12.345c-.02.16-.05.33-.1.49-.31 1.06-.9 1.94-1.73 2.68a4.912 4.912 0 01-3.12 1.205c-.16.01-.32 0-.48-.01-.92-.05-1.79-.3-2.6-.78-.18-.11-.3-.09-.45.05-.33.29-.7.54-1.1.75-.44.23-.9.41-1.39.52a4.404 4.404 0 01-2.4-.15c-.45-.13-.86-.34-1.23-.62-.71-.54-1.14-1.26-1.24-2.15-.06-.55 0-1.1.19-1.62.3-.84.83-1.52 1.54-2.07.35-.27.75-.49 1.17-.66.11-.04.16-.1.17-.21.1-.73.34-1.41.69-2.05.4-.71.93-1.3 1.6-1.77.63-.43 1.34-.65 2.11-.68.61-.02 1.22.04 1.81.21.94.26 1.71.74 2.31 1.48.57.7.9 1.5 1 2.39.04.3.06.61.05.91-.01.31-.02.62-.05.93-.03.44.07.75.46.96.48.24.87.59 1.14 1.07.18.32.28.67.28 1.03.02.48-.12.91-.35 1.32z"/>
-                    </svg>
-                  </a>
+                <div className="ftg-hide-mobile" style={{ width: 1, height: 24, background: 'var(--border)' }} />
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <a href="https://x.com/FrameTheGlobe" target="_blank" className="icon-btn" title="X WIRE" style={{ transform: 'scale(1.1)', color: 'var(--text-primary)' }}><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.842L2.25 2.25h6.993l4.261 5.633L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z"/></svg></a>
+                  <a href="https://www.frametheglobenews.com/" target="_blank" className="icon-btn" title="SUBSTACK" style={{ transform: 'scale(1.1)', color: 'var(--text-primary)' }}><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z"/></svg></a>
                 </div>
               </div>
 
@@ -1568,18 +1597,18 @@ export default function Home() {
                    <span className="hud-mini-label" style={{ fontSize: 11, color: 'var(--text-primary)', fontWeight: 800, letterSpacing: '0.12em' }}>MISSION CHRONO</span>
                    <span style={{ fontSize: 18, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontWeight: 900 }}>
                       {hasMounted ? (missionTime || '--:--:--') : '--:--:--'}
-                      <span style={{ fontSize: 11, color: 'var(--accent)', marginLeft: 4, fontWeight: 900 }}>UTC</span>
+                      <span className="ftg-hide-mobile" style={{ fontSize: 11, color: 'var(--accent)', marginLeft: 4, fontWeight: 900 }}>UTC</span>
                    </span>
                  </div>
-                 <div style={{ width: 1, height: 24, background: 'var(--border)' }} />
-                 <div style={{ display: 'flex', gap: 10 }}>
-                    <button className="icon-btn" onClick={() => setTheme(ts => ts === 'light' ? 'dark' : 'light')} title="SYSTEM MODE" style={{ transform: 'scale(1.1)' }}>
+                 <div className="ftg-hide-mobile" style={{ width: 1, height: 24, background: 'var(--border)' }} />
+                 <div style={{ display: 'flex', gap: 12 }}>
+                    <button className="icon-btn" onClick={() => setTheme(ts => ts === 'light' ? 'dark' : 'light')} title="SYSTEM MODE" style={{ transform: 'scale(1.2)' }}>
                       {(hasMounted && theme === 'light') ? (
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
                         </svg>
                       ) : (hasMounted && theme === 'dark') ? (
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <circle cx="12" cy="12" r="5"></circle>
                           <line x1="12" y1="1" x2="12" y2="3"></line>
                           <line x1="12" y1="21" x2="12" y2="23"></line>
@@ -1591,14 +1620,14 @@ export default function Home() {
                           <line x1="18.36" y1="4.22" x2="19.78" y2="5.64"></line>
                         </svg>
                       ) : (
-                        <div style={{ width: 18, height: 18, opacity: 0.2 }} />
+                        <div style={{ width: 20, height: 20, opacity: 0.2 }} />
                       )}
                     </button>
                     <button 
                       onClick={() => fetchNews()} 
                       disabled={loading}
                       className="icon-btn"
-                      style={{ background: 'var(--accent)', color: '#fff', fontSize: 9, fontFamily: 'var(--font-mono)', padding: '0 15px', width: 'auto', fontWeight: 900, height: 32, borderRadius: 0, border: 'none' }}
+                      style={{ background: 'var(--accent)', color: '#fff', fontSize: 11, fontFamily: 'var(--font-mono)', padding: '0 15px', width: 'auto', fontWeight: 900, height: 40, borderRadius: 0, border: 'none' }}
                     >
                       {loading ? 'REBOOT...' : 'SYSTEM REBOOT'}
                     </button>
