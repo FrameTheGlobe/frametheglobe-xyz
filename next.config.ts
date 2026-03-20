@@ -1,32 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Use a standard build path for the Hostinger Node.js selector. 
-  // Standard building + 'npm start' is more reliable for asset resolution on shared/VPS.
+  // Standard Next.js server build for Hostinger
   trailingSlash: false,
   reactStrictMode: true,
 
-  // Critical for Hostinger server builds: ignores checks to save memory/processes
-  // @ts-ignore
-  typescript: { ignoreBuildErrors: true },
-
-  // Experimental but recommended for shared hosting: 
-  // Limit the number of workers to prevent crashing Hostinger CPU limits.
-  // Standard VPS/Shared often has high core count but low process/memory limit.
-  // @ts-ignore
-  staticPageGenerationTimeout: 300,
-  output: 'standalone',
-  // Force Webpack (disables experimental Turbopack production build)
-  webpack: (config: any) => {
-    return config;
-  },
-  // Declare empty Turbopack config to silence Next.js 16 strictness
-  experimental: {
-    cpus: 1,
-    // @ts-ignore
-    turbopack: {},
-  },
-  
   // Compress responses in production
   compress: true,
 
