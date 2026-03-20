@@ -9,8 +9,6 @@ const nextConfig: NextConfig = {
   // Critical for Hostinger server builds: ignores checks to save memory/processes
   // @ts-ignore
   typescript: { ignoreBuildErrors: true },
-  // @ts-ignore
-  eslint: { ignoreDuringBuilds: true },
 
   // Experimental but recommended for shared hosting: 
   // Limit the number of workers to prevent crashing Hostinger CPU limits.
