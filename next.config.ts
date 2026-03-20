@@ -1,12 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // standalone: bundles the minimal server + node_modules into .next/standalone/.
-  // The standalone server.js handles /_next/static/ serving IN-PROCESS, so
-  // Hostinger's reverse proxy never needs to know about the _next path at all.
-  // Post-build we copy .next/static → .next/standalone/.next/static and
-  // public/ → .next/standalone/public/ so the standalone server finds them.
-  output: 'standalone',
+  // NOTE: output:'standalone' is intentionally NOT set here.
+  // Hostinger's Apache intercepts /_next/static/ requests before they reach
+  // the Node.js process and serves them from the filesystem (public/ webroot).
+  // Standalone mode copies static files to .next/standalone/.next/static/ —
+  // the wrong location. The build script copies .next/static → public/_next/static
+  // so Apache finds them. Node.js handles only SSR pages and API routes.
 
   trailingSlash: false,
   reactStrictMode: true,
