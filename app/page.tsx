@@ -1499,7 +1499,7 @@ export default function Home() {
               </div>
               <div style={{ display: 'flex', gap: 25 }}>
                 <span className="hud-glitch-active" style={{ color: 'var(--accent)', fontWeight: 900 }}>SECURITY: LEVEL 5</span>
-                <span>VER: <span style={{ color: 'var(--text-primary)', fontWeight: 800 }}>5.2.0</span></span>
+                <span>VER: <span style={{ color: 'var(--text-primary)', fontWeight: 800 }}>5.2.3</span></span>
               </div>
             </div>
 
@@ -1524,9 +1524,9 @@ export default function Home() {
                   textAlign: 'center'
                 }}>
                   FRAME<span style={{ color: 'var(--accent)' }}>THEGLOBE</span>
-                  <div style={{ fontSize: 10, letterSpacing: '0.45em', color: 'var(--accent)', marginTop: 6, fontWeight: 700 }}>
+                  <span style={{ display: 'block', fontSize: 10, letterSpacing: '0.45em', color: 'var(--accent)', marginTop: 6, fontWeight: 700 }}>
                     INTELLIGENCE OPS // GLOBAL MONITORING
-                  </div>
+                  </span>
                 </h1>
             </div>
 
@@ -1552,7 +1552,7 @@ export default function Home() {
                 <div style={{ display: 'flex', gap: 8 }}>
                   <a href="https://x.com/FrameTheGlobe" target="_blank" className="icon-btn" title="X WIRE" style={{ transform: 'scale(0.9)', color: 'var(--text-primary)' }}><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.842L2.25 2.25h6.993l4.261 5.633L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z"/></svg></a>
                   <a href="https://www.frametheglobenews.com/" target="_blank" className="icon-btn" title="SUBSTACK" style={{ transform: 'scale(0.9)', color: 'var(--text-primary)' }}><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z"/></svg></a>
-                  <a href="https://www.threads.net/@echoesofstreet" target="_blank" className="icon-btn" title="THREADS" style={{ transform: 'scale(0.9)', color: 'var(--text-primary)' }}>
+                  <a href="https://www.threads.com/@echoesofstreet" target="_blank" className="icon-btn" title="THREADS" style={{ transform: 'scale(0.9)', color: 'var(--text-primary)' }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm6.842 12.345c-.02.16-.05.33-.1.49-.31 1.06-.9 1.94-1.73 2.68a4.912 4.912 0 01-3.12 1.205c-.16.01-.32 0-.48-.01-.92-.05-1.79-.3-2.6-.78-.18-.11-.3-.09-.45.05-.33.29-.7.54-1.1.75-.44.23-.9.41-1.39.52a4.404 4.404 0 01-2.4-.15c-.45-.13-.86-.34-1.23-.62-.71-.54-1.14-1.26-1.24-2.15-.06-.55 0-1.1.19-1.62.3-.84.83-1.52 1.54-2.07.35-.27.75-.49 1.17-.66.11-.04.16-.1.17-.21.1-.73.34-1.41.69-2.05.4-.71.93-1.3 1.6-1.77.63-.43 1.34-.65 2.11-.68.61-.02 1.22.04 1.81.21.94.26 1.71.74 2.31 1.48.57.7.9 1.5 1 2.39.04.3.06.61.05.91-.01.31-.02.62-.05.93-.03.44.07.75.46.96.48.24.87.59 1.14 1.07.18.32.28.67.28 1.03.02.48-.12.91-.35 1.32z"/>
                     </svg>
