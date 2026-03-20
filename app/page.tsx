@@ -815,10 +815,12 @@ export default function Home() {
   const [expandedComparisons, setExpandedComparisons] = useState<Set<string>>(new Set());
   const [briefingOpen, setBriefingOpen]       = useState(true);
   const [briefingDismissed, setBriefingDismissed] = useState(false);
+  const [hasMounted, setHasMounted]               = useState(false);
   const [missionTime, setMissionTime]             = useState<string | null>(null);
 
   // ── Mission Timer (Client-only to avoid hydration mismatch) ──────────────
   useEffect(() => {
+    setHasMounted(true);
     const update = () => setMissionTime(new Date().toISOString().slice(11, 19));
     update();
     const t = setInterval(update, 1000);
@@ -1499,7 +1501,7 @@ export default function Home() {
               </div>
               <div style={{ display: 'flex', gap: 25 }}>
                 <span className="hud-glitch-active" style={{ color: 'var(--accent)', fontWeight: 900 }}>SECURITY: LEVEL 5</span>
-                <span>VER: <span style={{ color: 'var(--text-primary)', fontWeight: 800 }}>5.2.3</span></span>
+                <span>VER: <span style={{ color: 'var(--text-primary)', fontWeight: 800 }}>5.2.4</span></span>
               </div>
             </div>
 
@@ -1565,17 +1567,18 @@ export default function Home() {
                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                    <span className="hud-mini-label" style={{ fontSize: 8, color: 'var(--text-primary)', fontWeight: 800, letterSpacing: '0.1em' }}>MISSION CHRONO</span>
                    <span style={{ fontSize: 16, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontWeight: 900 }}>
-                      {missionTime || '--:--:--'}<span style={{ fontSize: 9, color: 'var(--accent)', marginLeft: 4, fontWeight: 900 }}>UTC</span>
+                      {hasMounted ? (missionTime || '--:--:--') : '--:--:--'}
+                      <span style={{ fontSize: 9, color: 'var(--accent)', marginLeft: 4, fontWeight: 900 }}>UTC</span>
                    </span>
                  </div>
                  <div style={{ width: 1, height: 24, background: 'var(--border)' }} />
                  <div style={{ display: 'flex', gap: 10 }}>
                     <button className="icon-btn" onClick={() => setTheme(ts => ts === 'light' ? 'dark' : 'light')} title="SYSTEM MODE" style={{ transform: 'scale(1.1)' }}>
-                      {theme === 'light' ? (
+                      {(hasMounted && theme === 'light') ? (
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
                         </svg>
-                      ) : (
+                      ) : (hasMounted && theme === 'dark') ? (
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <circle cx="12" cy="12" r="5"></circle>
                           <line x1="12" y1="1" x2="12" y2="3"></line>
@@ -1587,6 +1590,8 @@ export default function Home() {
                           <line x1="4.22" y1="18.36" x2="5.64" y2="19.78"></line>
                           <line x1="18.36" y1="4.22" x2="19.78" y2="5.64"></line>
                         </svg>
+                      ) : (
+                        <div style={{ width: 18, height: 18, opacity: 0.2 }} />
                       )}
                     </button>
                     <button 

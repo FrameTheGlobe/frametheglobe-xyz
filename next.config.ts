@@ -16,6 +16,11 @@ const nextConfig: NextConfig = {
   // @ts-ignore
   staticPageGenerationTimeout: 300,
   output: 'standalone',
+  // Defensive building for Hostinger: prevents CPU/Memory limit kills
+  experimental: {
+    workerThreads: false,
+    cpus: 1,
+  },
   
   // Compress responses in production
   compress: true,

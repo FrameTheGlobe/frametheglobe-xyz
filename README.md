@@ -1,6 +1,6 @@
 # FrameTheGlobe Geopolitical Intelligence Hub
 
-**Version:** 5.2.1 — *Universal Deployment Readiness*  
+**Version:** 5.2.4 — *Universal Deployment Readiness*  
 **Mission:** Real-time news aggregation and intelligence monitoring for the Iran War Theater, South Asia, and the Global Pivot.  
 **Production URL:** [frametheglobe.xyz](https://frametheglobe.xyz)
 
