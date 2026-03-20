@@ -2,7 +2,7 @@
 
 import React from 'react';
 
-type IntelStatus = 'ELEVATED' | 'CRITICAL' | 'HIGH' | 'STABLE';
+export type IntelStatus = 'ELEVATED' | 'CRITICAL' | 'HIGH' | 'STABLE';
 
 interface IntelEvent {
   id: string;
@@ -169,47 +169,44 @@ export default function IntelTimeline({ events }: Props) {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    marginBottom: '4px',
+                    marginBottom: '8px',
                     flexWrap: 'wrap',
-                    gap: '8px'
+                    gap: '10px'
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                       <span style={{
-                        fontSize: '9px',
+                        fontSize: '13px',
                         fontWeight: 700,
-                        letterSpacing: '0.04em',
+                        letterSpacing: '0.06em',
                         color: statusStyle.color,
-                        border: `1px solid ${statusStyle.color}33`,
-                        padding: '1px 6px',
+                        border: `1px solid ${statusStyle.color}44`,
+                        padding: '2px 8px',
                         borderRadius: '2px',
+                        background: 'rgba(0,0,0,0.02)',
                         textTransform: 'uppercase',
-                        maxWidth: '180px',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
                       }}>
                         {event.location}
                       </span>
                       
                       <span style={{
-                        fontSize: '8px',
-                        padding: '0px 5px',
-                        borderRadius: '99px',
+                        fontSize: '12px',
+                        padding: '2px 10px',
+                        borderRadius: '2px',
                         background: statusStyle.bg,
                         color: statusStyle.color,
-                        letterSpacing: '0.05em',
-                        fontWeight: 600,
-                        border: `1px solid ${statusStyle.color}11`
+                        letterSpacing: '0.08em',
+                        fontWeight: 800,
+                        border: `1px solid ${statusStyle.color}22`
                       }}>
                         {event.status}
                       </span>
                     </div>
 
                     <div style={{ 
-                      fontSize: '9px', 
+                      fontSize: '12px', 
                       color: 'var(--text-muted)', 
                       fontFamily: 'var(--font-mono)',
-                      opacity: 0.5 
+                      fontWeight: 500
                     }}>
                       {event.timestamp}
                     </div>
@@ -217,39 +214,39 @@ export default function IntelTimeline({ events }: Props) {
 
                   {/* Subheader */}
                   <div style={{
-                    fontSize: '10px',
+                    fontSize: '13px',
                     color: 'var(--text-muted)',
-                    marginBottom: '6px',
-                    fontStyle: 'italic',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap'
+                    marginBottom: '10px',
+                    fontFamily: 'var(--font-mono)',
+                    fontWeight: 500,
+                    opacity: 0.8
                   }}>
                     {event.subLocation}
                   </div>
 
                   {/* Dateline */}
                   <div style={{
-                    fontSize: '10px',
+                    fontSize: '13px',
                     color: 'var(--accent)',
-                    fontWeight: 700,
-                    marginBottom: '8px',
+                    fontWeight: 800,
+                    marginBottom: '12px',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px'
+                    gap: '8px'
                   }}>
-                    <span style={{ height: '1px', width: '8px', background: 'var(--accent)', opacity: 0.4 }} />
+                    <span style={{ height: '1px', width: '12px', background: 'var(--accent)', opacity: 0.5 }} />
                     {event.dateHeader}
                   </div>
 
                   {/* Description */}
                   <p style={{
-                    fontSize: '12px',
+                    fontSize: '16px',
                     lineHeight: '1.6',
                     color: 'var(--text-secondary)',
                     margin: 0,
                     letterSpacing: '0.01em',
-                    fontFamily: 'var(--font-body)'
+                    fontFamily: 'var(--font-body)',
+                    fontWeight: 400
                   }}>
                     {event.description}
                   </p>

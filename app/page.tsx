@@ -13,7 +13,7 @@ import OilTicker      from './components/OilTicker';
 import IranWarSection  from './components/IranWarSection';
 import DailyBriefing, { BriefCluster } from './components/DailyBriefing';
 import CrossSourceComparison, { CompItem } from './components/CrossSourceComparison';
-import IntelTimeline from './components/IntelTimeline';
+import IntelTimeline, { IntelStatus } from './components/IntelTimeline';
 
 // MapView uses Leaflet (browser-only) — load with no SSR
 const MapView = dynamic(() => import('./components/MapView'), { ssr: false });
@@ -1228,25 +1228,66 @@ export default function Home() {
 
   // ── INTEL TIMELINE DATA (GDELT + CRITICAL) ─────────────────────────
   const intelEvents = useMemo(() => {
-    // Filter for GDELT or other "ops" / conflict style items
-    const opsItems = items.filter(item => 
-      item.sourceId.includes('gdelt') || 
-      item.sourceId === 'liveleak-osint' ||
-      item.title.toLowerCase().includes('strike') ||
-      item.title.toLowerCase().includes('explosion') ||
-      item.title.toLowerCase().includes('intercept') ||
-      item.title.toLowerCase().includes('attack')
-    );
+    // ── CONFIG ────────────────────────────────────────────────────────
+    const CRITICAL_KEYWORDS = ['strike', 'nuclear', 'explosion', 'intercept', 'attack', 'missile', 'ballistic', 'casualties', 'dead', 'war', 'invasion'];
+    const STRATEGIC_KEYWORDS = ['pipeline', 'sanctions', 'treaty', 'oil price', 'production cut', 'uranium', 'iaea', 'veto', 'blockade'];
+    const SOURCE_WEIGHTS: Record<string, number> = { 'gdelt': 5, 'osint': 8, 'gcaptain': 6, 'timesofisrael': 2, 'aljazeera': 2 };
 
-    return opsItems.slice(0, 15).map(item => ({
-      id: item.link + item.pubDate,
-      location: item.region ? item.region.toUpperCase() : 'OPERATIONAL',
-      subLocation: item.sourceName,
-      status: (item.title.toLowerCase().includes('strike') || item.title.toLowerCase().includes('attack') || item.title.toLowerCase().includes('nuclear')) ? 'CRITICAL' : 'ELEVATED' as any,
-      timestamp: new Date(item.pubDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      dateHeader: new Date(item.pubDate).toLocaleDateString([], { month: 'short', day: 'numeric' }),
-      description: item.title
-    }));
+    // 1. Gather candidates (last 48 hours for the Brief)
+    const now = Date.now();
+    const TWO_DAYS = 48 * 3600_000;
+    
+    // 2. Score and Filter
+    const scored = items
+      .filter(item => (now - new Date(item.pubDate).getTime()) < TWO_DAYS)
+      .map(item => {
+        let score = 0;
+        const lowTitle = item.title.toLowerCase();
+        
+        // Source authority
+        Object.entries(SOURCE_WEIGHTS).forEach(([id, weight]) => {
+          if (item.sourceId.toLowerCase().includes(id)) score += weight;
+        });
+
+        // Event Criticality
+        if (CRITICAL_KEYWORDS.some(kw => lowTitle.includes(kw))) score += 12;
+        if (STRATEGIC_KEYWORDS.some(kw => lowTitle.includes(kw))) score += 7;
+
+        // Recency Decay: Max +10 for new items, decays linearly over 48h
+        const hoursOld = (now - new Date(item.pubDate).getTime()) / 3600_000;
+        score += Math.max(0, 10 - (hoursOld / 4.8));
+
+        return { ...item, intensityScore: score };
+      })
+      .filter(item => item.intensityScore > 8)
+      .sort((a, b) => b.intensityScore - a.intensityScore);
+
+    // 3. Simple Deduplication (KeySet approach)
+    const seenSigs = new Set<string>();
+    const unique = scored.filter(item => {
+      const sig = Array.from(titleToKeySet(item.title)).sort().join('|');
+      if (seenSigs.has(sig)) return false;
+      seenSigs.add(sig);
+      return true;
+    });
+
+    // 4. Final Format
+    return unique.slice(0, 15).map(item => {
+      let status: IntelStatus = 'STABLE';
+      if (item.intensityScore > 20) status = 'CRITICAL';
+      else if (item.intensityScore > 15) status = 'HIGH';
+      else if (item.intensityScore > 10) status = 'ELEVATED';
+
+      return {
+        id: (item.link || item.title) + item.pubDate,
+        location: item.region ? item.region.toUpperCase() : 'GLOBAL Ops',
+        subLocation: item.sourceName,
+        status,
+        timestamp: timeAgo(item.pubDate),
+        dateHeader: new Date(item.pubDate).toLocaleDateString([], { month: 'short', day: 'numeric' }),
+        description: item.title
+      };
+    });
   }, [items]);
 
   const toggleSource = useCallback((id: string) => {
@@ -2415,9 +2456,9 @@ export default function Home() {
             }}>
               <h2 style={{
                 fontFamily: 'var(--font-mono)',
-                fontSize: 13,
-                fontWeight: 700,
-                letterSpacing: '0.1em',
+                fontSize: 15,
+                fontWeight: 800,
+                letterSpacing: '0.12em',
                 textTransform: 'uppercase',
                 color: 'var(--accent)',
                 margin: 0
@@ -2430,9 +2471,9 @@ export default function Home() {
               </div>
             </div>
 
-            <IntelTimeline events={intelEvents} />
+            {hasMounted && <IntelTimeline events={intelEvents} />}
 
-            {intelEvents.length > 0 && (
+            {hasMounted && intelEvents.length > 0 && (
               <div style={{
                 marginTop: 20,
                 padding: '10px',
