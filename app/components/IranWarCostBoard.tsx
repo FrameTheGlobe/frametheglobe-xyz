@@ -46,6 +46,13 @@ const RECENT_HISTORY = [
   { t: '-14h', e: 'Carrier air wing replenishment flight', c: '$1.8M' },
 ];
 
+const OPS_STATUS = [
+  { l: 'SIGNAL INTEL', v: '92%', s: 'JAMMING ACTIVE' },
+  { l: 'REPLENISHMENT', v: '04h', s: 'IN-BOUND' },
+  { l: 'ISR COVERAGE', v: '88%', s: 'STABLE' },
+  { l: 'AV FUEL LOAD', v: '64%', s: 'ELEVATED' },
+];
+
 export default function IranWarCostBoard() {
   const [now, setNow] = useState<Date | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -126,34 +133,76 @@ export default function IranWarCostBoard() {
             </div>
           </div>
 
-          {/* ASSET & MUNITION GRID CARD */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', borderTop: `1px solid ${border}` }}>
-            <div style={{ flex: '1 1 240px', padding: '14px', borderRight: `1px solid ${border}` }}>
-              <div style={{ fontFamily: mono, fontSize: 11, fontWeight: 700, color: muted, marginBottom: 12, letterSpacing: '0.05em' }}>MUNITIONS</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 16px' }}>
-                {MUNITIONS.slice(0, 4).map(m => (
-                  <div key={m.n}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                      <span style={{ fontFamily: mono, fontSize: 13, opacity: 0.9, fontWeight: 500 }}>{m.n}</span>
-                      <span style={{ fontFamily: mono, fontSize: 13, color: red, fontWeight: 700 }}>{m.q}</span>
+          {/* ASSET & MUNITION GRID & AIR OPS (Consolidated flow) */}
+          <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', borderTop: `1px solid ${border}` }}>
+              <div style={{ flex: '1 1 240px', padding: '14px', borderRight: `1px solid ${border}` }}>
+                <div style={{ fontFamily: mono, fontSize: 13, fontWeight: 800, color: muted, marginBottom: 14, letterSpacing: '0.05em' }}>MUNITIONS</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px 20px' }}>
+                  {MUNITIONS.map(m => (
+                    <div key={m.n}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                        <span style={{ fontFamily: mono, fontSize: 15, opacity: 0.9, fontWeight: 600 }}>{m.n}</span>
+                        <span style={{ fontFamily: mono, fontSize: 15, color: red, fontWeight: 800 }}>{m.q}</span>
+                      </div>
+                      <div style={{ height: 6, background: 'rgba(0,0,0,0.05)', borderRadius: 2 }}>
+                         <div style={{ height: '100%', width: `${m.p}%`, background: red, borderRadius: 2 }} />
+                      </div>
                     </div>
-                    <div style={{ height: 5, background: 'rgba(255,255,255,0.05)', borderRadius: 2 }}>
-                       <div style={{ height: '100%', width: `${m.p}%`, background: red, borderRadius: 2 }} />
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+              </div>
+              <div style={{ flex: '1 1 200px', padding: '14px' }}>
+                <div style={{ fontFamily: mono, fontSize: 13, fontWeight: 800, color: muted, marginBottom: 14, letterSpacing: '0.05em' }}>THEATER ASSETS</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                   {ASSETS.map(a => (
+                     <div key={a.l} style={{ padding: '10px', border: `1px solid ${border}`, borderRadius: 4, background: 'rgba(0,0,0,0.01)', textAlign: 'center' }}>
+                        <div style={{ fontFamily: mono, fontSize: 13, color: muted, whiteSpace: 'nowrap', textTransform: 'uppercase', fontWeight: 700 }}>{a.l}</div>
+                        <div style={{ fontFamily: mono, fontSize: 19, fontWeight: 900, lineHeight: 1.2 }}>{a.v}</div>
+                     </div>
+                   ))}
+                </div>
               </div>
             </div>
-            <div style={{ flex: '1 1 200px', padding: '14px' }}>
-              <div style={{ fontFamily: mono, fontSize: 11, fontWeight: 700, color: muted, marginBottom: 12, letterSpacing: '0.05em' }}>THEATER ASSETS</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-                 {ASSETS.slice(0, 6).map(a => (
-                   <div key={a.l} style={{ padding: '8px', border: `1px solid ${border}`, borderRadius: 4, background: 'rgba(255,255,255,0.01)', textAlign: 'center' }}>
-                      <div style={{ fontFamily: mono, fontSize: 12, color: muted, whiteSpace: 'nowrap', textTransform: 'uppercase', fontWeight: 600 }}>{a.l}</div>
-                      <div style={{ fontFamily: mono, fontSize: 17, fontWeight: 900, lineHeight: 1.2 }}>{a.v}</div>
-                   </div>
-                 ))}
-              </div>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', borderTop: `1px solid ${border}`, flexGrow: 1 }}>
+               <div style={{ flex: '1 1 240px', padding: '16px', borderRight: `1px solid ${border}` }}>
+                  <div style={{ fontFamily: mono, fontSize: 13, fontWeight: 800, color: muted, marginBottom: 16 }}>AIR OPERATIONS (SORTIES)</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                     {[{ l: 'COMBAT', v: '1,412', p: 82, c: red }, { l: 'SUPPORT/TANKER', v: '2,090', p: 65, c: '#4a9eff' }, { l: 'ISR/EW', v: '854', p: 45, c: '#bdc3c7' }].map(a => (
+                       <div key={a.l}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                             <span style={{ fontFamily: mono, fontSize: 14, fontWeight: 800 }}>{a.l}</span>
+                             <span style={{ fontFamily: mono, fontSize: 14, fontWeight: 900 }}>{a.v}</span>
+                          </div>
+                          <div style={{ height: 6, background: 'rgba(0,0,0,0.04)', borderRadius: 2 }}>
+                             <div style={{ height: '100%', width: `${a.p}%`, background: a.c, borderRadius: 2 }} />
+                          </div>
+                       </div>
+                     ))}
+                  </div>
+               </div>
+               <div style={{ flex: '1 1 200px', padding: '16px' }}>
+                  <div style={{ fontFamily: mono, fontSize: 13, fontWeight: 800, color: muted, marginBottom: 16 }}>OPERATIONAL READINESS</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                     {OPS_STATUS.map(s => (
+                       <div key={s.l} style={{ border: `1px solid ${border}`, borderRadius: 4, padding: '10px', background: 'rgba(0,0,0,0.01)' }}>
+                          <div style={{ fontFamily: mono, fontSize: 12, color: muted, fontWeight: 800, marginBottom: 6 }}>{s.l}</div>
+                          <div style={{ fontFamily: mono, fontSize: 18, fontWeight: 900, color: s.l === 'AV FUEL LOAD' ? '#e67e22' : 'var(--text-primary)' }}>{s.v}</div>
+                          <div style={{ fontFamily: mono, fontSize: 10, fontWeight: 800, color: muted, marginTop: 4 }}>{s.s}</div>
+                       </div>
+                     ))}
+                  </div>
+               </div>
+            </div>
+
+            <div style={{ padding: '12px 16px', borderTop: `1px solid ${border}`, background: 'rgba(0,0,0,0.02)', display: 'flex', gap: 18, alignItems: 'center', marginTop: 'auto' }}>
+               <span style={{ fontFamily: mono, fontSize: 12, fontWeight: 900, color: red }}>MISSION OBJ:</span>
+               <span style={{ fontFamily: mono, fontSize: 14, color: 'var(--text-secondary)', fontWeight: 700 }}>SECURE HORMUZ · NEUTRALIZE FORDOW · DETER PROXY ESCALATION</span>
+               <div style={{ marginLeft: 'auto', display: 'flex', gap: 12 }}>
+                  <span className="live-dot" style={{ background: '#27ae60', width: 7, height: 7 }} />
+                  <span style={{ fontFamily: mono, fontSize: 11, color: muted, fontWeight: 800 }}>LINK-16 ACTIVE</span>
+               </div>
             </div>
           </div>
         </div>

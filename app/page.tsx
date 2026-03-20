@@ -1516,7 +1516,7 @@ export default function Home() {
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              fontSize: 12,
+              fontSize: 13,
               fontFamily: 'var(--font-mono)',
               letterSpacing: '0.12em',
               background: 'var(--surface)',
@@ -1528,8 +1528,8 @@ export default function Home() {
                 <span>STATE: <span style={{ color: 'var(--text-primary)', fontWeight: 800 }}>ENCRYPTED</span></span>
               </div>
               <div style={{ display: 'flex', gap: 25 }}>
-                <span className="hud-glitch-active" style={{ color: 'var(--accent)', fontWeight: 900 }}>SECURITY: LEVEL 5</span>
-                <span>VER: <span style={{ color: 'var(--text-primary)', fontWeight: 800 }}>5.2.10</span></span>
+                <span className="hud-glitch-active" style={{ color: 'var(--accent)', fontWeight: 900, fontSize: 13 }}>SECURITY: LEVEL 5</span>
+                <span>VER: <span style={{ color: 'var(--text-primary)', fontWeight: 800, fontSize: 13 }}>5.2.10</span></span>
               </div>
             </div>
 
@@ -1556,7 +1556,7 @@ export default function Home() {
                   FRAME<span style={{ color: 'var(--accent)' }}>THEGLOBE</span>
                   <span className="ftg-branding-subtitle" style={{ 
                     display: 'block', 
-                    fontSize: 14, 
+                    fontSize: 15, 
                     letterSpacing: '0.45em', 
                     color: 'var(--accent)', 
                     marginTop: 10, 
@@ -1580,10 +1580,10 @@ export default function Home() {
               {/* Left Comms Block */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                   <span className="hud-mini-label" style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 800, letterSpacing: '0.12em' }}>COMM LINK</span>
+                   <span className="hud-mini-label" style={{ fontSize: 14, color: 'var(--text-primary)', fontWeight: 800, letterSpacing: '0.12em' }}>COMM LINK</span>
                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span className="ftg-hide-mobile" style={{ color: loading ? 'var(--neon-amber)' : 'var(--neon-green)', fontSize: 13, fontWeight: 900 }}>{loading ? 'SYNCING' : 'ONLINE'}</span>
-                      <div className={!loading ? "live-dot hud-glitch-active" : ""} style={{ width: 6, height: 6, background: loading ? 'var(--neon-amber)' : 'var(--neon-green)' }} />
+                      <span className="ftg-hide-mobile" style={{ color: (hasMounted && loading) ? 'var(--neon-amber)' : 'var(--neon-green)', fontSize: 14, fontWeight: 900 }}>{(hasMounted && loading) ? 'SYNCING' : 'ONLINE'}</span>
+                      <div className={(hasMounted && !loading) ? "live-dot hud-glitch-active" : ""} style={{ width: 6, height: 6, background: (hasMounted && loading) ? 'var(--neon-amber)' : 'var(--neon-green)' }} />
                    </div>
                 </div>
                 <div className="ftg-hide-mobile" style={{ width: 1, height: 24, background: 'var(--border)' }} />
@@ -1596,10 +1596,10 @@ export default function Home() {
               {/* Right Temporal Block */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                   <span className="hud-mini-label" style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 800, letterSpacing: '0.12em' }}>MISSION CHRONO</span>
+                   <span className="hud-mini-label" style={{ fontSize: 14, color: 'var(--text-primary)', fontWeight: 800, letterSpacing: '0.12em' }}>MISSION CHRONO</span>
                    <span style={{ fontSize: 18, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontWeight: 900 }}>
                       {hasMounted ? (missionTime || '--:--:--') : '--:--:--'}
-                      <span className="ftg-hide-mobile" style={{ fontSize: 11, color: 'var(--accent)', marginLeft: 4, fontWeight: 900 }}>UTC</span>
+                      <span className="ftg-hide-mobile" style={{ fontSize: 12, color: 'var(--accent)', marginLeft: 4, fontWeight: 900 }}>UTC</span>
                    </span>
                  </div>
                  <div className="ftg-hide-mobile" style={{ width: 1, height: 24, background: 'var(--border)' }} />
@@ -1629,7 +1629,7 @@ export default function Home() {
                       onClick={() => fetchNews()} 
                       disabled={loading}
                       className="icon-btn"
-                      style={{ background: 'var(--accent)', color: '#fff', fontSize: 11, fontFamily: 'var(--font-mono)', padding: '0 15px', width: 'auto', fontWeight: 900, height: 40, borderRadius: 0, border: 'none' }}
+                      style={{ background: 'var(--accent)', color: '#fff', fontSize: 12, fontFamily: 'var(--font-mono)', padding: '0 15px', width: 'auto', fontWeight: 900, height: 40, borderRadius: 0, border: 'none' }}
                     >
                       {loading ? 'REBOOT...' : 'SYSTEM REBOOT'}
                     </button>
@@ -1667,7 +1667,7 @@ export default function Home() {
 
             {/* ── Keyword Watchlist ───────────────────────────────────── */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.12em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.12em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
                 ⚑ Watchlist
               </div>
               <div style={{ display: 'flex', gap: 5 }}>
@@ -1677,7 +1677,7 @@ export default function Home() {
                   onKeyDown={e => { if (e.key === 'Enter') addWatchword(watchlistInput); }}
                   placeholder="Add keyword…"
                   style={{
-                    flex: 1, fontFamily: 'var(--font-mono)', fontSize: 13,
+                    flex: 1, fontFamily: 'var(--font-mono)', fontSize: 14,
                     background: 'var(--bg)', border: '1px solid var(--border)',
                     borderRadius: 3, padding: '5px 8px', color: 'var(--text-primary)',
                     outline: 'none',
@@ -1686,7 +1686,7 @@ export default function Home() {
                 <button
                   onClick={() => addWatchword(watchlistInput)}
                   style={{
-                    fontFamily: 'var(--font-mono)', fontSize: 13, padding: '5px 10px',
+                    fontFamily: 'var(--font-mono)', fontSize: 14, padding: '5px 10px',
                     background: 'var(--accent)', color: '#fff', border: 'none',
                     borderRadius: 3, cursor: 'pointer',
                   }}
@@ -1697,7 +1697,7 @@ export default function Home() {
                   {watchlistKeywords.map(kw => (
                     <span key={kw} style={{
                       display: 'inline-flex', alignItems: 'center', gap: 4,
-                      fontFamily: 'var(--font-mono)', fontSize: 10,
+                      fontFamily: 'var(--font-mono)', fontSize: 11,
                       background: 'rgba(243,156,18,0.12)', border: '1px solid rgba(243,156,18,0.35)',
                       color: '#f39c12', padding: '2px 7px', borderRadius: 999,
                     }}>
@@ -1711,7 +1711,7 @@ export default function Home() {
                 </div>
               )}
               {watchlistKeywords.length === 0 && (
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>
                   Track any term — &ldquo;ceasefire&rdquo;, &ldquo;Natanz&rdquo;, &ldquo;IAEA&rdquo;…
                 </div>
               )}
@@ -1773,10 +1773,10 @@ export default function Home() {
               animation: 'fadeUp 0.3s ease both',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#f39c12', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600 }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#f39c12', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600 }}>
                   ⚑ Watchlist — {watchlistMatches.length} match{watchlistMatches.length !== 1 ? 'es' : ''}
                 </span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)' }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>
                   {watchlistKeywords.map(k => `"${k}"`).join(' · ')}
                 </span>
               </div>
@@ -1786,16 +1786,16 @@ export default function Home() {
                   return (
                     <a key={key} href={item.link || undefined} target="_blank" rel="noopener noreferrer"
                       onClick={() => markRead(key)}
-                      style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-primary)', textDecoration: 'none', lineHeight: 1.4 }}
+                      style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-primary)', textDecoration: 'none', lineHeight: 1.4 }}
                       onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
                       onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-primary)')}>
-                      <span style={{ color: item.sourceColor, fontFamily: 'var(--font-mono)', fontSize: 10, marginRight: 6 }}>{item.sourceName}</span>
+                      <span style={{ color: item.sourceColor, fontFamily: 'var(--font-mono)', fontSize: 11, marginRight: 6 }}>{item.sourceName}</span>
                       {item.title}
                     </a>
                   );
                 })}
                 {watchlistMatches.length > 5 && (
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>
                     +{watchlistMatches.length - 5} more — activate the lens to see all
                   </span>
                 )}
@@ -1817,7 +1817,7 @@ export default function Home() {
                   onClick={() => { setActiveLenses(new Set()); setActiveRegions(new Set()); }}
                   style={{
                     fontFamily: 'var(--font-mono)',
-                    fontSize: 12,
+                    fontSize: 13,
                     padding: '3px 10px',
                     borderRadius: 999,
                     border: `1px solid ${activeLenses.size === 0 ? 'transparent' : 'var(--border-light)'}`,
@@ -1830,7 +1830,7 @@ export default function Home() {
                   }}
                 >
                   All Topics
-                  <span style={{ fontSize: 10, opacity: 0.75 }}>{lensCountMap['all'] ?? 0}</span>
+                  <span style={{ fontSize: 11, opacity: 0.75 }}>{lensCountMap['all'] ?? 0}</span>
                 </button>
 
                 {/* Individual topic lenses (skip index 0 = 'all') */}
@@ -1849,7 +1849,7 @@ export default function Home() {
                       })}
                       style={{
                         fontFamily: 'var(--font-mono)',
-                        fontSize: 12,
+                        fontSize: 13,
                         padding: '3px 10px',
                         borderRadius: 999,
                         border: `1px solid ${active ? 'transparent' : 'var(--border-light)'}`,
@@ -1864,7 +1864,7 @@ export default function Home() {
                     >
                       {l.label}
                       {count > 0 && (
-                        <span style={{ fontSize: 10, opacity: 0.7 }}>{count}</span>
+                        <span style={{ fontSize: 11, opacity: 0.7 }}>{count}</span>
                       )}
                     </button>
                   );
@@ -1886,7 +1886,7 @@ export default function Home() {
                       onClick={() => setSortMode(mode)}
                       style={{
                         fontFamily: 'var(--font-mono)',
-                        fontSize: 13,
+                        fontSize: 14,
                         letterSpacing: '0.04em',
                         padding: '4px 8px',
                         borderRadius: 3,
@@ -1911,7 +1911,7 @@ export default function Home() {
                     onClick={() => setViewMode(mode)}
                     style={{
                       fontFamily: 'var(--font-mono)',
-                      fontSize: 12,
+                      fontSize: 13,
                       letterSpacing: '0.04em',
                       padding: '4px 9px',
                       borderRadius: 3,
@@ -1932,7 +1932,7 @@ export default function Home() {
             {/* Region quick-filter strip (shown when ≥2 regions have items) */}
             {availableRegions.size >= 2 && (
               <div className="ftg-region-strip" style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', marginRight: 4 }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 14, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', marginRight: 4 }}>
                   Region
                 </span>
                 {[...availableRegions].sort().map(reg => {
@@ -1948,7 +1948,7 @@ export default function Home() {
                       })}
                       style={{
                         fontFamily: 'var(--font-mono)',
-                        fontSize: 13,
+                        fontSize: 14,
                         padding: '2px 8px',
                         borderRadius: 999,
                         border: `1px solid ${active ? dotColor : 'var(--border-light)'}`,
@@ -1969,7 +1969,7 @@ export default function Home() {
 
             {/* Active filter summary + clear */}
             {(activeLenses.size > 0 || activeRegions.size > 0 || search) && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-muted)', letterSpacing: '0.03em', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-mono)', fontSize: 14, color: 'var(--text-muted)', letterSpacing: '0.03em', flexWrap: 'wrap' }}>
                 <span>{visibleItems.length} stories shown</span>
                 {activeLenses.size > 0 && (
                   <span>
@@ -1983,7 +1983,7 @@ export default function Home() {
                 <button
                   onClick={() => { setActiveLenses(new Set()); setActiveRegions(new Set()); setSearch(''); }}
                   style={{
-                    fontFamily: 'var(--font-mono)', fontSize: 10,
+                    fontFamily: 'var(--font-mono)', fontSize: 11,
                     color: 'var(--accent)', background: 'none',
                     border: '1px solid var(--accent)', borderRadius: 3,
                     padding: '1px 7px', cursor: 'pointer', letterSpacing: '0.04em',
@@ -2008,7 +2008,7 @@ export default function Home() {
               textAlign: 'center',
               padding: '60px 0',
               fontFamily: 'var(--font-mono)',
-              fontSize: 12,
+              fontSize: 13,
               color: 'var(--text-muted)',
               letterSpacing: '0.05em',
             }}>
@@ -2078,7 +2078,7 @@ export default function Home() {
                           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7, marginBottom: 5 }}>
                             {badge === 'breaking' && (
                               <span style={{
-                                fontFamily: 'var(--font-mono)', fontSize: 13, letterSpacing: '0.1em',
+                                fontFamily: 'var(--font-mono)', fontSize: 14, letterSpacing: '0.1em',
                                 textTransform: 'uppercase', flexShrink: 0, marginTop: 2,
                                 color: 'var(--badge-brk-color)', background: 'var(--badge-brk-bg)',
                                 border: '1px solid var(--badge-brk-border)', padding: '2px 8px', borderRadius: 2,
@@ -2090,20 +2090,20 @@ export default function Home() {
                             )}
                             {badge === 'new' && (
                               <span style={{
-                                fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: '0.1em',
+                                fontFamily: 'var(--font-mono)', fontSize: 13, letterSpacing: '0.1em',
                                 textTransform: 'uppercase', flexShrink: 0, marginTop: 2,
                                 color: 'var(--badge-new-color)', background: 'var(--badge-new-bg)',
-                                border: '1px solid var(--badge-new-border)', padding: '1px 5px', borderRadius: 2,
+                                border: '1px solid var(--badge-new-border)', padding: '2px 8px', borderRadius: 2,
                               }}>
                                 New
                               </span>
                             )}
                             {isDeveloping && (
                               <span style={{
-                                fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: '0.1em',
+                                fontFamily: 'var(--font-mono)', fontSize: 13, letterSpacing: '0.1em',
                                 textTransform: 'uppercase', flexShrink: 0, marginTop: 2,
                                 color: '#27ae60', background: 'rgba(39,174,96,0.1)',
-                                border: '1px solid rgba(39,174,96,0.35)', padding: '1px 5px', borderRadius: 2,
+                                border: '1px solid rgba(39,174,96,0.35)', padding: '2px 8px', borderRadius: 2,
                               }}>
                                 ↑ Developing
                               </span>
@@ -2112,18 +2112,18 @@ export default function Home() {
                               <span
                                 title="Western and counter-narrative sources both covering this"
                                 style={{
-                                  fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: '0.1em',
+                                  fontFamily: 'var(--font-mono)', fontSize: 13, letterSpacing: '0.1em',
                                   textTransform: 'uppercase', flexShrink: 0, marginTop: 2,
                                   color: '#9b59b6', background: 'rgba(155,89,182,0.1)',
-                                  border: '1px solid rgba(155,89,182,0.35)', padding: '1px 5px', borderRadius: 2,
+                                  border: '1px solid rgba(155,89,182,0.35)', padding: '2px 8px', borderRadius: 2,
                                 }}>
                                 ⚑ Cross-divide
                               </span>
                             )}
                             {coverageCount > 2 && (
                               <span style={{
-                                fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: '0.06em',
-                                flexShrink: 0, marginTop: 3,
+                                fontFamily: 'var(--font-mono)', fontSize: 13, letterSpacing: '0.06em',
+                                flexShrink: 0, marginTop: 4,
                                 color: 'var(--text-muted)',
                               }}>
                                 ● {coverageCount} sources
@@ -2158,7 +2158,7 @@ export default function Home() {
                           {item.summary && (
                             <p className="ftg-article-summary" style={{
                               fontFamily: 'var(--font-body)',
-                              fontSize: 16,
+                              fontSize: 18,
                               color: 'var(--text-secondary)',
                               lineHeight: 1.65,
                               fontWeight: 400,
@@ -2174,7 +2174,7 @@ export default function Home() {
                     <div style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 10,
+                      gap: 12,
                       fontFamily: 'var(--font-mono)',
                       fontSize: 14,
                       color: 'var(--text-muted)',

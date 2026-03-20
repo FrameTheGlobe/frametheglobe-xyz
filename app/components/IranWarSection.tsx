@@ -391,8 +391,8 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
                     }}>
                       <span style={{
                         fontFamily:    'var(--font-mono)',
-                        fontSize:      13,
-                        fontWeight:    600,
+                        fontSize:      14,
+                        fontWeight:    700,
                         color:         'var(--text-secondary)',
                         letterSpacing: '0.04em',
                       }}>
@@ -427,11 +427,11 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
                             rel="noopener noreferrer"
                             style={{
                               fontFamily:    'var(--font-body)',
-                              fontSize:      16,
+                              fontSize:      18,
                               color:         'var(--text-primary)',
                               textDecoration:'none',
-                              lineHeight:    1.5,
-                              fontWeight:    500
+                              lineHeight:    1.4,
+                              fontWeight:    600
                             }}
                             onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
                             onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-primary)')}
@@ -439,11 +439,11 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
                             {trunc(item.title, 85)}
                           </a>
                           <span style={{
-                            fontFamily:    'var(--font-mono)',
-                            fontSize:      13,
-                            color:         item.sourceColor || 'var(--text-muted)',
-                            letterSpacing: '0.02em',
-                            fontWeight:    600
+                             fontFamily:    'var(--font-mono)',
+                             fontSize:      14,
+                             color:         item.sourceColor || 'var(--text-muted)',
+                             letterSpacing: '0.02em',
+                             fontWeight:    700
                           }}>
                             {item.sourceName} · {timeAgo(item.pubDate)}
                           </span>
@@ -743,10 +743,10 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
 // ── Shared label style ────────────────────────────────────────────────────────
 const sectionLabel: React.CSSProperties = {
   fontFamily:    'var(--font-mono)',
-  fontSize:      13,
+  fontSize:      15,
   letterSpacing: '0.12em',
   textTransform: 'uppercase',
   color:         'var(--text-muted)',
+  fontWeight:    800,
   marginBottom:  12,
-  fontWeight:    800
 };
