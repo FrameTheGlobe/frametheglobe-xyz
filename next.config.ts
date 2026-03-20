@@ -16,6 +16,10 @@ const nextConfig: NextConfig = {
   // @ts-ignore
   staticPageGenerationTimeout: 300,
   output: 'standalone',
+  // Force Webpack (disables experimental Turbopack production build)
+  webpack: (config: any) => {
+    return config;
+  },
   
   // Compress responses in production
   compress: true,

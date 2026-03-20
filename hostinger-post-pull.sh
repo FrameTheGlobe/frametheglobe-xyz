@@ -14,6 +14,7 @@ set -e
 
 # ── Force Node.js 20 on Hostinger ────────────────────────────
 export PATH=/opt/alt/alt-nodejs20/root/usr/bin:$PATH
+export NEXT_CPU_COUNT=1
 echo "🟢  Using Node.js version: $(node -v)"
 
 # ── Install dependencies (skipping devDeps for speed/space) ───
