@@ -1,6 +1,6 @@
 {
   "name": "frametheglobe",
-  "version": "5.2.7",
+  "version": "5.2.8",
   "private": true,
   "description": "Iran war theater news aggregator — frametheglobe.xyz",
   "author": "Zeeshan Khan",
@@ -12,7 +12,7 @@
     "node": "20.x"
   },
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
     "build": "NEXT_CPU_COUNT=1 NODE_OPTIONS='--max-old-space-size=2048' next build --webpack",
     "start": "next start",
     "lint": "eslint",
