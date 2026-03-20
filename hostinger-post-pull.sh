@@ -20,22 +20,26 @@ echo "🟢  Using Node.js version: $(node -v)"
 echo "📦  Installing production dependencies..."
 npm install --omit=dev
 
-# ── Build the Next.js app ─────────────────────────────────────
-echo "🔨  Building Next.js application..."
-# Memory limit set to 1GB to prevent OOM on Hostinger shared servers
+# ── Clear cache and build ──────────────────────────────────────
+echo "🔨  Cleaning and Building Next.js application..."
+# Remove old build and cache to prevent stale asset issues
+rm -rf .next
+# Build with memory limit 
 NODE_OPTIONS='--max-old-space-size=1024' npm run build
 
 # ── Restart the server ────────────────────────────────────────
 echo "🔄  Restarting application..."
+
+# Create /tmp directory if it doesn't exist (used for Passenger restart)
+mkdir -p tmp
+touch tmp/restart.txt
+
 if command -v pm2 &> /dev/null; then
   # If PM2 is already running, restart; else start
   pm2 restart all || pm2 start npm --name "frametheglobe" -- start
-else
-  # Fallback for some non-PM2 setups: touch restart file
-  mkdir -p tmp
-  touch tmp/restart.txt
-  echo "⚠️  PM2 not found. Triggered restart via tmp/restart.txt."
 fi
+
+echo "✅  Restart signal sent (tmp/restart.txt updated)."
 
 echo ""
 echo "════════════════════════════════════════"

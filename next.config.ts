@@ -11,6 +11,13 @@ const nextConfig: NextConfig = {
   typescript: { ignoreBuildErrors: true },
   // @ts-ignore
   eslint: { ignoreDuringBuilds: true },
+
+  // Experimental but recommended for shared hosting: 
+  // Limit the number of workers to prevent crashing Hostinger CPU limits.
+  // Standard VPS/Shared often has high core count but low process/memory limit.
+  // @ts-ignore
+  staticPageGenerationTimeout: 300,
+  output: 'standalone',
   
   // Compress responses in production
   compress: true,
