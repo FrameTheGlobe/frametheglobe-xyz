@@ -678,6 +678,8 @@ function FeedLoadingScreen({ sourceCount, isDone }: { sourceCount: number; isDon
           50%       { opacity: 0; }
         }
         .ftg-cursor { animation: ftg-blink 1s step-end infinite; }
+
+        .ftg-cursor { animation: ftg-blink 1s step-end infinite; }
       `}</style>
 
       <div style={{
@@ -1554,10 +1556,10 @@ export default function Home() {
                   FRAME<span style={{ color: 'var(--accent)' }}>THEGLOBE</span>
                   <span className="ftg-branding-subtitle" style={{ 
                     display: 'block', 
-                    fontSize: 13, 
+                    fontSize: 14, 
                     letterSpacing: '0.45em', 
                     color: 'var(--accent)', 
-                    marginTop: 8, 
+                    marginTop: 10, 
                     fontWeight: 700 
                   }}>
                     INTELLIGENCE OPS // GLOBAL MONITORING
@@ -1578,7 +1580,7 @@ export default function Home() {
               {/* Left Comms Block */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                   <span className="hud-mini-label" style={{ fontSize: 11, color: 'var(--text-primary)', fontWeight: 800, letterSpacing: '0.12em' }}>COMM LINK</span>
+                   <span className="hud-mini-label" style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 800, letterSpacing: '0.12em' }}>COMM LINK</span>
                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span className="ftg-hide-mobile" style={{ color: loading ? 'var(--neon-amber)' : 'var(--neon-green)', fontSize: 13, fontWeight: 900 }}>{loading ? 'SYNCING' : 'ONLINE'}</span>
                       <div className={!loading ? "live-dot hud-glitch-active" : ""} style={{ width: 6, height: 6, background: loading ? 'var(--neon-amber)' : 'var(--neon-green)' }} />
@@ -1594,7 +1596,7 @@ export default function Home() {
               {/* Right Temporal Block */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                   <span className="hud-mini-label" style={{ fontSize: 11, color: 'var(--text-primary)', fontWeight: 800, letterSpacing: '0.12em' }}>MISSION CHRONO</span>
+                   <span className="hud-mini-label" style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 800, letterSpacing: '0.12em' }}>MISSION CHRONO</span>
                    <span style={{ fontSize: 18, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontWeight: 900 }}>
                       {hasMounted ? (missionTime || '--:--:--') : '--:--:--'}
                       <span className="ftg-hide-mobile" style={{ fontSize: 11, color: 'var(--accent)', marginLeft: 4, fontWeight: 900 }}>UTC</span>
@@ -1675,7 +1677,7 @@ export default function Home() {
                   onKeyDown={e => { if (e.key === 'Enter') addWatchword(watchlistInput); }}
                   placeholder="Add keyword…"
                   style={{
-                    flex: 1, fontFamily: 'var(--font-mono)', fontSize: 11,
+                    flex: 1, fontFamily: 'var(--font-mono)', fontSize: 13,
                     background: 'var(--bg)', border: '1px solid var(--border)',
                     borderRadius: 3, padding: '5px 8px', color: 'var(--text-primary)',
                     outline: 'none',
@@ -1684,7 +1686,7 @@ export default function Home() {
                 <button
                   onClick={() => addWatchword(watchlistInput)}
                   style={{
-                    fontFamily: 'var(--font-mono)', fontSize: 11, padding: '5px 10px',
+                    fontFamily: 'var(--font-mono)', fontSize: 13, padding: '5px 10px',
                     background: 'var(--accent)', color: '#fff', border: 'none',
                     borderRadius: 3, cursor: 'pointer',
                   }}
@@ -1884,7 +1886,7 @@ export default function Home() {
                       onClick={() => setSortMode(mode)}
                       style={{
                         fontFamily: 'var(--font-mono)',
-                        fontSize: 11,
+                        fontSize: 13,
                         letterSpacing: '0.04em',
                         padding: '4px 8px',
                         borderRadius: 3,
@@ -1930,7 +1932,7 @@ export default function Home() {
             {/* Region quick-filter strip (shown when ≥2 regions have items) */}
             {availableRegions.size >= 2 && (
               <div className="ftg-region-strip" style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', marginRight: 4 }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', marginRight: 4 }}>
                   Region
                 </span>
                 {[...availableRegions].sort().map(reg => {
@@ -1946,7 +1948,7 @@ export default function Home() {
                       })}
                       style={{
                         fontFamily: 'var(--font-mono)',
-                        fontSize: 11,
+                        fontSize: 13,
                         padding: '2px 8px',
                         borderRadius: 999,
                         border: `1px solid ${active ? dotColor : 'var(--border-light)'}`,
@@ -1967,7 +1969,7 @@ export default function Home() {
 
             {/* Active filter summary + clear */}
             {(activeLenses.size > 0 || activeRegions.size > 0 || search) && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.03em', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text-muted)', letterSpacing: '0.03em', flexWrap: 'wrap' }}>
                 <span>{visibleItems.length} stories shown</span>
                 {activeLenses.size > 0 && (
                   <span>
@@ -2076,7 +2078,7 @@ export default function Home() {
                           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7, marginBottom: 5 }}>
                             {badge === 'breaking' && (
                               <span style={{
-                                fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.1em',
+                                fontFamily: 'var(--font-mono)', fontSize: 13, letterSpacing: '0.1em',
                                 textTransform: 'uppercase', flexShrink: 0, marginTop: 2,
                                 color: 'var(--badge-brk-color)', background: 'var(--badge-brk-bg)',
                                 border: '1px solid var(--badge-brk-border)', padding: '2px 8px', borderRadius: 2,
@@ -2136,11 +2138,11 @@ export default function Home() {
                               onClick={() => markRead(itemKey)}
                               style={{
                                 fontFamily: 'var(--font-display)',
-                                fontSize: 20,
+                                fontSize: 24,
                                 fontWeight: 700,
                                 color: 'var(--text-primary)',
                                 textDecoration: 'none',
-                                lineHeight: 1.35,
+                                lineHeight: 1.3,
                                 flex: 1,
                                 textWrap: 'balance',
                                 transition: 'color 0.15s',
@@ -2156,13 +2158,13 @@ export default function Home() {
                           {item.summary && (
                             <p className="ftg-article-summary" style={{
                               fontFamily: 'var(--font-body)',
-                              fontSize: 14,
+                              fontSize: 16,
                               color: 'var(--text-secondary)',
-                              lineHeight: 1.6,
+                              lineHeight: 1.65,
                               fontWeight: 400,
-                              marginBottom: 8,
+                              marginBottom: 10,
                             }}>
-                              {truncate(item.summary)}
+                              {truncate(item.summary, 200)}
                             </p>
                           )}
                         </div>
@@ -2172,9 +2174,9 @@ export default function Home() {
                     <div style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 7,
+                      gap: 10,
                       fontFamily: 'var(--font-mono)',
-                      fontSize: 12,
+                      fontSize: 14,
                       color: 'var(--text-muted)',
                       letterSpacing: '0.03em',
                       flexWrap: 'wrap',
@@ -2205,7 +2207,7 @@ export default function Home() {
                             onClick={() => toggleComparison(itemKey)}
                             style={{
                               border: 'none', background: 'transparent', cursor: 'pointer',
-                              fontFamily: 'var(--font-mono)', fontSize: 11, padding: 0,
+                              fontFamily: 'var(--font-mono)', fontSize: 13, padding: 0,
                               color: compExpanded ? 'var(--accent)' : 'var(--text-muted)',
                               transition: 'color 0.1s',
                             }}
@@ -2413,7 +2415,7 @@ export default function Home() {
             }}>
               <h2 style={{
                 fontFamily: 'var(--font-mono)',
-                fontSize: 11,
+                fontSize: 13,
                 fontWeight: 700,
                 letterSpacing: '0.1em',
                 textTransform: 'uppercase',

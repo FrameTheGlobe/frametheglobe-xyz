@@ -79,13 +79,13 @@ export default function IranWarCostBoard() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span className="live-dot" style={{ background: red }} />
-          <span style={{ fontFamily: mono, fontSize: 11, fontWeight: 800, color: red, letterSpacing: '0.1em' }}>
+          <span style={{ fontFamily: mono, fontSize: 13, fontWeight: 800, color: red, letterSpacing: '0.1em' }}>
             U.S. CENTRAL COMMAND · WAR EXPENDITURE · V2.2-TAC
           </span>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <div style={{ fontFamily: mono, fontSize: 11, padding: '3px 8px', background: red, color: '#fff', borderRadius: 2, fontWeight: 700 }}>TOP SECRET // NOCON</div>
-          <div style={{ fontFamily: mono, fontSize: 11, padding: '3px 8px', background: 'var(--border-light)', borderRadius: 2, fontWeight: 700 }}>SECURE LINK ACTIVE</div>
+          <div style={{ fontFamily: mono, fontSize: 13, padding: '4px 10px', background: red, color: '#fff', borderRadius: 2, fontWeight: 700 }}>TOP SECRET // NOCON</div>
+          <div style={{ fontFamily: mono, fontSize: 13, padding: '4px 10px', background: 'var(--border-light)', borderRadius: 2, fontWeight: 700 }}>SECURE LINK ACTIVE</div>
         </div>
       </div>
 
@@ -94,33 +94,33 @@ export default function IranWarCostBoard() {
         <div style={{ flex: '2 1 500px', borderRight: `1px solid ${border}` }}>
           {/* BIG COST SECTION */}
           <div style={{ padding: '24px', borderBottom: `1px solid ${border}`, textAlign: 'center' }}>
-            <div style={{ fontFamily: mono, fontSize: 10, color: muted, letterSpacing: '0.15em', marginBottom: 12 }}>ESTIMATED TOTAL CONFLICT COST (USD)</div>
+            <div style={{ fontFamily: mono, fontSize: 13, color: muted, letterSpacing: '0.15em', marginBottom: 14 }}>ESTIMATED TOTAL CONFLICT COST (USD)</div>
             <div className="ftg-war-cost-counter" style={{
-              fontFamily: mono, fontSize: 32, fontWeight: 900, color: red, lineHeight: 1, letterSpacing: '-0.02em',
-              marginBottom: 6, fontVariantNumeric: 'tabular-nums'
+              fontFamily: mono, fontSize: 42, fontWeight: 900, color: red, lineHeight: 1, letterSpacing: '-0.02em',
+              marginBottom: 10, fontVariantNumeric: 'tabular-nums'
             }}>
               {formatDollars(cost)}
             </div>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 18, marginBottom: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 20, marginBottom: 28 }}>
               {BURN_RATES.map(b => (
-                <div key={b.label} style={{ display: 'flex', gap: 6, alignItems: 'baseline' }}>
-                  <span style={{ fontFamily: mono, fontSize: 11, color: muted, fontWeight: 600 }}>{b.label.toUpperCase()}:</span>
-                  <span style={{ fontFamily: mono, fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>{b.value}</span>
+                <div key={b.label} style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
+                  <span style={{ fontFamily: mono, fontSize: 13, color: muted, fontWeight: 600 }}>{b.label.toUpperCase()}:</span>
+                  <span style={{ fontFamily: mono, fontSize: 15, fontWeight: 800, color: 'var(--text-primary)' }}>{b.value}</span>
                 </div>
               ))}
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 6, opacity: 0.9 }}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 8, opacity: 0.9 }}>
               {[{ v: el.days, l: 'D' }, { v: el.hours, l: 'H' }, { v: el.mins, l: 'M' }, { v: el.secs, l: 'S' }].map((t, i) => (
-                <div key={t.l} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <div key={t.l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                    <div style={{ textAlign: 'center' }}>
                       <div style={{ 
                         background: 'rgba(255,255,255,0.02)', border: `1px solid ${border}`, borderRadius: 3, 
-                        padding: '4px 8px', fontFamily: mono, fontSize: 14, fontWeight: 800, color: red, minWidth: 32
+                        padding: '6px 12px', fontFamily: mono, fontSize: 18, fontWeight: 800, color: red, minWidth: 44
                       }}>{i === 0 ? t.v : pad(t.v)}</div>
-                      <div style={{ fontFamily: mono, fontSize: 6, color: muted, marginTop: 2 }}>{t.l}</div>
+                      <div style={{ fontFamily: mono, fontSize: 8, color: muted, marginTop: 4 }}>{t.l}</div>
                    </div>
-                   {i < 3 && <div style={{ fontSize: 14, color: 'rgba(201,58,32,0.2)' }}>:</div>}
+                   {i < 3 && <div style={{ fontSize: 18, color: 'rgba(201,58,32,0.2)' }}>:</div>}
                 </div>
               ))}
             </div>
@@ -128,29 +128,29 @@ export default function IranWarCostBoard() {
 
           {/* ASSET & MUNITION GRID CARD */}
           <div style={{ display: 'flex', flexWrap: 'wrap', borderTop: `1px solid ${border}` }}>
-            <div style={{ flex: '1 1 240px', padding: '10px', borderRight: `1px solid ${border}` }}>
-              <div style={{ fontFamily: mono, fontSize: 8, fontWeight: 700, color: muted, marginBottom: 8, letterSpacing: '0.05em' }}>MUNITIONS</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px' }}>
+            <div style={{ flex: '1 1 240px', padding: '14px', borderRight: `1px solid ${border}` }}>
+              <div style={{ fontFamily: mono, fontSize: 11, fontWeight: 700, color: muted, marginBottom: 12, letterSpacing: '0.05em' }}>MUNITIONS</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 16px' }}>
                 {MUNITIONS.slice(0, 4).map(m => (
                   <div key={m.n}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                      <span style={{ fontFamily: mono, fontSize: 11, opacity: 0.9, fontWeight: 500 }}>{m.n}</span>
-                      <span style={{ fontFamily: mono, fontSize: 11, color: red, fontWeight: 700 }}>{m.q}</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <span style={{ fontFamily: mono, fontSize: 13, opacity: 0.9, fontWeight: 500 }}>{m.n}</span>
+                      <span style={{ fontFamily: mono, fontSize: 13, color: red, fontWeight: 700 }}>{m.q}</span>
                     </div>
-                    <div style={{ height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2 }}>
+                    <div style={{ height: 5, background: 'rgba(255,255,255,0.05)', borderRadius: 2 }}>
                        <div style={{ height: '100%', width: `${m.p}%`, background: red, borderRadius: 2 }} />
                     </div>
                   </div>
                 ))}
               </div>
             </div>
-            <div style={{ flex: '1 1 200px', padding: '10px' }}>
-              <div style={{ fontFamily: mono, fontSize: 8, fontWeight: 700, color: muted, marginBottom: 8, letterSpacing: '0.05em' }}>THEATER ASSETS</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+            <div style={{ flex: '1 1 200px', padding: '14px' }}>
+              <div style={{ fontFamily: mono, fontSize: 11, fontWeight: 700, color: muted, marginBottom: 12, letterSpacing: '0.05em' }}>THEATER ASSETS</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
                  {ASSETS.slice(0, 6).map(a => (
-                   <div key={a.l} style={{ padding: '6px', border: `1px solid ${border}`, borderRadius: 4, background: 'rgba(255,255,255,0.01)', textAlign: 'center' }}>
-                      <div style={{ fontFamily: mono, fontSize: 10, color: muted, whiteSpace: 'nowrap', textTransform: 'uppercase', fontWeight: 600 }}>{a.l}</div>
-                      <div style={{ fontFamily: mono, fontSize: 14, fontWeight: 900, lineHeight: 1.2 }}>{a.v}</div>
+                   <div key={a.l} style={{ padding: '8px', border: `1px solid ${border}`, borderRadius: 4, background: 'rgba(255,255,255,0.01)', textAlign: 'center' }}>
+                      <div style={{ fontFamily: mono, fontSize: 12, color: muted, whiteSpace: 'nowrap', textTransform: 'uppercase', fontWeight: 600 }}>{a.l}</div>
+                      <div style={{ fontFamily: mono, fontSize: 17, fontWeight: 900, lineHeight: 1.2 }}>{a.v}</div>
                    </div>
                  ))}
               </div>
@@ -160,33 +160,33 @@ export default function IranWarCostBoard() {
 
         {/* RIGHT COLUMN: RECENT LOGS & HUMAN COST */}
         <div style={{ flex: '1 1 300px', background: 'rgba(255,255,255,0.01)' }}>
-          <div style={{ padding: '16px', borderBottom: `1px solid ${border}` }}>
-            <div style={{ fontFamily: mono, fontSize: 9, fontWeight: 700, color: muted, marginBottom: 12 }}>STRATEGIC ENGAGEMENT LOG</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ padding: '20px', borderBottom: `1px solid ${border}` }}>
+            <div style={{ fontFamily: mono, fontSize: 11, fontWeight: 700, color: muted, marginBottom: 16 }}>STRATEGIC ENGAGEMENT LOG</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               {RECENT_HISTORY.map((h, i) => (
-                <div key={i} style={{ borderLeft: `2px solid ${red}33`, paddingLeft: 12 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span style={{ fontFamily: mono, fontSize: 11, color: red, fontWeight: 800 }}>{h.t}</span>
-                    <span style={{ fontFamily: mono, fontSize: 11, color: muted, fontWeight: 600 }}>{h.c}</span>
+                <div key={i} style={{ borderLeft: `2px solid ${red}33`, paddingLeft: 14 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <span style={{ fontFamily: mono, fontSize: 13, color: red, fontWeight: 800 }}>{h.t}</span>
+                    <span style={{ fontFamily: mono, fontSize: 13, color: muted, fontWeight: 600 }}>{h.c}</span>
                   </div>
-                  <div style={{ fontFamily: mono, fontSize: 12, color: 'var(--text-primary)', lineHeight: 1.4, fontWeight: 500 }}>{h.e}</div>
+                  <div style={{ fontFamily: mono, fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.5, fontWeight: 500 }}>{h.e}</div>
                 </div>
               ))}
             </div>
           </div>
 
-          <div style={{ padding: '16px' }}>
-             <div style={{ fontFamily: mono, fontSize: 9, fontWeight: 700, color: muted, marginBottom: 12 }}>CASUALTY TRACKER</div>
-             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ padding: '20px' }}>
+             <div style={{ fontFamily: mono, fontSize: 11, fontWeight: 700, color: muted, marginBottom: 16 }}>CASUALTY TRACKER</div>
+             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {HUMAN_COST.map(h => (
-                  <div key={h.l} style={{ padding: '12px', border: `1px solid ${border}`, borderRadius: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div key={h.l} style={{ padding: '14px', border: `1px solid ${border}`, borderRadius: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
-                      <div style={{ fontFamily: mono, fontSize: 11, color: muted, marginBottom: 4, fontWeight: 700 }}>{h.l}</div>
-                      <div style={{ fontFamily: mono, fontSize: 22, fontWeight: 900, color: h.c, letterSpacing: '-0.01em' }}>{h.k} <span style={{ fontSize: 11, opacity: 0.7, fontWeight: 800 }}>KILLED</span></div>
+                      <div style={{ fontFamily: mono, fontSize: 13, color: muted, marginBottom: 6, fontWeight: 700 }}>{h.l}</div>
+                      <div style={{ fontFamily: mono, fontSize: 28, fontWeight: 900, color: h.c, letterSpacing: '-0.01em' }}>{h.k} <span style={{ fontSize: 13, opacity: 0.7, fontWeight: 800 }}>KILLED</span></div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontFamily: mono, fontSize: 16, fontWeight: 800, color: h.c }}>{h.w}</div>
-                      <div style={{ fontFamily: mono, fontSize: 9, color: muted, fontWeight: 700 }}>WOUNDED</div>
+                      <div style={{ fontFamily: mono, fontSize: 18, fontWeight: 800, color: h.c }}>{h.w}</div>
+                      <div style={{ fontFamily: mono, fontSize: 11, color: muted, fontWeight: 700 }}>WOUNDED</div>
                     </div>
                   </div>
                 ))}
@@ -197,11 +197,11 @@ export default function IranWarCostBoard() {
 
       {/* FOOTER: NOTABLE ALERTS */}
       <div style={{ padding: '12px 14px', borderTop: `1px solid ${border}`, background: 'rgba(201,58,32,0.04)', display: 'flex', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-           <span style={{ fontFamily: mono, fontSize: 9, fontWeight: 800, color: red }}>LATEST INCIDENT:</span>
-           <span style={{ fontFamily: mono, fontSize: 9, color: 'var(--text-primary)' }}>175 KILLED · SHAJAREH TAYYEBEH GIRLS SCHOOL · MINAB · UN CONDEMNED</span>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+           <span style={{ fontFamily: mono, fontSize: 12, fontWeight: 800, color: red }}>LATEST INCIDENT:</span>
+           <span style={{ fontFamily: mono, fontSize: 12, color: 'var(--text-primary)' }}>175 KILLED · SHAJAREH TAYYEBEH GIRLS SCHOOL · MINAB · UN CONDEMNED</span>
         </div>
-        <div style={{ fontFamily: mono, fontSize: 7, color: muted }}>SOURCE: DOD/CENTCOM · IRCS · AP WIRE</div>
+        <div style={{ fontFamily: mono, fontSize: 9, color: muted }}>SOURCE: DOD/CENTCOM · IRCS · AP WIRE</div>
       </div>
     </div>
   );

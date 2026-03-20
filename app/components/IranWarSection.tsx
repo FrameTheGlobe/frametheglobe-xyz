@@ -298,7 +298,7 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
 
           <span style={{
             fontFamily:    'var(--font-mono)',
-            fontSize:      12,
+            fontSize:      15,
             fontWeight:    800,
             letterSpacing: '0.12em',
             textTransform: 'uppercase',
@@ -309,10 +309,10 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
 
           <span style={{
             fontFamily:    'var(--font-mono)',
-            fontSize:      11,
+            fontSize:      13,
             color:         'var(--text-muted)',
             border:        '1px solid var(--border-light)',
-            padding:       '2px 8px',
+            padding:       '3px 10px',
             borderRadius:  2,
             letterSpacing: '0.04em',
             fontWeight:    600
@@ -391,7 +391,7 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
                     }}>
                       <span style={{
                         fontFamily:    'var(--font-mono)',
-                        fontSize:      10,
+                        fontSize:      13,
                         fontWeight:    600,
                         color:         'var(--text-secondary)',
                         letterSpacing: '0.04em',
@@ -400,13 +400,13 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
                       </span>
                       <span style={{
                         fontFamily:    'var(--font-mono)',
-                        fontSize:      8,
+                        fontSize:      11,
                         letterSpacing: '0.1em',
                         textTransform: 'uppercase',
                         color:         status.color,
                         background:    `${status.color}18`,
                         border:        `1px solid ${status.color}44`,
-                        padding:       '1px 6px',
+                        padding:       '2px 8px',
                         borderRadius:  2,
                         flexShrink:    0,
                       }}>
@@ -427,7 +427,7 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
                             rel="noopener noreferrer"
                             style={{
                               fontFamily:    'var(--font-body)',
-                              fontSize:      13,
+                              fontSize:      16,
                               color:         'var(--text-primary)',
                               textDecoration:'none',
                               lineHeight:    1.5,
@@ -440,7 +440,7 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
                           </a>
                           <span style={{
                             fontFamily:    'var(--font-mono)',
-                            fontSize:      11,
+                            fontSize:      13,
                             color:         item.sourceColor || 'var(--text-muted)',
                             letterSpacing: '0.02em',
                             fontWeight:    600
@@ -613,20 +613,20 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7, marginBottom: 4 }}>
                         {isBreaking && (
                           <span style={{
-                            fontFamily:    'var(--font-mono)', fontSize: 7, letterSpacing: '0.1em',
-                            textTransform: 'uppercase', flexShrink: 0, marginTop: 3,
+                            fontFamily:    'var(--font-mono)', fontSize: 11, letterSpacing: '0.1em',
+                            textTransform: 'uppercase', flexShrink: 0, marginTop: 4,
                             color: 'var(--badge-brk-color)', background: 'var(--badge-brk-bg)',
-                            border: '1px solid var(--badge-brk-border)', padding: '1px 5px', borderRadius: 2,
+                            border: '1px solid var(--badge-brk-border)', padding: '2px 8px', borderRadius: 2,
                           }}>
                             Breaking
                           </span>
                         )}
                         {!isBreaking && isNew && (
                           <span style={{
-                            fontFamily:    'var(--font-mono)', fontSize: 7, letterSpacing: '0.1em',
-                            textTransform: 'uppercase', flexShrink: 0, marginTop: 3,
+                            fontFamily:    'var(--font-mono)', fontSize: 11, letterSpacing: '0.1em',
+                            textTransform: 'uppercase', flexShrink: 0, marginTop: 4,
                             color: 'var(--badge-new-color)', background: 'var(--badge-new-bg)',
-                            border: '1px solid var(--badge-new-border)', padding: '1px 5px', borderRadius: 2,
+                            border: '1px solid var(--badge-new-border)', padding: '2px 8px', borderRadius: 2,
                           }}>
                             New
                           </span>
@@ -637,11 +637,11 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
                           rel="noopener noreferrer"
                           style={{
                             fontFamily:    'var(--font-display)',
-                            fontSize:      15,
+                            fontSize:      18,
                             fontWeight:    600,
                             color:         'var(--text-primary)',
                             textDecoration:'none',
-                            lineHeight:    1.35,
+                            lineHeight:    1.4,
                             flex:          1,
                             transition:    'color 0.1s',
                           }}
@@ -656,10 +656,10 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
                       {item.summary && (
                         <p className="ftg-article-summary" style={{
                           fontFamily: 'var(--font-body)',
-                          fontSize:   13,
+                          fontSize:   16,
                           color:      'var(--text-secondary)',
-                          lineHeight: 1.55,
-                          marginBottom: 6,
+                          lineHeight: 1.6,
+                          marginBottom: 8,
                         }}>
                           {trunc(item.summary, 200)}
                         </p>
@@ -669,9 +669,9 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
                       <div style={{
                         display:    'flex',
                         alignItems: 'center',
-                        gap:        7,
+                        gap:        10,
                         fontFamily: 'var(--font-mono)',
-                        fontSize:   11,
+                        fontSize:   14,
                         color:      'var(--text-muted)',
                         letterSpacing: '0.03em',
                         flexWrap:   'wrap',
@@ -743,10 +743,10 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
 // ── Shared label style ────────────────────────────────────────────────────────
 const sectionLabel: React.CSSProperties = {
   fontFamily:    'var(--font-mono)',
-  fontSize:      11,
+  fontSize:      13,
   letterSpacing: '0.12em',
   textTransform: 'uppercase',
   color:         'var(--text-muted)',
-  marginBottom:  10,
-  fontWeight:    700
+  marginBottom:  12,
+  fontWeight:    800
 };
