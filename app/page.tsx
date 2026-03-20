@@ -1501,7 +1501,7 @@ export default function Home() {
               </div>
               <div style={{ display: 'flex', gap: 25 }}>
                 <span className="hud-glitch-active" style={{ color: 'var(--accent)', fontWeight: 900 }}>SECURITY: LEVEL 5</span>
-                <span>VER: <span style={{ color: 'var(--text-primary)', fontWeight: 800 }}>5.2.4</span></span>
+                <span>VER: <span style={{ color: 'var(--text-primary)', fontWeight: 800 }}>5.2.5</span></span>
               </div>
             </div>
 
