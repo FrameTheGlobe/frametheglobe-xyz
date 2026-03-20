@@ -8,6 +8,10 @@ yarn.lock
 pnpm-lock.yaml
 *.log
 
+# generated static asset copy (produced by npm run build, served by Apache)
+# never commit — stale files here cause /_next/static/ 404s after a rebuild
+public/_next/
+
 # deploy artifacts
 deploy.env
 deploy.sh
