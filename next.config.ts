@@ -34,6 +34,14 @@ const nextConfig: NextConfig = {
         ],
       },
       {
+        // Social card image - allow caching for X crawler
+        source: '/img/social-card.png',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=3600, s-maxage=3600' },
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+        ],
+      },
+      {
         // HTML pages must never be cached. Each rebuild changes the chunk
         // filenames embedded in the HTML; serving stale HTML causes every
         // JS/CSS chunk to 404 and breaks React hydration.
