@@ -99,7 +99,7 @@ export default function IranOilBoard() {
       <div style={{
         background:   'var(--surface)',
         border:       '1px solid var(--border-light)',
-        borderTop:    '2px solid #c93a20',
+        borderTop:    '2px solid var(--accent)',
         borderRadius: '0 0 4px 4px',
         marginBottom: 12,
         overflow:     'hidden',
@@ -111,17 +111,17 @@ export default function IranOilBoard() {
           justifyContent: 'space-between',
           padding:        '8px 14px',
           borderBottom:   '1px solid var(--border-light)',
-          background:     'rgba(201,58,32,0.06)',
+          background:     'var(--accent-light)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-            <span className="live-dot" style={{ background: '#c93a20' }} />
+            <span className="live-dot" style={{ background: 'var(--accent)' }} />
             <span style={{
               fontFamily:    mono,
               fontSize:      10,
               fontWeight:    700,
               letterSpacing: '0.12em',
               textTransform: 'uppercase',
-              color:         '#c93a20',
+              color:         'var(--accent)',
             }}>
               Crude Oil · Tactical Market Board
             </span>

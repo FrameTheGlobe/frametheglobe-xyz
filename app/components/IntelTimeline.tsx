@@ -83,10 +83,10 @@ interface Props {
 }
 
 const STATUS_STYLES: Record<IntelStatus, { color: string; bg: string }> = {
-  CRITICAL: { color: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)' },
-  ELEVATED: { color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
-  HIGH:     { color: '#f97316', bg: 'rgba(249, 115, 22, 0.1)' },
-  STABLE:   { color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' }
+  CRITICAL: { color: '#0070f3', bg: 'rgba(0, 112, 243, 0.08)' }, // Pure Blue
+  ELEVATED: { color: '#00a6ff', bg: 'rgba(0, 166, 255, 0.08)' }, // Sky Blue
+  HIGH:     { color: '#00d8ff', bg: 'rgba(0, 216, 255, 0.08)' }, // Cyan
+  STABLE:   { color: '#27ae60', bg: 'rgba(39, 174, 96, 0.08)' }   // Emerald Green
 };
 
 export default function IntelTimeline({ events }: Props) {

@@ -14,7 +14,7 @@ const IranWarCostBoard = dynamic(() => import('./IranWarCostBoard'), {
   loading: () => (
     <div style={{
       border:       '1px solid var(--border-light)',
-      borderTop:    '2px solid #c93a20',
+      borderTop:    '2px solid var(--accent)',
       borderRadius: '0 0 6px 6px',
       marginBottom: 12,
       height:       420,
@@ -73,7 +73,7 @@ const IRAN_LENSES: {
     label:    'All Iran',
     icon:     '●',
     keywords: [],
-    color:    '#c93a20',
+    color:    'var(--accent)',
   },
   {
     id:       'nuclear',
@@ -207,9 +207,9 @@ function deriveFrontStatus(iranItems: FeedItem[], keywords: string[]): StatusInf
     (now - new Date(i.pubDate).getTime()) < 2 * 3600_000
   );
 
-  if (hot.length >= 3)  return { label: 'Escalating', color: '#e74c3c', bg: 'rgba(231,76,60,0.08)'  };
-  if (hot.length >= 1)  return { label: 'Active',     color: '#e67e22', bg: 'rgba(230,126,34,0.08)' };
-  if (recent.length > 0)return { label: 'Monitoring', color: '#3498db', bg: 'rgba(52,152,219,0.08)' };
+  if (hot.length >= 3)  return { label: 'Escalating', color: '#0070f3', bg: 'rgba(0,112,243,0.08)'  };
+  if (hot.length >= 1)  return { label: 'Active',     color: '#00a6ff', bg: 'rgba(0,166,255,0.08)' };
+  if (recent.length > 0)return { label: 'Monitoring', color: '#00d8ff', bg: 'rgba(0,216,255,0.08)' };
   return                         { label: 'Quiet',     color: '#7f8c8d', bg: 'rgba(127,140,141,0.06)'};
 }
 
@@ -253,7 +253,7 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
   const displayed = showAll ? lensedItems : lensedItems.slice(0, 18);
 
   // Date.now() inside useMemo is intentional: refreshes once per displayed-list change.
-  // eslint-disable-next-line react-hooks/purity, react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const nowMs = useMemo(() => Date.now(), [displayed]);
 
   const iranSourceCount = SOURCES.filter(s => s.region === 'iranian').length;
@@ -262,11 +262,12 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
 
   return (
     <section
+      className="ftg-iran-section"
       aria-label="Iran War Theater"
       style={{
         marginBottom: 14,
         border:       '1px solid var(--border-light)',
-        borderTop:    '3px solid #c93a20',
+        borderTop:    '3px solid var(--accent)',
         background:   'var(--surface)',
         borderRadius: '0 0 4px 4px',
       }}
@@ -282,37 +283,38 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
           display:       'flex',
           alignItems:    'center',
           justifyContent:'space-between',
-          padding:       '9px 16px',
+          padding:       '10px 14px',
           borderBottom:  collapsed ? 'none' : '1px solid var(--border-light)',
           cursor:        'pointer',
           userSelect:    'none',
+          background:    'var(--surface-muted)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {/* Red pulse dot */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          {/* Theme-aware pulse dot */}
           <span style={{
             width: 7, height: 7, borderRadius: '50%',
-            background: '#c93a20', flexShrink: 0,
-            boxShadow: '0 0 0 2px rgba(201,58,32,0.18)',
+            background: 'var(--accent)', flexShrink: 0,
+            boxShadow: '0 0 0 2px var(--accent-light)',
           }} />
 
           <span style={{
             fontFamily:    'var(--font-mono)',
-            fontSize:      15,
+            fontSize:      14,
             fontWeight:    800,
-            letterSpacing: '0.12em',
+            letterSpacing: '0.1em',
             textTransform: 'uppercase',
-            color:         '#c93a20',
+            color:         'var(--accent)',
           }}>
             Iran War Theater
           </span>
 
           <span style={{
             fontFamily:    'var(--font-mono)',
-            fontSize:      13,
+            fontSize:      11,
             color:         'var(--text-muted)',
             border:        '1px solid var(--border-light)',
-            padding:       '3px 10px',
+            padding:       '2px 8px',
             borderRadius:  2,
             letterSpacing: '0.04em',
             fontWeight:    600
@@ -323,19 +325,19 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
 
         <span style={{
           fontFamily:    'var(--font-mono)',
-          fontSize:      11,
+          fontSize:      10,
           color:         'var(--text-muted)',
           letterSpacing: '0.06em',
           textTransform: 'uppercase',
           fontWeight:    700
         }}>
-          {collapsed ? '▶ Expand' : '▼ Collapse'}
+          {collapsed ? 'Show Section' : 'Collapse'}
         </span>
       </div>
 
       {/* ── Body ────────────────────────────────────────────────────────── */}
       {!collapsed && (
-        <div className="ftg-section-body" style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div className="ftg-section-body ftg-iran-section-body" style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
           {/* ── War Cost Counter ─────────────────────────────────────────── */}
           <IranWarCostBoard />
@@ -360,7 +362,7 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
           {/* ── Situation Status ────────────────────────────────────────── */}
           <div>
             <div style={sectionLabel}>Situation Status</div>
-            <div style={{
+            <div className="ftg-iran-front-grid" style={{
               display:             'grid',
               gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))',
               gap:                 8,
@@ -373,6 +375,7 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
 
                 return (
                   <div
+                    className="ftg-iran-front-card"
                     key={front.id}
                     style={{
                       background:  status.bg,
@@ -427,10 +430,10 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
                             rel="noopener noreferrer"
                             style={{
                               fontFamily:    'var(--font-body)',
-                              fontSize:      18,
+                              fontSize:      15,
                               color:         'var(--text-primary)',
                               textDecoration:'none',
-                              lineHeight:    1.4,
+                              lineHeight:    1.35,
                               fontWeight:    600
                             }}
                             onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
@@ -440,10 +443,10 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
                           </a>
                           <span style={{
                              fontFamily:    'var(--font-mono)',
-                             fontSize:      14,
+                             fontSize:      11,
                              color:         item.sourceColor || 'var(--text-muted)',
                              letterSpacing: '0.02em',
-                             fontWeight:    700
+                             fontWeight:    600
                           }}>
                             {item.sourceName} · {timeAgo(item.pubDate)}
                           </span>
@@ -525,7 +528,7 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
           {/* ── Sub-Lens Filter ──────────────────────────────────────────── */}
           <div>
             <div style={sectionLabel}>Filter by Theater</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+            <div className="ftg-iran-lens-row" style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
               {IRAN_LENSES.map(l => {
                 const active = iranLens === l.id;
                 const count  = lensCounts[l.id] ?? 0;
@@ -587,7 +590,7 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
                 No Iran stories found in current feed. Refresh to update.
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              <div className="ftg-iran-article-list" style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                 {displayed.map(item => {
                   const ageMs     = nowMs - new Date(item.pubDate).getTime();
                   const isBreaking = ageMs < 30 * 60_000;
@@ -595,12 +598,13 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
 
                   return (
                     <article
+                      className="ftg-iran-article-card"
                       key={(item.link && item.link !== '#' && item.link.startsWith('http') ? item.link : null) ?? `${item.sourceId}::${item.title}::${item.pubDate}`}
                       style={{
                         borderTop:    '1px solid var(--border-light)',
                         borderRight:  '1px solid var(--border-light)',
                         borderBottom: '1px solid var(--border-light)',
-                        borderLeft:   `3px solid ${item.sourceColor || '#c93a20'}`,
+                        borderLeft:   `3px solid ${item.sourceColor || 'var(--accent)'}`,
                         padding:      '10px 14px',
                         background:   'var(--surface)',
                         borderRadius: '0 3px 3px 0',
@@ -632,6 +636,7 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
                           </span>
                         )}
                         <a
+                          className="ftg-iran-front-headline"
                           href={item.link || undefined}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -666,7 +671,7 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
                       )}
 
                       {/* Meta row */}
-                      <div style={{
+                      <div className="ftg-iran-article-meta" style={{
                         display:    'flex',
                         alignItems: 'center',
                         gap:        10,
@@ -676,7 +681,7 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
                         letterSpacing: '0.03em',
                         flexWrap:   'wrap',
                       }}>
-                        <span style={{ color: item.sourceColor || '#c93a20', fontWeight: 600 }}>
+                        <span style={{ color: item.sourceColor || 'var(--accent)', fontWeight: 600 }}>
                           {item.sourceName}
                         </span>
                         <span style={{ color: 'var(--border-light)' }}>/</span>
@@ -710,9 +715,9 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
                   fontSize:      11,
                   letterSpacing: '0.07em',
                   textTransform: 'uppercase',
-                  color:         '#c93a20',
+                  color:         'var(--accent)',
                   background:    'none',
-                  border:        '1px solid rgba(201,58,32,0.3)',
+                  border:        '1px solid var(--accent)',
                   borderRadius:  3,
                   padding:       '7px 0',
                   cursor:        'pointer',

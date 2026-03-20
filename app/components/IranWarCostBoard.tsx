@@ -12,7 +12,6 @@ const STRIKE_START   = new Date('2026-02-28T00:00:00Z');
 const BASE_COST_USD  = 11_300_000_000;
 const BASE_DAYS      = 6;
 const DAILY_RATE     = 1_000_000_000;
-const PER_SECOND     = DAILY_RATE / 86_400;
 
 // ── Static data ───────────────────────────────────────────────────────────────
 const HUMAN_COST = [
@@ -54,61 +53,58 @@ const OPS_STATUS = [
 ];
 
 export default function IranWarCostBoard() {
-  const [now, setNow] = useState<Date | null>(null);
+  const [now, setNow] = useState<Date>(new Date());
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    setNow(new Date());
     timerRef.current = setInterval(() => setNow(new Date()), 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, []);
 
-  const cost = useMemo(() => now ? calcCost(now) : 0, [now]);
-  const el = useMemo(() => now ? getElapsed(now) : null, [now]);
-
-  if (!now || !el) return <div style={{ height: 400, background: 'var(--surface)' }} />;
+  const cost = useMemo(() => calcCost(now), [now]);
+  const el = useMemo(() => getElapsed(now), [now]);
 
   const mono = 'var(--font-mono)';
-  const red = '#c93a20';
+  const accent = 'var(--accent)';
   const border = 'var(--border-light)';
   const muted = 'var(--text-muted)';
   const surface = 'var(--surface)';
 
   return (
-    <div style={{
-      background: surface, border: `1px solid ${border}`, borderTop: `2px solid ${red}`,
+    <div className="ftg-iran-board" style={{
+      background: surface, border: `1px solid ${border}`, borderTop: `2px solid ${accent}`,
       borderRadius: '0 0 6px 6px', marginBottom: 12, overflow: 'hidden',
     }}>
       {/* ── HEADER BLOCK ────────────────────────────────────────────── */}
-      <div style={{
+      <div className="ftg-iran-board-top" style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '10px 14px', borderBottom: `1px solid ${border}`, background: 'rgba(201,58,32,0.08)'
+        padding: '10px 14px', borderBottom: `1px solid ${border}`, background: 'var(--accent-light)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span className="live-dot" style={{ background: red }} />
-          <span style={{ fontFamily: mono, fontSize: 13, fontWeight: 800, color: red, letterSpacing: '0.1em' }}>
-            U.S. CENTRAL COMMAND · WAR EXPENDITURE · V2.2-TAC
+        <div className="ftg-iran-board-top-left" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span className="live-dot" style={{ background: accent }} />
+          <span style={{ fontFamily: mono, fontSize: 13, fontWeight: 800, color: accent, letterSpacing: '0.1em' }}>
+            IRAN THEATER COST & OPERATIONS MODEL
           </span>
         </div>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <div style={{ fontFamily: mono, fontSize: 13, padding: '4px 10px', background: red, color: '#fff', borderRadius: 2, fontWeight: 700 }}>TOP SECRET // NOCON</div>
-          <div style={{ fontFamily: mono, fontSize: 13, padding: '4px 10px', background: 'var(--border-light)', borderRadius: 2, fontWeight: 700 }}>SECURE LINK ACTIVE</div>
+        <div className="ftg-iran-board-tags" style={{ display: 'flex', gap: 12 }}>
+          <div style={{ fontFamily: mono, fontSize: 11, padding: '4px 10px', background: accent, color: '#fff', borderRadius: 2, fontWeight: 700, letterSpacing: '0.08em' }}>LIVE MODEL</div>
+          <div style={{ fontFamily: mono, fontSize: 11, padding: '4px 10px', background: 'var(--border-light)', borderRadius: 2, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.08em' }}>UPDATED EACH SECOND</div>
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+      <div className="ftg-iran-board-grid" style={{ display: 'flex', flexWrap: 'wrap' }}>
         {/* LEFT COLUMN: MAIN STATS */}
-        <div style={{ flex: '2 1 500px', borderRight: `1px solid ${border}` }}>
+        <div className="ftg-iran-board-main" style={{ flex: '2 1 500px', borderRight: `1px solid ${border}` }}>
           {/* BIG COST SECTION */}
           <div style={{ padding: '24px', borderBottom: `1px solid ${border}`, textAlign: 'center' }}>
             <div style={{ fontFamily: mono, fontSize: 13, color: muted, letterSpacing: '0.15em', marginBottom: 14 }}>ESTIMATED TOTAL CONFLICT COST (USD)</div>
             <div className="ftg-war-cost-counter" style={{
-              fontFamily: mono, fontSize: 42, fontWeight: 900, color: red, lineHeight: 1, letterSpacing: '-0.02em',
+              fontFamily: mono, fontSize: 42, fontWeight: 900, color: accent, lineHeight: 1, letterSpacing: '-0.02em',
               marginBottom: 10, fontVariantNumeric: 'tabular-nums'
             }}>
               {formatDollars(cost)}
             </div>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 20, marginBottom: 28 }}>
+            <div className="ftg-iran-burn-rates" style={{ display: 'flex', justifyContent: 'center', gap: 20, marginBottom: 28 }}>
               {BURN_RATES.map(b => (
                 <div key={b.label} style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
                   <span style={{ fontFamily: mono, fontSize: 13, color: muted, fontWeight: 600 }}>{b.label.toUpperCase()}:</span>
@@ -117,46 +113,46 @@ export default function IranWarCostBoard() {
               ))}
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 8, opacity: 0.9 }}>
+            <div className="ftg-iran-timer" style={{ display: 'flex', justifyContent: 'center', gap: 8, opacity: 0.9 }}>
               {[{ v: el.days, l: 'D' }, { v: el.hours, l: 'H' }, { v: el.mins, l: 'M' }, { v: el.secs, l: 'S' }].map((t, i) => (
                 <div key={t.l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                    <div style={{ textAlign: 'center' }}>
                       <div style={{ 
-                        background: 'rgba(255,255,255,0.02)', border: `1px solid ${border}`, borderRadius: 3, 
-                        padding: '6px 12px', fontFamily: mono, fontSize: 18, fontWeight: 800, color: red, minWidth: 44
+                        background: 'var(--surface)', border: `1px solid ${border}`, borderRadius: 3, 
+                        padding: '6px 12px', fontFamily: mono, fontSize: 18, fontWeight: 800, color: accent, minWidth: 44
                       }}>{i === 0 ? t.v : pad(t.v)}</div>
                       <div style={{ fontFamily: mono, fontSize: 8, color: muted, marginTop: 4 }}>{t.l}</div>
                    </div>
-                   {i < 3 && <div style={{ fontSize: 18, color: 'rgba(201,58,32,0.2)' }}>:</div>}
+                   {i < 3 && <span style={{ fontSize: 18, color: accent, opacity: 0.3 }}>:</span>}
                 </div>
               ))}
             </div>
           </div>
 
           {/* ASSET & MUNITION GRID & AIR OPS (Consolidated flow) */}
-          <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', borderTop: `1px solid ${border}` }}>
-              <div style={{ flex: '1 1 240px', padding: '14px', borderRight: `1px solid ${border}` }}>
+          <div className="ftg-iran-main-panels" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            <div className="ftg-iran-subgrid" style={{ display: 'flex', flexWrap: 'wrap', borderTop: `1px solid ${border}` }}>
+              <div className="ftg-iran-munitions" style={{ flex: '1 1 240px', padding: '14px', borderRight: `1px solid ${border}` }}>
                 <div style={{ fontFamily: mono, fontSize: 13, fontWeight: 800, color: muted, marginBottom: 14, letterSpacing: '0.05em' }}>MUNITIONS</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px 20px' }}>
                   {MUNITIONS.map(m => (
                     <div key={m.n}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                         <span style={{ fontFamily: mono, fontSize: 15, opacity: 0.9, fontWeight: 600 }}>{m.n}</span>
-                        <span style={{ fontFamily: mono, fontSize: 15, color: red, fontWeight: 800 }}>{m.q}</span>
+                        <span style={{ fontFamily: mono, fontSize: 15, color: accent, fontWeight: 800 }}>{m.q}</span>
                       </div>
-                      <div style={{ height: 6, background: 'rgba(0,0,0,0.05)', borderRadius: 2 }}>
-                         <div style={{ height: '100%', width: `${m.p}%`, background: red, borderRadius: 2 }} />
+                      <div style={{ height: 6, background: 'var(--border-light)', borderRadius: 2 }}>
+                         <div style={{ height: '100%', width: `${m.p}%`, background: accent, borderRadius: 2 }} />
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
-              <div style={{ flex: '1 1 200px', padding: '14px' }}>
+              <div className="ftg-iran-assets" style={{ flex: '1 1 200px', padding: '14px' }}>
                 <div style={{ fontFamily: mono, fontSize: 13, fontWeight: 800, color: muted, marginBottom: 14, letterSpacing: '0.05em' }}>THEATER ASSETS</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                <div className="ftg-iran-assets-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
                    {ASSETS.map(a => (
-                     <div key={a.l} style={{ padding: '10px', border: `1px solid ${border}`, borderRadius: 4, background: 'rgba(0,0,0,0.01)', textAlign: 'center' }}>
+                     <div key={a.l} style={{ padding: '10px', border: `1px solid ${border}`, borderRadius: 4, background: 'var(--surface-hover)', textAlign: 'center' }}>
                         <div style={{ fontFamily: mono, fontSize: 13, color: muted, whiteSpace: 'nowrap', textTransform: 'uppercase', fontWeight: 700 }}>{a.l}</div>
                         <div style={{ fontFamily: mono, fontSize: 19, fontWeight: 900, lineHeight: 1.2 }}>{a.v}</div>
                      </div>
@@ -165,28 +161,28 @@ export default function IranWarCostBoard() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexWrap: 'wrap', borderTop: `1px solid ${border}`, flexGrow: 1 }}>
-               <div style={{ flex: '1 1 240px', padding: '16px', borderRight: `1px solid ${border}` }}>
+            <div className="ftg-iran-subgrid" style={{ display: 'flex', flexWrap: 'wrap', borderTop: `1px solid ${border}`, flexGrow: 1 }}>
+               <div className="ftg-iran-air" style={{ flex: '1 1 240px', padding: '16px', borderRight: `1px solid ${border}` }}>
                   <div style={{ fontFamily: mono, fontSize: 13, fontWeight: 800, color: muted, marginBottom: 16 }}>AIR OPERATIONS (SORTIES)</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                     {[{ l: 'COMBAT', v: '1,412', p: 82, c: red }, { l: 'SUPPORT/TANKER', v: '2,090', p: 65, c: '#4a9eff' }, { l: 'ISR/EW', v: '854', p: 45, c: '#bdc3c7' }].map(a => (
+                     {[{ l: 'COMBAT', v: '1,412', p: 82, c: accent }, { l: 'SUPPORT/TANKER', v: '2,090', p: 65, c: '#4a9eff' }, { l: 'ISR/EW', v: '854', p: 45, c: '#bdc3c7' }].map(a => (
                        <div key={a.l}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                              <span style={{ fontFamily: mono, fontSize: 14, fontWeight: 800 }}>{a.l}</span>
                              <span style={{ fontFamily: mono, fontSize: 14, fontWeight: 900 }}>{a.v}</span>
                           </div>
-                          <div style={{ height: 6, background: 'rgba(0,0,0,0.04)', borderRadius: 2 }}>
+                          <div style={{ height: 6, background: 'var(--border-light)', borderRadius: 2 }}>
                              <div style={{ height: '100%', width: `${a.p}%`, background: a.c, borderRadius: 2 }} />
                           </div>
                        </div>
                      ))}
                   </div>
                </div>
-               <div style={{ flex: '1 1 200px', padding: '16px' }}>
+               <div className="ftg-iran-readiness" style={{ flex: '1 1 200px', padding: '16px' }}>
                   <div style={{ fontFamily: mono, fontSize: 13, fontWeight: 800, color: muted, marginBottom: 16 }}>OPERATIONAL READINESS</div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                      {OPS_STATUS.map(s => (
-                       <div key={s.l} style={{ border: `1px solid ${border}`, borderRadius: 4, padding: '10px', background: 'rgba(0,0,0,0.01)' }}>
+                       <div key={s.l} style={{ border: `1px solid ${border}`, borderRadius: 4, padding: '10px', background: 'var(--surface-hover)' }}>
                           <div style={{ fontFamily: mono, fontSize: 12, color: muted, fontWeight: 800, marginBottom: 6 }}>{s.l}</div>
                           <div style={{ fontFamily: mono, fontSize: 18, fontWeight: 900, color: s.l === 'AV FUEL LOAD' ? '#e67e22' : 'var(--text-primary)' }}>{s.v}</div>
                           <div style={{ fontFamily: mono, fontSize: 10, fontWeight: 800, color: muted, marginTop: 4 }}>{s.s}</div>
@@ -196,8 +192,8 @@ export default function IranWarCostBoard() {
                </div>
             </div>
 
-            <div style={{ padding: '12px 16px', borderTop: `1px solid ${border}`, background: 'rgba(0,0,0,0.02)', display: 'flex', gap: 18, alignItems: 'center', marginTop: 'auto' }}>
-               <span style={{ fontFamily: mono, fontSize: 12, fontWeight: 900, color: red }}>MISSION OBJ:</span>
+            <div className="ftg-iran-mission-row" style={{ padding: '12px 16px', borderTop: `1px solid ${border}`, background: 'var(--surface-hover)', display: 'flex', gap: 18, alignItems: 'center', marginTop: 'auto' }}>
+               <span style={{ fontFamily: mono, fontSize: 12, fontWeight: 900, color: accent }}>MISSION OBJ:</span>
                <span style={{ fontFamily: mono, fontSize: 14, color: 'var(--text-secondary)', fontWeight: 700 }}>SECURE HORMUZ · NEUTRALIZE FORDOW · DETER PROXY ESCALATION</span>
                <div style={{ marginLeft: 'auto', display: 'flex', gap: 12 }}>
                   <span className="live-dot" style={{ background: '#27ae60', width: 7, height: 7 }} />
@@ -208,14 +204,14 @@ export default function IranWarCostBoard() {
         </div>
 
         {/* RIGHT COLUMN: RECENT LOGS & HUMAN COST */}
-        <div style={{ flex: '1 1 300px', background: 'rgba(255,255,255,0.01)' }}>
+        <div className="ftg-iran-board-side" style={{ flex: '1 1 300px', background: 'var(--bg)' }}>
           <div style={{ padding: '20px', borderBottom: `1px solid ${border}` }}>
             <div style={{ fontFamily: mono, fontSize: 11, fontWeight: 700, color: muted, marginBottom: 16 }}>STRATEGIC ENGAGEMENT LOG</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               {RECENT_HISTORY.map((h, i) => (
-                <div key={i} style={{ borderLeft: `2px solid ${red}33`, paddingLeft: 14 }}>
+                <div key={i} style={{ borderLeft: `2px solid var(--accent-light)`, paddingLeft: 14 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                    <span style={{ fontFamily: mono, fontSize: 13, color: red, fontWeight: 800 }}>{h.t}</span>
+                    <span style={{ fontFamily: mono, fontSize: 13, color: accent, fontWeight: 800 }}>{h.t}</span>
                     <span style={{ fontFamily: mono, fontSize: 13, color: muted, fontWeight: 600 }}>{h.c}</span>
                   </div>
                   <div style={{ fontFamily: mono, fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.5, fontWeight: 500 }}>{h.e}</div>
@@ -245,12 +241,12 @@ export default function IranWarCostBoard() {
       </div>
 
       {/* FOOTER: NOTABLE ALERTS */}
-      <div style={{ padding: '12px 14px', borderTop: `1px solid ${border}`, background: 'rgba(201,58,32,0.04)', display: 'flex', justifyContent: 'space-between' }}>
+      <div className="ftg-iran-board-footer" style={{ padding: '12px 14px', borderTop: `1px solid ${border}`, background: 'var(--accent-light)', display: 'flex', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-           <span style={{ fontFamily: mono, fontSize: 12, fontWeight: 800, color: red }}>LATEST INCIDENT:</span>
-           <span style={{ fontFamily: mono, fontSize: 12, color: 'var(--text-primary)' }}>175 KILLED · SHAJAREH TAYYEBEH GIRLS SCHOOL · MINAB · UN CONDEMNED</span>
+           <span style={{ fontFamily: mono, fontSize: 12, fontWeight: 800, color: accent }}>LATEST UPDATE:</span>
+           <span style={{ fontFamily: mono, fontSize: 12, color: 'var(--text-primary)' }}>{RECENT_HISTORY[0].e}</span>
         </div>
-        <div style={{ fontFamily: mono, fontSize: 9, color: muted }}>SOURCE: DOD/CENTCOM · IRCS · AP WIRE</div>
+        <div style={{ fontFamily: mono, fontSize: 10, color: muted }}>{RECENT_HISTORY[0].c} · strategic log</div>
       </div>
     </div>
   );

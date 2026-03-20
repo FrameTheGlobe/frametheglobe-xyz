@@ -14,6 +14,7 @@ import IranWarSection  from './components/IranWarSection';
 import DailyBriefing, { BriefCluster } from './components/DailyBriefing';
 import CrossSourceComparison, { CompItem } from './components/CrossSourceComparison';
 import IntelTimeline, { IntelStatus } from './components/IntelTimeline';
+import CompactHeader  from './components/CompactHeader';
 
 // MapView uses Leaflet (browser-only) — load with no SSR
 const MapView = dynamic(() => import('./components/MapView'), { ssr: false });
@@ -256,32 +257,6 @@ function getAgeBadge(dateStr: string): 'breaking' | 'new' | null {
   return null;
 }
 
-// ── Stat tile (header widget) ──────────────────────────────────────────────────
-function StatTile({ icon, value, label, highlight, dim }: {
-  icon: string; value: number; label: string; highlight: boolean; dim?: boolean;
-}) {
-  return (
-    <div style={{
-      display:       'inline-flex',
-      alignItems:    'center',
-      gap:           4,
-      padding:       '2px 7px',
-      borderRadius:  3,
-      border:        `1px solid ${highlight ? 'var(--badge-brk-border)' : 'var(--border-light)'}`,
-      background:    highlight ? 'var(--badge-brk-bg)' : 'transparent',
-      fontFamily:    'var(--font-mono)',
-      fontSize:      9,
-      letterSpacing: '0.04em',
-      color:         highlight ? 'var(--badge-brk-color)' : dim ? 'var(--text-muted)' : 'var(--text-secondary)',
-      lineHeight:    1,
-    }}>
-      <span style={{ fontSize: 10 }}>{icon}</span>
-      <span style={{ fontWeight: 600 }}>{value}</span>
-      <span style={{ opacity: 0.7 }}>{label}</span>
-    </div>
-  );
-}
-
 // ── Region stats bar ───────────────────────────────────────────────────────────
 function RegionStatsStrip({ items }: { items: FeedItem[] }) {
   if (!items.length) return null;
@@ -384,7 +359,7 @@ function SidebarPanel({
           <span style={{
             width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
             background: isAllHealthy ? '#27ae60'
-              : failedHealth.length > 0 ? '#c93a20'
+              : failedHealth.length > 0 ? 'var(--accent)'
               : 'var(--text-muted)',
           }} />
           <span style={{
@@ -394,7 +369,7 @@ function SidebarPanel({
             letterSpacing: '0.10em',
             textTransform: 'uppercase',
             color: isAllHealthy ? '#27ae60'
-              : failedHealth.length > 0 ? '#c93a20'
+              : failedHealth.length > 0 ? 'var(--accent)'
               : 'var(--text-muted)',
             flex: 1,
           }}>
@@ -437,7 +412,7 @@ function SidebarPanel({
                       <span style={{ fontSize: 10, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {h.name}
                       </span>
-                      <span style={{ fontSize: 8, color: '#c93a20', flexShrink: 0 }}>
+                      <span style={{ fontSize: 8, color: 'var(--accent)', flexShrink: 0 }}>
                         {h.errorMsg || 'Error'}
                       </span>
                     </div>
@@ -632,11 +607,6 @@ function FeedLoadingScreen({ sourceCount, isDone }: { sourceCount: number; isDon
     return () => clearInterval(t);
   }, [isDone]);
 
-  // When real data arrives, jump immediately to the final message.
-  useEffect(() => {
-    if (isDone) setMsgIdx(LOADING_MESSAGES.length - 1);
-  }, [isDone]);
-
   // Light up region chips one by one
   useEffect(() => {
     if (regionIdx >= LOADING_REGIONS.length - 1) return;
@@ -652,7 +622,7 @@ function FeedLoadingScreen({ sourceCount, isDone }: { sourceCount: number; isDon
 
   // Progress bar: CSS animation fills to ~88% over ~5s then holds
   const total = sourceCount || SOURCES.length;
-  const msg   = LOADING_MESSAGES[msgIdx];
+  const msg   = LOADING_MESSAGES[isDone ? LOADING_MESSAGES.length - 1 : msgIdx];
   // isFinal is driven by real load state, not by the message timer.
   const isFinal = isDone;
 
@@ -684,7 +654,7 @@ function FeedLoadingScreen({ sourceCount, isDone }: { sourceCount: number; isDon
 
       <div style={{
         border:       '1px solid var(--border-light)',
-        borderTop:    '3px solid #c93a20',
+        borderTop:    '3px solid var(--accent)',
         borderRadius: '0 0 4px 4px',
         background:   'var(--surface)',
         padding:      '28px 28px 24px',
@@ -695,13 +665,13 @@ function FeedLoadingScreen({ sourceCount, isDone }: { sourceCount: number; isDon
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 22 }}>
           <span style={{
             width: 8, height: 8, borderRadius: '50%',
-            background: '#c93a20', flexShrink: 0,
-            boxShadow:  '0 0 0 3px rgba(201,58,32,0.18)',
+            background: 'var(--accent)', flexShrink: 0,
+            boxShadow:  '0 0 0 3px rgba(30,64,175,0.18)',
             animation:  'pulse 1.5s infinite',
           }} />
           <span style={{
             fontSize: 11, fontWeight: 700, letterSpacing: '0.18em',
-            textTransform: 'uppercase', color: '#c93a20',
+            textTransform: 'uppercase', color: 'var(--accent)',
           }}>
             FrameTheGlobe · Intelligence Feed
           </span>
@@ -736,7 +706,7 @@ function FeedLoadingScreen({ sourceCount, isDone }: { sourceCount: number; isDon
               height: '100%',
               background: isFinal
                 ? '#27ae60'
-                : 'linear-gradient(90deg, #c93a20, #e67e22)',
+                : 'linear-gradient(90deg, var(--accent), #3b82f6)',
               borderRadius: 2,
             }}
           />
@@ -756,9 +726,9 @@ function FeedLoadingScreen({ sourceCount, isDone }: { sourceCount: number; isDon
                   textTransform: 'uppercase',
                   padding:       '2px 8px',
                   borderRadius:  2,
-                  border:        `1px solid ${lit ? '#c93a2055' : 'var(--border-light)'}`,
-                  background:    lit ? 'rgba(201,58,32,0.06)' : 'transparent',
-                  color:         lit ? '#c93a20' : 'var(--text-muted)',
+                  border:        `1px solid ${lit ? 'rgba(30,64,175,0.33)' : 'var(--border-light)'}`,
+                  background:    lit ? 'rgba(30,64,175,0.06)' : 'transparent',
+                  color:         lit ? 'var(--accent)' : 'var(--text-muted)',
                   transition:    'background 0.3s, color 0.3s, border-color 0.3s',
                 }}
               >
@@ -809,9 +779,6 @@ export default function Home() {
   const [showLoadingScreen, setShowLoadingScreen] = useState(true);
   const [loadingDone, setLoadingDone]             = useState(false);
   const loadingScreenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [lastUpdated, setLastUpdated]   = useState<string | null>(null);
-  const [total, setTotal]               = useState(0);
-  const [failedCount, setFailedCount]   = useState(0);
   const [sourceHealth, setSourceHealth] = useState<SourceHealth[]>([]);
   const [activeSources, setActiveSources] = useState<Set<string>>(
     new Set(SOURCES.map(s => s.id))
@@ -827,7 +794,6 @@ export default function Home() {
   const [theme, setTheme]               = useState<Theme>('light');
   const [liveStatus, setLiveStatus]     = useState<'connecting' | 'live' | 'polling'>('connecting');
   const [focusedIdx, setFocusedIdx]     = useState<number>(-1);
-  const [scrolled, setScrolled]         = useState(false);
   const searchRef                        = useRef<HTMLInputElement>(null);
   // Track when data was last successfully fetched so the visibility handler
   // can skip a re-fetch if the data is still reasonably fresh (< 10 min).
@@ -836,8 +802,6 @@ export default function Home() {
 
   // ── Addict-loop features ──────────────────────────────────────────────
   const [readKeys, setReadKeys]               = useState<Set<string>>(new Set());
-  const [lastVisitTime, setLastVisitTime]     = useState<number>(0);
-  const [newCount, setNewCount]               = useState(0);
   const [watchlistKeywords, setWatchlistKeywords] = useState<string[]>([]);
   const [watchlistInput, setWatchlistInput]   = useState('');
   const [expandedComparisons, setExpandedComparisons] = useState<Set<string>>(new Set());
@@ -863,13 +827,6 @@ export default function Home() {
     const t = setTimeout(() => setDebouncedSearch(search), 200);
     return () => clearTimeout(t);
   }, [search]);
-
-  // ── Scroll listener for header shadow ─────────────────────────────────────
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 10);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
 
   // ── Keyboard shortcuts ────────────────────────────────────────────────────
   // j/k  — navigate articles  |  o — open focused article
@@ -1011,22 +968,6 @@ export default function Home() {
     } catch { /* ignore */ }
   }, [readKeys]);
 
-  // ── Last-visit timestamp (for new-story counter) ──────────────────────────
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      const saved = window.localStorage.getItem('ftg_last_visit');
-      const ts = saved ? parseInt(saved, 10) : 0;
-      setLastVisitTime(ts);
-      // Save current time as the last-visit time so next visit sees a delta
-      const handleHide = () => {
-        try { window.localStorage.setItem('ftg_last_visit', String(Date.now())); } catch { /* ignore */ }
-      };
-      document.addEventListener('visibilitychange', handleHide);
-      return () => document.removeEventListener('visibilitychange', handleHide);
-    } catch { /* ignore */ }
-  }, []);
-
   // ── Watchlist persistence ─────────────────────────────────────────────────
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -1066,9 +1007,6 @@ export default function Home() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setItems(data.items || []);
-      setTotal(data.total || 0);
-      setLastUpdated(data.fetchedAt);
-      setFailedCount(data.failedSources || 0);
       if (Array.isArray(data.health)) setSourceHealth(data.health);
       lastFetchedAtRef.current = Date.now();
     } catch (err) {
@@ -1105,9 +1043,6 @@ export default function Home() {
     }) => {
       if (data.type !== 'news' || !Array.isArray(data.items)) return;
       setItems(data.items);
-      setTotal(data.total ?? 0);
-      setLastUpdated(data.fetchedAt ?? null);
-      setFailedCount(data.failedSources ?? 0);
       if (Array.isArray(data.health)) setSourceHealth(data.health);
       setLoading(false);
       lastFetchedAtRef.current = Date.now();
@@ -1202,8 +1137,7 @@ export default function Home() {
       window.removeEventListener('online', handleOnline);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // fetchNews is stable (useCallback with no deps)
+  }, [fetchNews]);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   // Wrapped in useCallback so the stable references prevent unnecessary
@@ -1223,8 +1157,6 @@ export default function Home() {
       prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
     );
   }, [keyForItem]);
-
-  const itemsCount = items.length;
 
   // ── INTEL TIMELINE DATA (GDELT + CRITICAL) ─────────────────────────
   const intelEvents = useMemo(() => {
@@ -1297,17 +1229,11 @@ export default function Home() {
       else next.add(id);
       return next;
     });
-  }, []); // uses only the setter — stable forever
-
-  const viewAllByKeyword = useCallback((kw: string) => {
-    setSearch(kw);
-    setActiveLenses(new Set());
-    setActiveRegions(new Set());
-  }, [setSearch, setActiveLenses, setActiveRegions]);
+  }, [setActiveSources]);
 
   const selectAllSources = useCallback(
     () => setActiveSources(new Set(SOURCES.map(s => s.id))),
-    []
+    [setActiveSources]
   );
   const selectNoSources = useCallback(
     () => setActiveSources(new Set([SOURCES[0].id])),
@@ -1423,13 +1349,6 @@ export default function Home() {
     [visibleItems]
   );
 
-  // ── New-story counter (items newer than last visit) ──────────────────────
-  useEffect(() => {
-    if (!lastVisitTime || loading) return;
-    const count = items.filter(i => new Date(i.pubDate).getTime() > lastVisitTime).length;
-    setNewCount(count);
-  }, [items, lastVisitTime, loading]);
-
   // ── Coverage map: how many sources cover same event ───────────────────────
   const coverageMap = useMemo(() => {
     const map = new Map<string, number>();
@@ -1538,146 +1457,25 @@ export default function Home() {
       />
 
       {/* ── ELITE MISSION HUD HEADER ────────────────────────────────────────── */}
-      <header className="command-header-hud" style={{ 
-        position: 'sticky', top: 0, zIndex: 100,
+      <header className="command-header-hud" style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
         background: 'var(--bg)',
         backdropFilter: 'blur(12px)',
         borderBottom: '1px solid var(--border)',
         boxShadow: 'var(--shadow-md)',
-        height: 'auto',
-        minHeight: 100
       }}>
-          <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-            <div className="scanning-bar" />
-            
-            {/* Top Tactical Metadata - Higher Contrast */}
-            <div className="ftg-hide-mobile" style={{
-              borderBottom: '1px solid var(--border-light)',
-              padding: '8px 25px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              fontSize: 13,
-              fontFamily: 'var(--font-mono)',
-              letterSpacing: '0.12em',
-              background: 'var(--surface)',
-              color: 'var(--text-secondary)',
-              fontWeight: 700
-            }}>
-              <div style={{ display: 'flex', gap: 30 }}>
-                <span>NODE: <span style={{ color: 'var(--accent)', fontWeight: 800 }}>HORMUZ-SECTOR-7</span></span>
-                <span>STATE: <span style={{ color: 'var(--text-primary)', fontWeight: 800 }}>ENCRYPTED</span></span>
-              </div>
-              <div style={{ display: 'flex', gap: 25 }}>
-                <span className="hud-glitch-active" style={{ color: 'var(--accent)', fontWeight: 900, fontSize: 13 }}>SECURITY: LEVEL 5</span>
-                <span>VER: <span style={{ color: 'var(--text-primary)', fontWeight: 800, fontSize: 13 }}>5.2.10</span></span>
-              </div>
-            </div>
-
-            {/* Central Newspaper Identity */}
-            <div style={{ 
-              display: 'flex', 
-              flexDirection: 'column',
-              alignItems: 'center', 
-              padding: '18px 0 12px 0',
-              borderBottom: '1px solid var(--border)',
-              background: 'var(--bg)'
-            }}>
-                <h1 className="glitch-text" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} style={{
-                  fontSize: 38, 
-                  fontWeight: 900, 
-                  cursor: 'pointer', 
-                  fontFamily: 'var(--font-display)', 
-                  color: 'var(--text-primary)', 
-                  letterSpacing: '-0.03em',
-                  textTransform: 'uppercase',
-                  lineHeight: 0.85,
-                  textAlign: 'center'
-                }}>
-                  FRAME<span style={{ color: 'var(--accent)' }}>THEGLOBE</span>
-                  <span className="ftg-branding-subtitle" style={{ 
-                    display: 'block', 
-                    fontSize: 15, 
-                    letterSpacing: '0.45em', 
-                    color: 'var(--accent)', 
-                    marginTop: 10, 
-                    fontWeight: 700 
-                  }}>
-                    INTELLIGENCE OPS // GLOBAL MONITORING
-                  </span>
-                </h1>
-            </div>
-
-            {/* Bottom HUD Command Row */}
-            <div className="ftg-controls-row" style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'space-between',
-              padding: '10px 25px',
-              background: 'var(--surface)',
-              borderBottom: '4px double var(--border)',
-              gap: 15
-            }}>
-              {/* Left Comms Block */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                   <span className="hud-mini-label" style={{ fontSize: 14, color: 'var(--text-primary)', fontWeight: 800, letterSpacing: '0.12em' }}>COMM LINK</span>
-                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span className="ftg-hide-mobile" style={{ color: (hasMounted && loading) ? 'var(--neon-amber)' : 'var(--neon-green)', fontSize: 14, fontWeight: 900 }}>{(hasMounted && loading) ? 'SYNCING' : 'ONLINE'}</span>
-                      <div className={(hasMounted && !loading) ? "live-dot hud-glitch-active" : ""} style={{ width: 6, height: 6, background: (hasMounted && loading) ? 'var(--neon-amber)' : 'var(--neon-green)' }} />
-                   </div>
-                </div>
-                <div className="ftg-hide-mobile" style={{ width: 1, height: 24, background: 'var(--border)' }} />
-                <div style={{ display: 'flex', gap: 12 }}>
-                  <a href="https://x.com/FrameTheGlobe" target="_blank" className="icon-btn" title="X WIRE" style={{ transform: 'scale(1.1)', color: 'var(--text-primary)' }}><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.842L2.25 2.25h6.993l4.261 5.633L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z"/></svg></a>
-                  <a href="https://www.frametheglobenews.com/" target="_blank" className="icon-btn" title="SUBSTACK" style={{ transform: 'scale(1.1)', color: 'var(--text-primary)' }}><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z"/></svg></a>
-                </div>
-              </div>
-
-              {/* Right Temporal Block */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                   <span className="hud-mini-label" style={{ fontSize: 14, color: 'var(--text-primary)', fontWeight: 800, letterSpacing: '0.12em' }}>MISSION CHRONO</span>
-                   <span style={{ fontSize: 18, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontWeight: 900 }}>
-                      {hasMounted ? (missionTime || '--:--:--') : '--:--:--'}
-                      <span className="ftg-hide-mobile" style={{ fontSize: 12, color: 'var(--accent)', marginLeft: 4, fontWeight: 900 }}>UTC</span>
-                   </span>
-                 </div>
-                 <div className="ftg-hide-mobile" style={{ width: 1, height: 24, background: 'var(--border)' }} />
-                 <div style={{ display: 'flex', gap: 12 }}>
-                    <button className="icon-btn" onClick={() => setTheme(ts => ts === 'light' ? 'dark' : 'light')} title="SYSTEM MODE" style={{ transform: 'scale(1.2)' }}>
-                      {(hasMounted && theme === 'light') ? (
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                        </svg>
-                      ) : (hasMounted && theme === 'dark') ? (
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="12" cy="12" r="5"></circle>
-                          <line x1="12" y1="1" x2="12" y2="3"></line>
-                          <line x1="12" y1="21" x2="12" y2="23"></line>
-                          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                          <line x1="1" y1="12" x2="3" y2="12"></line>
-                          <line x1="21" y1="12" x2="23" y2="12"></line>
-                          <line x1="4.22" y1="18.36" x2="5.64" y2="19.78"></line>
-                          <line x1="18.36" y1="4.22" x2="19.78" y2="5.64"></line>
-                        </svg>
-                      ) : (
-                        <div style={{ width: 20, height: 20, opacity: 0.2 }} />
-                      )}
-                    </button>
-                    <button 
-                      onClick={() => fetchNews()} 
-                      disabled={loading}
-                      className="icon-btn"
-                      style={{ background: 'var(--accent)', color: '#fff', fontSize: 12, fontFamily: 'var(--font-mono)', padding: '0 15px', width: 'auto', fontWeight: 900, height: 40, borderRadius: 0, border: 'none' }}
-                    >
-                      {loading ? 'REBOOT...' : 'SYSTEM REBOOT'}
-                    </button>
-                 </div>
-              </div>
-            </div>
-          </div>
+        <CompactHeader
+          hasMounted={hasMounted}
+          loading={loading}
+          missionTime={missionTime}
+          theme={theme}
+          storyCount={items.length}
+          sourceCount={SOURCES.length}
+          onThemeToggle={() => setTheme(ts => ts === 'light' ? 'dark' : 'light')}
+          onRefresh={() => fetchNews()}
+        />
       </header>
 
       {/* ── BREAKING TICKER ────────────────────────────────────────────── */}
@@ -2492,7 +2290,7 @@ export default function Home() {
       </div>
 
       {/* ── FOOTER ─────────────────────────────────────────────────────── */}
-      <footer style={{
+      <footer className="ftg-footer" style={{
         borderTop: '1px solid var(--border-light)',
         padding: '14px 24px',
         fontFamily: 'var(--font-mono)',
@@ -2510,24 +2308,34 @@ export default function Home() {
         <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>frametheglobe.xyz</span>
 
         {/* Social links */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="ftg-footer-social" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <a
             href="https://x.com/FrameTheGlobe"
             target="_blank"
             rel="noopener noreferrer"
-            style={{
-              display: 'flex', alignItems: 'center', gap: 5,
-              color: 'var(--text-muted)', textDecoration: 'none',
-              transition: 'color 0.15s',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+            className="icon-link-ghost"
+            title="X"
+            aria-label="FrameTheGlobe on X"
           >
-            {/* X / Twitter icon */}
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
               <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.842L2.25 2.25h6.993l4.261 5.633L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z" />
             </svg>
-            @FrameTheGlobe
+          </a>
+
+          <span style={{ color: 'var(--border)' }}>·</span>
+
+          <a
+            href="https://www.threads.net/@frametheglobe"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="icon-link-ghost"
+            title="Threads"
+            aria-label="FrameTheGlobe on Threads"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
           </a>
 
           <span style={{ color: 'var(--border)' }}>·</span>
@@ -2536,23 +2344,17 @@ export default function Home() {
             href="https://www.frametheglobenews.com/"
             target="_blank"
             rel="noopener noreferrer"
-            style={{
-              display: 'flex', alignItems: 'center', gap: 5,
-              color: 'var(--text-muted)', textDecoration: 'none',
-              transition: 'color 0.15s',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+            className="icon-link-ghost"
+            title="Substack"
+            aria-label="FrameTheGlobe Newsletter"
           >
-            {/* Substack icon */}
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
               <path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z" />
             </svg>
-            Newsletter
           </a>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div className="ftg-footer-meta" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span>open-source · no tracking · no ads · {SOURCES.length} sources</span>
           <span style={{ color: 'var(--border)' }}>·</span>
           <a
