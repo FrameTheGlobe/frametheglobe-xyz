@@ -815,6 +815,15 @@ export default function Home() {
   const [expandedComparisons, setExpandedComparisons] = useState<Set<string>>(new Set());
   const [briefingOpen, setBriefingOpen]       = useState(true);
   const [briefingDismissed, setBriefingDismissed] = useState(false);
+  const [missionTime, setMissionTime]             = useState<string | null>(null);
+
+  // ── Mission Timer (Client-only to avoid hydration mismatch) ──────────────
+  useEffect(() => {
+    const update = () => setMissionTime(new Date().toISOString().slice(11, 19));
+    update();
+    const t = setInterval(update, 1000);
+    return () => clearInterval(t);
+  }, []);
 
   // ── Debounce search ───────────────────────────────────────────────────────
   // Avoids re-running the O(n) itemMatchesSearch filter on every keystroke.
@@ -1299,18 +1308,15 @@ export default function Home() {
   );
 
   const visibleItems = useMemo(() => {
-    // Use debouncedSearch (200ms lag) so the O(n) filter only runs once the
-    // user has paused typing, not on every individual keystroke.
     const filtered = filteredByRegion.filter(i => itemMatchesSearch(i, debouncedSearch));
     if (sortMode === 'date-asc') return [...filtered].reverse();
     if (sortMode === 'source') return [...filtered].sort((a, b) => a.sourceName.localeCompare(b.sourceName));
-    return filtered; // date-desc is default from API
+    return filtered;
   }, [filteredByRegion, debouncedSearch, sortMode]);
 
   const pinnedItems = useMemo(
     () => visibleItems.filter(i => pinnedKeys.includes(keyForItem(i))),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [visibleItems, pinnedKeys]
+    [visibleItems, pinnedKeys, keyForItem]
   );
 
   const sourceCountMap = useMemo(
@@ -1321,14 +1327,11 @@ export default function Home() {
     [items]
   );
 
-  // Sources that actually errored on their last fetch (not just empty after keyword filter)
   const failedSources = useMemo(() => {
     const ids = new Set<string>();
     if (sourceHealth.length > 0) {
-      // Use real health data when available
       sourceHealth.forEach(h => { if (!h.ok) ids.add(h.id); });
     } else {
-      // Fall back to zero-count heuristic on first load before health data arrives
       SOURCES.forEach(s => { if (!sourceCountMap[s.id]) ids.add(s.id); });
     }
     return ids;
@@ -1339,11 +1342,11 @@ export default function Home() {
     LENSES.forEach(l => {
       map[l.id] = l.id === 'all'
         ? filteredBySource.length
-        // Re-use pre-built single-id Sets — no `new Set(...)` inside the loop.
         : filteredBySource.filter(i => itemMatchesLens(i, SINGLE_LENS_SETS[l.id]!)).length;
     });
     return map;
   }, [filteredBySource]);
+
   const clusters = useMemo(
     () => buildClusters(visibleItems),
     [visibleItems]
@@ -1452,7 +1455,9 @@ export default function Home() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', position: 'relative' }}>
+      {/* Tactical visual layer */}
+      <div className="scanline-overlay" />
 
       {/* Mobile sidebar overlay */}
       <div
@@ -1461,248 +1466,141 @@ export default function Home() {
         aria-hidden
       />
 
-      {/* ── HEADER ─────────────────────────────────────────────────────── */}
-      <header style={{
-        borderBottom: `1px solid ${scrolled ? 'transparent' : 'var(--border)'}`,
-        background: 'var(--surface)',
-        position: 'sticky',
-        top: 0,
-        zIndex: 200,
-        boxShadow: scrolled ? 'var(--shadow-sm)' : 'none',
-        transition: 'box-shadow 0.3s ease, border-color 0.3s ease',
+      {/* ── ELITE MISSION HUD HEADER ────────────────────────────────────────── */}
+      <header className="command-header-hud" style={{ 
+        position: 'sticky', top: 0, zIndex: 100,
+        background: 'var(--bg)',
+        backdropFilter: 'blur(12px)',
+        borderBottom: '1px solid var(--border)',
+        boxShadow: 'var(--shadow-md)',
+        height: 'auto',
+        minHeight: 100
       }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', padding: '11px 0 9px', gap: 10 }}>
+          <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+            <div className="scanning-bar" />
+            
+            {/* Top Tactical Metadata - Higher Contrast */}
+            <div style={{
+              borderBottom: '1px solid var(--border)',
+              padding: '8px 25px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              fontSize: 9,
+              fontFamily: 'var(--font-mono)',
+              letterSpacing: '0.15em',
+              background: 'var(--surface)',
+              color: 'var(--text-secondary)',
+              fontWeight: 600
+            }}>
+              <div style={{ display: 'flex', gap: 30 }}>
+                <span>NODE: <span style={{ color: 'var(--accent)', fontWeight: 800 }}>HORMUZ-SECTOR-7</span></span>
+                <span>STATE: <span style={{ color: 'var(--text-primary)', fontWeight: 800 }}>ENCRYPTED</span></span>
+              </div>
+              <div style={{ display: 'flex', gap: 25 }}>
+                <span className="hud-glitch-active" style={{ color: 'var(--accent)', fontWeight: 900 }}>SECURITY: LEVEL 5</span>
+                <span>VER: <span style={{ color: 'var(--text-primary)', fontWeight: 800 }}>5.2.0</span></span>
+              </div>
+            </div>
 
-            {/* Hamburger (mobile only) */}
-            <button
-              className="icon-btn menu-btn"
-              onClick={() => setSidebarOpen(v => !v)}
-              aria-label="Toggle sidebar"
-              title="Sources & filters"
-            >
-              ☰
-            </button>
-
-            {/* Wordmark + badges */}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                <h1 className="ftg-wordmark" style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: 20,
-                  fontWeight: 700,
-                  letterSpacing: '-0.01em',
-                  color: 'var(--text-primary)',
-                  lineHeight: 1,
-                }}>
-                  FrameTheGlobeNews
-                </h1>
-
-                <span className="ftg-hide-mobile" style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 9,
-                  letterSpacing: '0.12em',
-                  color: 'var(--accent)',
-                  border: '1px solid var(--accent)',
-                  padding: '2px 6px',
-                  borderRadius: 2,
+            {/* Central Newspaper Identity */}
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column',
+              alignItems: 'center', 
+              padding: '18px 0 12px 0',
+              borderBottom: '1px solid var(--border)',
+              background: 'var(--bg)'
+            }}>
+                <h1 className="glitch-text" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} style={{
+                  fontSize: 38, 
+                  fontWeight: 900, 
+                  cursor: 'pointer', 
+                  fontFamily: 'var(--font-display)', 
+                  color: 'var(--text-primary)', 
+                  letterSpacing: '-0.03em',
                   textTransform: 'uppercase',
-                  fontWeight: 500,
+                  lineHeight: 0.85,
+                  textAlign: 'center'
                 }}>
-                  Global Pivot
-                </span>
+                  FRAME<span style={{ color: 'var(--accent)' }}>THEGLOBE</span>
+                  <div style={{ fontSize: 10, letterSpacing: '0.45em', color: 'var(--accent)', marginTop: 6, fontWeight: 700 }}>
+                    INTELLIGENCE OPS // GLOBAL MONITORING
+                  </div>
+                </h1>
+            </div>
 
-                {/* New-story counter badge */}
-                {newCount > 0 && !loading && (
-                  <span style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: 10,
-                    fontWeight: 600,
-                    letterSpacing: '0.06em',
-                    color: '#f39c12',
-                    background: 'rgba(243,156,18,0.12)',
-                    border: '1px solid rgba(243,156,18,0.4)',
-                    padding: '2px 7px',
-                    borderRadius: 999,
-                    whiteSpace: 'nowrap',
-                    animation: 'fadeUp 0.3s ease both',
-                  }}>
-                    +{newCount} new
-                  </span>
-                )}
-
-                {/* Live / connection indicator.
-                    Stay amber until BOTH the SSE handshake and the initial
-                    data fetch are done — SSE opens fast but the feed HTTP
-                    request takes longer, so we gate green on !loading too. */}
-                {(() => {
-                  const effectiveStatus = loading ? 'connecting' : liveStatus;
-                  return (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <span
-                        className="live-dot"
-                        style={{
-                          background: effectiveStatus === 'live'
-                            ? '#27ae60'
-                            : effectiveStatus === 'connecting'
-                            ? '#f39c12'
-                            : '#7f8c8d',
-                        }}
-                      />
-                      <span style={{
-                        fontFamily: 'var(--font-mono)',
-                        fontSize: 9,
-                        color: effectiveStatus === 'live'
-                          ? '#27ae60'
-                          : effectiveStatus === 'connecting'
-                          ? '#f39c12'
-                          : 'var(--text-muted)',
-                        letterSpacing: '0.08em',
-                        textTransform: 'uppercase',
-                      }}>
-                        {effectiveStatus === 'live' ? 'Live' : effectiveStatus === 'connecting' ? 'Connecting…' : 'Polling'}
-                      </span>
-                    </div>
-                  );
-                })()}
-
-                {/* Trump / Rapid 47 indicator */}
-                {(() => {
-                  const tCount = items.filter(i => itemMatchesLens(i, new Set(['trump']))).length;
-                  return tCount > 0 ? (
-                    <div
-                      onClick={() => setActiveLenses(new Set(['trump']))}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 4,
-                        background: 'var(--brand-blue)',
-                        color: '#fff',
-                        padding: '1px 5px',
-                        borderRadius: 3,
-                        cursor: 'pointer',
-                        fontSize: 9,
-                        fontFamily: 'var(--font-mono)',
-                        fontWeight: 900,
-                        letterSpacing: '0.05em'
-                      }}
-                      title={`${tCount} Rapid 47 Response updates`}
-                    >
-                      <span>47</span>
-                      <span style={{ opacity: 0.8, fontSize: 8 }}>•</span>
-                      <span>{tCount}</span>
-                    </div>
-                  ) : null;
-                })()}
+            {/* Bottom HUD Command Row */}
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              padding: '10px 25px',
+              background: 'var(--surface)',
+              borderBottom: '4px double var(--border)'
+            }}>
+              {/* Left Comms Block */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                   <span className="hud-mini-label" style={{ fontSize: 8, color: 'var(--text-primary)', fontWeight: 800, letterSpacing: '0.1em' }}>COMM LINK</span>
+                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ color: loading ? 'var(--neon-amber)' : 'var(--neon-green)', fontSize: 11, fontWeight: 900 }}>{loading ? 'SYNCING' : 'ONLINE'}</span>
+                      <div className={!loading ? "live-dot hud-glitch-active" : ""} style={{ width: 6, height: 6, background: loading ? 'var(--neon-amber)' : 'var(--neon-green)' }} />
+                   </div>
+                </div>
+                <div style={{ width: 1, height: 24, background: 'var(--border)' }} />
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <a href="https://x.com/FrameTheGlobe" target="_blank" className="icon-btn" title="X WIRE" style={{ transform: 'scale(0.9)', color: 'var(--text-primary)' }}><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.842L2.25 2.25h6.993l4.261 5.633L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z"/></svg></a>
+                  <a href="https://www.frametheglobenews.com/" target="_blank" className="icon-btn" title="SUBSTACK" style={{ transform: 'scale(0.9)', color: 'var(--text-primary)' }}><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z"/></svg></a>
+                  <a href="https://www.threads.net/@echoesofstreet" target="_blank" className="icon-btn" title="THREADS" style={{ transform: 'scale(0.9)', color: 'var(--text-primary)' }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm6.842 12.345c-.02.16-.05.33-.1.49-.31 1.06-.9 1.94-1.73 2.68a4.912 4.912 0 01-3.12 1.205c-.16.01-.32 0-.48-.01-.92-.05-1.79-.3-2.6-.78-.18-.11-.3-.09-.45.05-.33.29-.7.54-1.1.75-.44.23-.9.41-1.39.52a4.404 4.404 0 01-2.4-.15c-.45-.13-.86-.34-1.23-.62-.71-.54-1.14-1.26-1.24-2.15-.06-.55 0-1.1.19-1.62.3-.84.83-1.52 1.54-2.07.35-.27.75-.49 1.17-.66.11-.04.16-.1.17-.21.1-.73.34-1.41.69-2.05.4-.71.93-1.3 1.6-1.77.63-.43 1.34-.65 2.11-.68.61-.02 1.22.04 1.81.21.94.26 1.71.74 2.31 1.48.57.7.9 1.5 1 2.39.04.3.06.61.05.91-.01.31-.02.62-.05.93-.03.44.07.75.46.96.48.24.87.59 1.14 1.07.18.32.28.67.28 1.03.02.48-.12.91-.35 1.32z"/>
+                    </svg>
+                  </a>
+                </div>
               </div>
 
-              {/* Stats tiles */}
-              {loading ? (
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', marginTop: 4, letterSpacing: '0.04em' }}>
-                  Fetching feeds…
-                </div>
-              ) : (
-                <div className="ftg-header-stats" style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 5, alignItems: 'center' }}>
-                  {/* Stories tile */}
-                  <StatTile
-                    icon="📰"
-                    value={total}
-                    label="stories"
-                    highlight={false}
-                  />
-                  {/* Breaking tile */}
-                  {(() => {
-                    const brk = items.filter(i => (Date.now() - new Date(i.pubDate).getTime()) < 30 * 60_000).length;
-                    return brk > 0 ? (
-                      <StatTile icon="⚡" value={brk} label="breaking" highlight />
-                    ) : null;
-                  })()}
-                  {/* Sources tile */}
-                  <StatTile icon="🌍" value={SOURCES.length} label="sources" highlight={false} />
-                  {/* Failed tile */}
-                  {failedCount > 0 && (
-                    <StatTile icon="⚠" value={failedCount} label="down" highlight={false} dim />
-                  )}
-                  {/* Updated */}
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.04em' }}>
-                    updated {lastUpdated ? timeAgo(lastUpdated) : '—'}
-                  </span>
-                  {/* Keyboard hint — hidden on mobile */}
-                  <span className="ftg-hide-mobile" style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--border)', letterSpacing: '0.06em', marginLeft: 4 }}>
-                    j/k·o·/·m
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Action buttons */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-
-              {/* X / Twitter */}
-              <a
-                href="https://x.com/FrameTheGlobe"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="icon-btn"
-                title="Follow @FrameTheGlobe on X"
-                aria-label="X / Twitter"
-                style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.842L2.25 2.25h6.993l4.261 5.633L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z" />
-                </svg>
-              </a>
-
-              {/* Substack / Newsletter */}
-              <a
-                href="https://www.frametheglobenews.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="icon-btn"
-                title="FrameTheGlobe Newsletter on Substack"
-                aria-label="Substack Newsletter"
-                style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                  <path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z" />
-                </svg>
-              </a>
-
-              {/* Theme toggle */}
-              <button
-                className="icon-btn"
-                onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')}
-                title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-                aria-label="Toggle theme"
-              >
-                {theme === 'light' ? '◑' : '☀'}
-              </button>
-
-              {/* Refresh */}
-              <button
-                onClick={() => fetchNews()}
-                disabled={loading}
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 10,
-                  letterSpacing: '0.08em',
-                  color: loading ? 'var(--text-muted)' : 'var(--text-secondary)',
-                  background: 'none',
-                  border: '1px solid var(--border)',
-                  borderRadius: 3,
-                  padding: '5px 10px',
-                  cursor: loading ? 'default' : 'pointer',
-                  textTransform: 'uppercase',
-                  transition: 'color 0.15s, border-color 0.15s',
-                }}
-                onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--accent)'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)'; }}
-              >
-                {loading ? '●' : '↻'} Refresh
-              </button>
+              {/* Right Temporal Block */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                   <span className="hud-mini-label" style={{ fontSize: 8, color: 'var(--text-primary)', fontWeight: 800, letterSpacing: '0.1em' }}>MISSION CHRONO</span>
+                   <span style={{ fontSize: 16, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontWeight: 900 }}>
+                      {missionTime || '--:--:--'}<span style={{ fontSize: 9, color: 'var(--accent)', marginLeft: 4, fontWeight: 900 }}>UTC</span>
+                   </span>
+                 </div>
+                 <div style={{ width: 1, height: 24, background: 'var(--border)' }} />
+                 <div style={{ display: 'flex', gap: 10 }}>
+                    <button className="icon-btn" onClick={() => setTheme(ts => ts === 'light' ? 'dark' : 'light')} title="SYSTEM MODE" style={{ transform: 'scale(1.1)' }}>
+                      {theme === 'light' ? (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                      ) : (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="5"></circle>
+                          <line x1="12" y1="1" x2="12" y2="3"></line>
+                          <line x1="12" y1="21" x2="12" y2="23"></line>
+                          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                          <line x1="1" y1="12" x2="3" y2="12"></line>
+                          <line x1="21" y1="12" x2="23" y2="12"></line>
+                          <line x1="4.22" y1="18.36" x2="5.64" y2="19.78"></line>
+                          <line x1="18.36" y1="4.22" x2="19.78" y2="5.64"></line>
+                        </svg>
+                      )}
+                    </button>
+                    <button 
+                      onClick={() => fetchNews()} 
+                      disabled={loading}
+                      className="icon-btn"
+                      style={{ background: 'var(--accent)', color: '#fff', fontSize: 9, fontFamily: 'var(--font-mono)', padding: '0 15px', width: 'auto', fontWeight: 900, height: 32, borderRadius: 0, border: 'none' }}
+                    >
+                      {loading ? 'REBOOT...' : 'SYSTEM REBOOT'}
+                    </button>
+                 </div>
+              </div>
             </div>
           </div>
-        </div>
       </header>
 
       {/* ── BREAKING TICKER ────────────────────────────────────────────── */}

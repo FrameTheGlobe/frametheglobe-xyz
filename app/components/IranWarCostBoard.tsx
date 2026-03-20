@@ -96,8 +96,8 @@ export default function IranWarCostBoard() {
           <div style={{ padding: '24px', borderBottom: `1px solid ${border}`, textAlign: 'center' }}>
             <div style={{ fontFamily: mono, fontSize: 10, color: muted, letterSpacing: '0.15em', marginBottom: 12 }}>ESTIMATED TOTAL CONFLICT COST (USD)</div>
             <div className="ftg-war-cost-counter" style={{
-              fontFamily: mono, fontSize: 52, fontWeight: 900, color: red, lineHeight: 1, letterSpacing: '-0.03em',
-              marginBottom: 10, fontVariantNumeric: 'tabular-nums'
+              fontFamily: mono, fontSize: 32, fontWeight: 900, color: red, lineHeight: 1, letterSpacing: '-0.02em',
+              marginBottom: 6, fontVariantNumeric: 'tabular-nums'
             }}>
               {formatDollars(cost)}
             </div>
@@ -110,48 +110,47 @@ export default function IranWarCostBoard() {
               ))}
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 6 }}>
-              {[{ v: el.days, l: 'DAYS' }, { v: el.hours, l: 'HRS' }, { v: el.mins, l: 'MIN' }, { v: el.secs, l: 'SEC' }].map((t, i) => (
-                <div key={t.l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 6, opacity: 0.9 }}>
+              {[{ v: el.days, l: 'D' }, { v: el.hours, l: 'H' }, { v: el.mins, l: 'M' }, { v: el.secs, l: 'S' }].map((t, i) => (
+                <div key={t.l} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                    <div style={{ textAlign: 'center' }}>
                       <div style={{ 
-                        background: 'rgba(255,255,255,0.03)', border: `1px solid ${border}`, borderRadius: 4, 
-                        padding: '10px 14px', fontFamily: mono, fontSize: 22, fontWeight: 800, color: red, minWidth: 54
+                        background: 'rgba(255,255,255,0.02)', border: `1px solid ${border}`, borderRadius: 3, 
+                        padding: '4px 8px', fontFamily: mono, fontSize: 14, fontWeight: 800, color: red, minWidth: 32
                       }}>{i === 0 ? t.v : pad(t.v)}</div>
-                      <div style={{ fontFamily: mono, fontSize: 7, color: muted, marginTop: 4 }}>{t.l}</div>
+                      <div style={{ fontFamily: mono, fontSize: 6, color: muted, marginTop: 2 }}>{t.l}</div>
                    </div>
-                   {i < 3 && <div style={{ fontSize: 20, color: 'rgba(201,58,32,0.2)', marginTop: -16 }}>:</div>}
+                   {i < 3 && <div style={{ fontSize: 14, color: 'rgba(201,58,32,0.2)' }}>:</div>}
                 </div>
               ))}
             </div>
           </div>
 
           {/* ASSET & MUNITION GRID CARD */}
-          <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-            <div style={{ flex: '1 1 300px', padding: '16px', borderRight: `1px solid ${border}` }}>
-              <div style={{ fontFamily: mono, fontSize: 9, fontWeight: 700, color: muted, marginBottom: 14 }}>MUNITION DEPLETION TRACKER</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {MUNITIONS.map(m => (
+          <div style={{ display: 'flex', flexWrap: 'wrap', borderTop: `1px solid ${border}` }}>
+            <div style={{ flex: '1 1 240px', padding: '10px', borderRight: `1px solid ${border}` }}>
+              <div style={{ fontFamily: mono, fontSize: 8, fontWeight: 700, color: muted, marginBottom: 8, letterSpacing: '0.05em' }}>MUNITIONS</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 12px' }}>
+                {MUNITIONS.slice(0, 4).map(m => (
                   <div key={m.n}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                      <span style={{ fontFamily: mono, fontSize: 7, color: 'var(--text-primary)' }}>{m.n}</span>
-                      <span style={{ fontFamily: mono, fontSize: 7, color: red }}>{m.q} @ {m.c}</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                      <span style={{ fontFamily: mono, fontSize: 7, opacity: 0.9 }}>{m.n}</span>
+                      <span style={{ fontFamily: mono, fontSize: 7, color: red }}>{m.q}</span>
                     </div>
-                    <div style={{ height: 3, background: 'rgba(255,255,255,0.05)', borderRadius: 2 }}>
-                       <div style={{ height: '100%', width: `${m.p}%`, background: red, borderRadius: 2 }} />
+                    <div style={{ height: 2, background: 'rgba(255,255,255,0.05)', borderRadius: 1 }}>
+                       <div style={{ height: '100%', width: `${m.p}%`, background: red, borderRadius: 1 }} />
                     </div>
                   </div>
                 ))}
               </div>
             </div>
-            <div style={{ flex: '1 1 200px', padding: '16px' }}>
-              <div style={{ fontFamily: mono, fontSize: 9, fontWeight: 700, color: muted, marginBottom: 14 }}>THEATER ASSETS</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                 {ASSETS.map(a => (
-                   <div key={a.l} style={{ padding: '8px', border: `1px solid ${border}`, borderRadius: 3, background: 'rgba(255,255,255,0.01)' }}>
-                      <div style={{ fontFamily: mono, fontSize: 6, color: muted, marginBottom: 4 }}>{a.l}</div>
-                      <div style={{ fontFamily: mono, fontSize: 13, fontWeight: 800 }}>{a.v}</div>
-                      <div style={{ fontFamily: mono, fontSize: 6, color: '#27ae60', marginTop: 3 }}>{a.s}</div>
+            <div style={{ flex: '1 1 200px', padding: '10px' }}>
+              <div style={{ fontFamily: mono, fontSize: 8, fontWeight: 700, color: muted, marginBottom: 8, letterSpacing: '0.05em' }}>THEATER ASSETS</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4 }}>
+                 {ASSETS.slice(0, 6).map(a => (
+                   <div key={a.l} style={{ padding: '4px', border: `1px solid ${border}`, borderRadius: 2, background: 'rgba(255,255,255,0.01)', textAlign: 'center' }}>
+                      <div style={{ fontFamily: mono, fontSize: 5, color: muted, whiteSpace: 'nowrap' }}>{a.l}</div>
+                      <div style={{ fontFamily: mono, fontSize: 10, fontWeight: 800, lineHeight: 1 }}>{a.v}</div>
                    </div>
                  ))}
               </div>
