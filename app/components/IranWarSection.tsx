@@ -81,7 +81,7 @@ const IRAN_LENSES: {
     icon:     '⚛',
     keywords: ['nuclear','uranium','centrifuge','natanz','fordow','iaea',
                'enrichment','jcpoa','snapback','breakout','plutonium','arak'],
-    color:    '#e67e22',
+    color:    '#00d8ff', // Cyan
   },
   {
     id:       'proxy',
@@ -90,7 +90,7 @@ const IRAN_LENSES: {
     keywords: ['houthi','houthis','ansarallah','hezbollah','pmu','hashd',
                'kataib','axis of resistance','proxy','irgc qods','qods force',
                'quds force','iraq militia'],
-    color:    '#8e44ad',
+    color:    '#0070f3', // Blue
   },
   {
     id:       'domestic',
@@ -99,7 +99,7 @@ const IRAN_LENSES: {
     keywords: ['khamenei','pezeshkian','parliament','election','protest',
                'rial','sanction','crackdown','dissent','inflation','raisi',
                'mahsa','women','internet','shutdown'],
-    color:    '#2980b9',
+    color:    '#00a6ff', // Sky Blue
   },
   {
     id:       'naval',
@@ -108,7 +108,7 @@ const IRAN_LENSES: {
     keywords: ['hormuz','strait of hormuz','tanker','persian gulf','naval',
                'frigate','seized','maritime','irgc navy','drone ship',
                'mine','chokepoint'],
-    color:    '#16a085',
+    color:    '#0ea5e9', // Light Blue
   },
 ];
 

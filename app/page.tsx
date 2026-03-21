@@ -144,16 +144,16 @@ const LENSES: { id: LensId; label: string; hint: string; keywords: string[] }[] 
 
 // ── Region colours ─────────────────────────────────────────────────────────────
 const REGION_DOTS: Record<string, string> = {
-  western:      '#c0392b',
-  iranian:      '#27ae60',
-  gulf:         '#8e44ad',
-  'south-asian':'#2980b9',
-  levant:       '#e67e22',
-  analysis:     '#16a085',
-  osint:        '#f0b429',
-  global:       '#7f8c8d',
-  china:        '#de2910',
-  russia:       '#34495e',
+  western:      '#0070f3', // Blue
+  iranian:      '#10b981', // Emerald
+  gulf:         '#0ea5e9', // Sky
+  'south-asian':'#00d8ff', // Cyan
+  levant:       '#3b82f6', // Bright Blue
+  analysis:     '#2563eb',
+  osint:        '#0891b2',
+  global:       '#64748b',
+  china:        '#ef4444', // Keep but muted
+  russia:       '#1e293b', 
 };
 
 // ── Sources grouped by region (module-level, stable) ──────────────────────────
@@ -565,6 +565,8 @@ type SidebarPanelProps = {
   pinnedItems: FeedItem[];
   onTogglePin: (item: FeedItem) => void;
   keyForItem: (item: FeedItem) => string;
+  clusters: Cluster[];
+  items: FeedItem[];
 };
 
 function SidebarPanel({
@@ -572,243 +574,197 @@ function SidebarPanel({
   activeSources, onToggleSource, onAllSources, onNoSources,
   sourceCountMap, failedSources, sourceHealth,
   pinnedItems, onTogglePin, keyForItem,
+  clusters, items
 }: SidebarPanelProps) {
   const [healthOpen, setHealthOpen] = useState(false);
+  const [sidebarTab, setSidebarTab] = useState<'network' | 'intel' | 'assets'>('network');
+
   const failedHealth  = sourceHealth.filter(h => !h.ok);
   const isAllHealthy  = sourceHealth.length > 0 && failedHealth.length === 0;
   const total         = sourceHealth.length || SOURCES.length;
 
+  const TabNav = () => (
+    <div style={{
+      display: 'flex', gap: 2, marginBottom: 18, 
+      background: 'var(--surface-muted)', padding: 3, borderRadius: 6,
+      border: '1px solid var(--border-light)',
+      boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)'
+    }}>
+      {(['network', 'intel', 'assets'] as const).map(tab => {
+        const active = sidebarTab === tab;
+        const labels: Record<string, string> = { network: '🌐 NET', intel: '📂 INTEL', assets: '📊 INDICATORS' };
+        return (
+          <button
+            key={tab}
+            onClick={() => setSidebarTab(tab)}
+            style={{
+              flex: 1, padding: '8px 0', border: 'none', borderRadius: 4,
+              cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 9, 
+              fontWeight: 900, letterSpacing: '0.06em',
+              background: active ? 'var(--accent)' : 'transparent',
+              color: active ? '#fff' : 'var(--text-muted)',
+              transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+            }}
+            onMouseEnter={e => !active && (e.currentTarget.style.background = 'var(--surface-hover)')}
+            onMouseLeave={e => !active && (e.currentTarget.style.background = 'transparent')}
+          >
+            {labels[tab]}
+          </button>
+        );
+      })}
+    </div>
+  );
+
   return (
-    <div style={{ fontFamily: 'var(--font-mono)' }}>
+    <div style={{ fontFamily: 'var(--font-mono)', minHeight: '100%' }}>
+      <TabNav />
 
-      {/* ── Feed Status (always visible) ──────────────────────────────── */}
-      <div style={{
-        marginBottom: 14,
-        border:       '1px solid var(--border-light)',
-        borderRadius: 3,
-        overflow:     'hidden',
-      }}>
-        {/* Status header — clickable when there are failures */}
-        <button
-          onClick={() => failedHealth.length > 0 && setHealthOpen(v => !v)}
-          style={{
-            width:          '100%',
-            display:        'flex',
-            alignItems:     'center',
-            gap:            7,
-            padding:        '7px 10px',
-            background:     isAllHealthy
-              ? 'rgba(39,174,96,0.06)'
-              : failedHealth.length > 0
-                ? 'rgba(231,76,60,0.06)'
-                : 'var(--surface-hover)',
-            border:         'none',
-            cursor:         failedHealth.length > 0 ? 'pointer' : 'default',
-            textAlign:      'left',
-          }}
-        >
-          <span style={{
-            width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
-            background: isAllHealthy ? '#27ae60'
-              : failedHealth.length > 0 ? 'var(--accent)'
-              : 'var(--text-muted)',
-          }} />
-          <span style={{
-            fontFamily:    'var(--font-mono)',
-            fontSize:      9,
-            fontWeight:    600,
-            letterSpacing: '0.10em',
-            textTransform: 'uppercase',
-            color: isAllHealthy ? '#27ae60'
-              : failedHealth.length > 0 ? 'var(--accent)'
-              : 'var(--text-muted)',
-            flex: 1,
+      {sidebarTab === 'network' && (
+        <div style={{ animation: 'fadeInScale 0.2s ease forwards' }}>
+          {/* Feed Status Compact */}
+          <div style={{
+            marginBottom: 12, border: '1px solid var(--border-light)', borderRadius: 3, overflow: 'hidden',
           }}>
-            {sourceHealth.length === 0
-              ? 'Feed Status'
-              : isAllHealthy
-                ? `All ${total} sources online`
-                : `${failedHealth.length} of ${total} sources down`}
-          </span>
-          {failedHealth.length > 0 && (
-            <span style={{ fontSize: 8, color: 'var(--text-muted)' }}>
-              {healthOpen ? '▲' : '▼'}
-            </span>
-          )}
-        </button>
+            <button
+              onClick={() => failedHealth.length > 0 && setHealthOpen(v => !v)}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: 7, padding: '7px 10px',
+                background: isAllHealthy ? 'rgba(39,174,96,0.06)' : 'var(--surface-hover)',
+                border: 'none', cursor: failedHealth.length > 0 ? 'pointer' : 'default', textAlign: 'left',
+              }}
+            >
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: isAllHealthy ? '#27ae60' : 'var(--accent)' }} />
+              <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', color: isAllHealthy ? '#27ae60' : 'var(--accent)', flex: 1 }}>
+                {isAllHealthy ? 'NETWORK_ONLINE' : `${failedHealth.length} NODES_OFFLINE`}
+              </span>
+              {failedHealth.length > 0 && <span style={{ fontSize: 8 }}>{healthOpen ? '▲' : '▼'}</span>}
+            </button>
+            {healthOpen && failedHealth.length > 0 && (
+              <div style={{ padding: '8px', borderTop: '1px solid var(--border-light)', background: 'var(--surface)' }}>
+                 {failedHealth.map(h => (
+                   <div key={h.id} style={{ fontSize: 10, color: 'var(--text-secondary)', marginBottom: 2 }}>
+                     <span style={{ color: 'var(--accent)', fontWeight: 800 }}>[!]</span> {h.name}
+                   </div>
+                 ))}
+              </div>
+            )}
+          </div>
 
-        {/* Expanded failure list */}
-        {healthOpen && failedHealth.length > 0 && (() => {
-          const byRegion: Record<string, SourceHealth[]> = {};
-          failedHealth.forEach(h => {
-            const r = h.region || 'unknown';
-            if (!byRegion[r]) byRegion[r] = [];
-            byRegion[r].push(h);
-          });
-          return (
-            <div style={{ padding: '6px 10px 8px', borderTop: '1px solid var(--border-light)' }}>
-              {Object.entries(byRegion).map(([region, sources]) => (
-                <div key={region} style={{ marginBottom: 8 }}>
-                  <div style={{
-                    fontSize: 7, letterSpacing: '0.14em', textTransform: 'uppercase',
-                    color: 'var(--text-muted)', marginBottom: 4, fontWeight: 700,
-                  }}>
-                    {REGION_LABELS[region as Source['region']] || region}
-                  </div>
-                  {sources.map(h => (
-                    <div key={h.id} style={{
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      gap: 6, marginBottom: 3,
-                    }}>
-                      <span style={{ fontSize: 10, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {h.name}
-                      </span>
-                      <span style={{ fontSize: 8, color: 'var(--accent)', flexShrink: 0 }}>
-                        {h.errorMsg || 'Error'}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ))}
-              <div style={{ fontSize: 8, color: 'var(--text-muted)', marginTop: 4 }}>
-                Cached data served where available.
+          <div style={{ marginBottom: 16 }}>
+            <input 
+              id="sidebar-search" 
+              ref={searchRef} 
+              className="search-input" 
+              type="search" 
+              placeholder="Search providers..." 
+              value={search} 
+              onChange={e => onSearch(e.target.value)} 
+            />
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <span style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 800 }}>CHANNELS ({SOURCES.length})</span>
+            <div style={{ display: 'flex', gap: 4 }}>
+              <button onClick={onAllSources} style={{ fontSize: 8, color: 'var(--text-muted)', background: 'none', border: '1px solid var(--border-light)', borderRadius: 2, padding: '1px 6px', cursor: 'pointer' }}>ALL</button>
+              <button onClick={onNoSources} style={{ fontSize: 8, color: 'var(--text-muted)', background: 'none', border: '1px solid var(--border-light)', borderRadius: 2, padding: '1px 6px', cursor: 'pointer' }}>NONE</button>
+            </div>
+          </div>
+
+          {REGION_GROUPS.map(([region, srcs]) => (
+            <div key={region} style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 8, color: REGION_DOTS[region] || '#999', textTransform: 'uppercase', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: REGION_DOTS[region] || '#999' }} />
+                {REGION_LABELS[region as Source['region']] || region}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {srcs.map(s => {
+                  const active = activeSources.has(s.id);
+                  const count = sourceCountMap[s.id] || 0;
+                  return (
+                    <button key={s.id} onClick={() => onToggleSource(s.id)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px', borderRadius: 4, border: 'none', background: active ? 'var(--surface-hover)' : 'transparent', cursor: 'pointer', textAlign: 'left' }}>
+                      <span style={{ fontSize: 11, color: active ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: active ? 700 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</span>
+                      {count > 0 && <span style={{ fontSize: 9, color: active ? 'var(--accent)' : 'var(--text-muted)', fontWeight: 800 }}>{count}</span>}
+                    </button>
+                  );
+                })}
               </div>
             </div>
-          );
-        })()}
-      </div>
-
-      {/* Search */}
-      <div style={{ marginBottom: 16 }}>
-        <input
-          id="search-input"
-          name="search-input"
-          ref={searchRef}
-          className="search-input"
-          type="search"
-          placeholder="Search stories… (press /)"
-          value={search}
-          onChange={e => onSearch(e.target.value)}
-        />
-      </div>
-
-      {/* Sources header */}
-      <div style={{
-        fontSize: 9, letterSpacing: '0.15em', color: 'var(--text-muted)',
-        textTransform: 'uppercase', marginBottom: 10,
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      }}>
-        <span>Sources ({SOURCES.length})</span>
-        <div style={{ display: 'flex', gap: 4 }}>
-          {(['All', 'None'] as const).map(label => (
-            <button
-              key={label}
-              onClick={label === 'All' ? onAllSources : onNoSources}
-              style={{
-                fontSize: 8, letterSpacing: '0.06em', color: 'var(--text-muted)',
-                background: 'none', border: '1px solid var(--border-light)',
-                borderRadius: 2, padding: '1px 6px', cursor: 'pointer',
-                textTransform: 'uppercase',
-              }}
-            >{label}</button>
           ))}
-        </div>
-      </div>
 
-      {/* Sources grouped by region */}
-      {REGION_GROUPS.map(([region, srcs]) => (
-        <div key={region} style={{ marginBottom: 14 }}>
-          <div style={{
-            fontSize: 8, letterSpacing: '0.1em',
-            color: REGION_DOTS[region] || '#999',
-            textTransform: 'uppercase', marginBottom: 4,
-            display: 'flex', alignItems: 'center', gap: 5,
-          }}>
-            <span style={{ width: 5, height: 5, borderRadius: '50%', background: REGION_DOTS[region] || '#999', display: 'inline-block', flexShrink: 0 }} />
-            {REGION_LABELS[region as Source['region']] || region}
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            {srcs.map(s => {
-              const active = activeSources.has(s.id);
-              const count = sourceCountMap[s.id] || 0;
-              const failed = failedSources.has(s.id);
-              return (
+          {pinnedItems.length > 0 && (
+            <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border-light)' }}>
+              <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 900, marginBottom: 10 }}>PINNED_REPORTS ({pinnedItems.length})</div>
+              {pinnedItems.map(item => (
                 <button
-                  key={s.id}
-                  onClick={() => onToggleSource(s.id)}
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    gap: 8, padding: '4px 7px', borderRadius: 3,
-                    border: 'none',
-                    background: active ? 'var(--surface-hover)' : 'transparent',
-                    cursor: 'pointer', textAlign: 'left',
-                  }}
+                  key={keyForItem(item)}
+                  onClick={() => onTogglePin(item)}
+                  style={{ display: 'block', width: '100%', padding: '10px', borderRadius: 4, border: '1px solid var(--accent-light)', background: 'var(--surface)', cursor: 'pointer', textAlign: 'left', marginBottom: 6 }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-                    <span style={{
-                      width: 5, height: 5, borderRadius: '50%',
-                      background: active ? (REGION_DOTS[s.region] || '#999') : 'var(--border)',
-                      flexShrink: 0,
-                    }} />
-                    <span style={{
-                      fontSize: 11, letterSpacing: '0.02em',
-                      color: active ? 'var(--text-primary)' : 'var(--text-muted)',
-                      fontWeight: active ? 500 : 400,
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    }}>
-                      {s.name}
-                    </span>
-                    {failed && <span className="source-error-dot" title="Feed failed to load" />}
-                  </div>
-                  {count > 0 && (
-                    <span style={{ fontSize: 10, color: active ? 'var(--text-muted)' : 'var(--border)', flexShrink: 0 }}>
-                      {count}
-                    </span>
-                  )}
+                  <div style={{ fontSize: 9, color: 'var(--accent)', fontWeight: 800, marginBottom: 4 }}>{item.sourceName}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-primary)', fontWeight: 700, lineHeight: 1.3 }}>{truncate(item.title, 60)}</div>
                 </button>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
-      ))}
+      )}
 
-      {/* Region legend */}
-      <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border-light)' }}>
-        <div style={{ fontSize: 9, letterSpacing: '0.15em', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 8 }}>
-          Legend
+      {sidebarTab === 'intel' && (
+        <div style={{ animation: 'fadeInScale 0.2s ease forwards' }}>
+          <div style={{ fontSize: 10, color: 'var(--accent)', textTransform: 'uppercase', fontWeight: 900, marginBottom: 16, borderBottom: '1px solid var(--accent-light)', paddingBottom: 6 }}>
+             THEATER_INTEL_FOLDERS
+          </div>
+          {clusters.slice(0, 10).map((cluster, i) => (
+            <div key={cluster.id} style={{ marginBottom: 14, padding: '14px', border: '1px solid var(--border-light)', borderRadius: 6, background: 'var(--surface)', position: 'relative' }}>
+               <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 4, background: 'var(--accent)' }} />
+               <div style={{ fontSize: 14, fontWeight: 900, color: 'var(--text-primary)', marginBottom: 8, lineHeight: 1.2 }}>{cluster.title}</div>
+               <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <div style={{ fontSize: 9, color: 'var(--accent)', fontWeight: 800, background: 'var(--accent-light)', padding: '3px 8px', borderRadius: 3 }}>{Math.round(cluster.score * 10)} VITALITY</div>
+                  <div style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 700 }}>{cluster.items.length} ACTIVE_REPORTS</div>
+               </div>
+            </div>
+          ))}
+          {clusters.length === 0 && (
+            <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-muted)', fontSize: 12, border: '1px dashed var(--border)', borderRadius: 6 }}>
+               SYSTEM IS COLLATING LIVE FEEDS...
+            </div>
+          )}
         </div>
-        {Object.entries(REGION_DOTS).map(([r, c]) => (
-          <div key={r} style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 5 }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: c, flexShrink: 0 }} />
-            <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.02em' }}>
-              {REGION_LABELS[r as Source['region']] || r}
-            </span>
-          </div>
-        ))}
-      </div>
+      )}
 
-      {/* Pinned */}
-      {pinnedItems.length > 0 && (
-        <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border-light)' }}>
-          <div style={{ fontSize: 9, letterSpacing: '0.15em', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 8 }}>
-            Pinned ({pinnedItems.length})
+      {sidebarTab === 'assets' && (
+        <div style={{ animation: 'fadeInScale 0.2s ease forwards' }}>
+          <div style={{ fontSize: 10, color: 'var(--accent)', textTransform: 'uppercase', fontWeight: 900, marginBottom: 16 }}>
+             GLOBAL_ECONOMIC_INDICATORS
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            {pinnedItems.map(item => (
-              <button
-                key={keyForItem(item)}
-                onClick={() => onTogglePin(item)}
-                style={{
-                  border: 'none', background: 'transparent', textAlign: 'left',
-                  cursor: 'pointer', fontSize: 11, color: 'var(--text-secondary)', padding: '3px 0',
-                }}
-              >
-                <span style={{ fontWeight: 500, color: 'var(--accent)' }}>{item.sourceName}</span>
-                <span style={{ color: 'var(--border)' }}> / </span>
-                <span>{truncate(item.title, 55)}</span>
-              </button>
-            ))}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+             {[
+               { l: 'CRUDE OIL', v: '$72.84', d: '-1.2%' },
+               { l: 'BRENT', v: '$77.10', d: '-0.8%' },
+               { l: 'GOLD (OZ)', v: '$2,168', d: '+0.5%' },
+               { l: 'S&P 500', v: '5,123', d: '+0.2%' },
+             ].map(a => (
+               <div key={a.l} style={{ padding: '14px', border: '1px solid var(--border-light)', borderRadius: 8, background: 'var(--surface-muted)' }}>
+                  <div style={{ fontSize: 8, color: 'var(--text-muted)', fontWeight: 800, marginBottom: 4 }}>{a.l}</div>
+                  <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-primary)', marginBottom: 2 }}>{a.v}</div>
+                  <div style={{ fontSize: 10, color: a.d.startsWith('+') ? '#27ae60' : '#e74c3c', fontWeight: 900 }}>{a.d}</div>
+               </div>
+             ))}
+          </div>
+
+          <div style={{ fontSize: 10, color: 'var(--accent)', textTransform: 'uppercase', fontWeight: 900, marginTop: 24, marginBottom: 12 }}>
+             THEATER_STATUS_LOG
+          </div>
+          <div style={{ padding: '16px', border: '1px solid var(--accent-light)', background: 'rgba(0,112,243,0.03)', borderRadius: 6 }}>
+             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                <div className="live-dot" style={{ background: 'var(--accent)' }} />
+                <div style={{ fontSize: 11, fontWeight: 900, color: 'var(--accent)' }}>THEATER_SAT_RELAY</div>
+             </div>
+             <div style={{ fontSize: 12, color: 'var(--text-primary)', lineHeight: 1.6, fontFamily: 'var(--font-mono)' }}>
+                <span style={{ color: 'var(--accent)', fontWeight: 800 }}>[HORMUZ_STR]</span> PASSAGE_STABLE<br/>
+                <span style={{ color: 'var(--accent)', fontWeight: 800 }}>[FORDOW_SITE]</span> THERMAL_NORMAL<br/>
+                <span style={{ color: 'var(--accent)', fontWeight: 800 }}>[RED_SEA_TR]</span> RISK_ELEVATED
+             </div>
           </div>
         </div>
       )}
@@ -1825,6 +1781,8 @@ export default function Home() {
               pinnedItems={pinnedItems}
               onTogglePin={togglePin}
               keyForItem={keyForItem}
+              clusters={clusters}
+              items={items}
             />
 
             {/* ── Keyword Watchlist ───────────────────────────────────── */}
@@ -2136,13 +2094,13 @@ export default function Home() {
                         padding: '3px 10px',
                         borderRadius: 999,
                         border: `1px solid ${active ? 'transparent' : 'var(--border-light)'}`,
-                        background: active ? 'var(--text-primary)' : 'var(--surface)',
-                        color: active ? 'var(--bg)' : 'var(--text-muted)',
+                        background: active ? 'var(--accent)' : 'var(--surface)',
+                        color: active ? '#fff' : 'var(--text-muted)',
                         boxShadow: active ? 'var(--shadow-sm)' : 'none',
                         cursor: 'pointer',
                         display: 'flex', alignItems: 'center', gap: 4,
                         transition: 'background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s',
-                        fontWeight: active ? 500 : 400,
+                        fontWeight: active ? 700 : 400,
                       }}
                     >
                       {l.label}
