@@ -1006,6 +1006,70 @@ function FeedLoadingScreen({ sourceCount, isDone }: { sourceCount: number; isDon
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+// SCROLL TO TOP
+// ══════════════════════════════════════════════════════════════════════════════
+function ScrollToTop() {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setVisible(window.scrollY > 400);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const scrollUp = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  return (
+    <>
+      <style>{`
+        @keyframes ftg-fade-in  { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes ftg-fade-out { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(8px); } }
+        .ftg-scroll-top {
+          position: fixed;
+          bottom: 28px;
+          right: 24px;
+          z-index: 9999;
+          width: 38px;
+          height: 38px;
+          border-radius: 50%;
+          border: 1px solid var(--accent);
+          background: var(--surface);
+          color: var(--accent);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 16px;
+          font-weight: 700;
+          box-shadow: 0 2px 12px rgba(0,0,0,0.35);
+          transition: background 0.15s, color 0.15s, transform 0.15s;
+          animation: ftg-fade-in 0.2s ease-out;
+        }
+        .ftg-scroll-top:hover {
+          background: var(--accent);
+          color: #fff;
+          transform: translateY(-2px);
+        }
+        .ftg-scroll-top.hidden {
+          animation: ftg-fade-out 0.2s ease-out forwards;
+          pointer-events: none;
+        }
+      `}</style>
+      {visible && (
+        <button
+          className="ftg-scroll-top"
+          onClick={scrollUp}
+          title="Back to top"
+          aria-label="Scroll to top"
+        >
+          ↑
+        </button>
+      )}
+    </>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // MAIN PAGE
 // ══════════════════════════════════════════════════════════════════════════════
 export default function Home() {
@@ -2895,6 +2959,9 @@ export default function Home() {
           <span style={{ color: 'var(--border)', fontSize: 8 }}>j/k·o·/·m·r</span>
         </div>
       </footer>
+
+      {/* ── Scroll to top ──────────────────────────────────────────────── */}
+      <ScrollToTop />
     </div>
   );
 }
