@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import { Lora, IBM_Plex_Mono } from 'next/font/google';
 import './globals.css';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 // next/font self-hosts these at build time → no round-trip to Google Fonts CDN,
 // no render-blocking stylesheet, fonts inlined into the page bundle.
@@ -103,6 +105,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${lora.variable} ${ibmPlexMono.variable}`}>
       <body>{children}</body>
+      <Analytics />
+      <SpeedInsights />
     </html>
   );
 }
