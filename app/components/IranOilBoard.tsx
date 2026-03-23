@@ -8,10 +8,10 @@
  *   CHARTS — TradingView Mini Symbol Overview embeds (free TVC: spot feeds)
  *
  * Free symbols (no TradingView subscription needed):
- *   TVC:USOIL       — WTI spot
- *   TVC:UKOIL       — Brent spot
- *   TVC:NATURALGAS  — Natural Gas spot
- *   AMEX:USO        — USO ETF (equity, always free)
+ *   TVC:USOIL  — WTI spot
+ *   TVC:UKOIL  — Brent spot
+ *   AMEX:UNG   — United States Natural Gas Fund ETF (free equity)
+ *   AMEX:USO   — United States Oil Fund ETF (free equity)
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -37,7 +37,7 @@ const POLL_MS = 3 * 60 * 1000;
 const CHART_SYMBOLS = [
   { id: 'wti',    tv: 'TVC:USOIL',        name: 'WTI Crude',   color: '#e74c3c' },
   { id: 'brent',  tv: 'TVC:UKOIL',        name: 'Brent Crude', color: '#3498db' },
-  { id: 'natgas', tv: 'TVC:NATURALGAS',   name: 'Natural Gas', color: '#2ecc71' },
+  { id: 'natgas', tv: 'AMEX:UNG',          name: 'Nat Gas (UNG)', color: '#2ecc71' },
   { id: 'uso',    tv: 'AMEX:USO',         name: 'USO ETF',     color: '#f39c12' },
 ];
 
@@ -199,34 +199,29 @@ export default function IranOilBoard() {
     ? updatedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     : null;
 
-  // ── Shared tab button style ───────────────────────────────────────────────
-  const tabBtn = (active: boolean) => ({
+  // ── Segmented control styles ──────────────────────────────────────────────
+  const segWrap: React.CSSProperties = {
+    display:       'flex',
+    border:        '1px solid var(--border-light)',
+    borderRadius:  4,
+    overflow:      'hidden',
+    background:    'var(--bg)',
+  };
+
+  const segBtn = (active: boolean, first: boolean, last: boolean): React.CSSProperties => ({
     fontFamily:    mono,
     fontSize:      9,
     fontWeight:    active ? 700 : 500,
     letterSpacing: '0.1em',
-    textTransform: 'uppercase' as const,
-    padding:       '3px 10px',
-    border:        `1px solid ${active ? 'var(--accent)' : 'var(--border-light)'}`,
-    borderRadius:  2,
+    textTransform: 'uppercase',
+    padding:       '4px 11px',
+    border:        'none',
+    borderLeft:    first ? 'none' : '1px solid var(--border-light)',
     cursor:        'pointer',
     background:    active ? 'var(--accent)' : 'transparent',
     color:         active ? '#fff' : muted,
-    transition:    'all 0.15s',
-  });
-
-  const rangeBtn = (active: boolean) => ({
-    fontFamily:    mono,
-    fontSize:      9,
-    letterSpacing: '0.1em',
-    textTransform: 'uppercase' as const,
-    padding:       '3px 10px',
-    border:        `1px solid ${active ? 'var(--accent)' : 'var(--border-light)'}`,
-    borderRadius:  2,
-    cursor:        'pointer',
-    background:    active ? 'var(--accent)' : 'var(--bg)',
-    color:         active ? '#fff' : muted,
-    fontWeight:    active ? 700 : 400,
+    transition:    'background 0.12s, color 0.12s',
+    whiteSpace:    'nowrap',
   });
 
   if (loading && prices.length === 0) {
@@ -276,19 +271,24 @@ export default function IranOilBoard() {
             </span>
           </div>
 
-          {/* Right: view toggle + meta */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            {/* BOARD / CHARTS toggle */}
-            <div style={{ display: 'flex', gap: 3 }}>
-              <button style={tabBtn(view === 'BOARD')}  onClick={() => setView('BOARD')}>Board</button>
-              <button style={tabBtn(view === 'CHARTS')} onClick={() => setView('CHARTS')}>Charts</button>
+          {/* Right: segmented controls + meta */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+
+            {/* BOARD / CHARTS segmented control */}
+            <div style={segWrap}>
+              <button style={segBtn(view === 'BOARD',  true,  false)} onClick={() => setView('BOARD')}>Board</button>
+              <button style={segBtn(view === 'CHARTS', false, true)}  onClick={() => setView('CHARTS')}>Charts</button>
             </div>
 
-            {/* Range toggles — only visible in CHARTS view */}
+            {/* Range segmented control — only in CHARTS view */}
             {view === 'CHARTS' && (
-              <div style={{ display: 'flex', gap: 3 }}>
-                {RANGES.map(r => (
-                  <button key={r.key} style={rangeBtn(range === r.key)} onClick={() => setRange(r.key)}>
+              <div style={segWrap}>
+                {RANGES.map((r, i) => (
+                  <button
+                    key={r.key}
+                    style={segBtn(range === r.key, i === 0, i === RANGES.length - 1)}
+                    onClick={() => setRange(r.key)}
+                  >
                     {r.label}
                   </button>
                 ))}
@@ -297,26 +297,20 @@ export default function IranOilBoard() {
 
             {/* Meta badges */}
             {timeLabel && (
-              <span style={{ fontFamily: mono, fontSize: 8, color: muted }}>UPDATED {timeLabel}</span>
+              <span style={{ fontFamily: mono, fontSize: 8, color: muted, letterSpacing: '0.05em' }}>
+                UPDATED {timeLabel}
+              </span>
             )}
-            {view === 'BOARD' && (
-              <span style={{
-                fontFamily: mono, fontSize: 8, color: muted,
-                border: '1px solid var(--border-light)',
-                padding: '1px 5px', borderRadius: 2, textTransform: 'uppercase',
-              }}>15m delay · Stooq</span>
-            )}
-            {view === 'CHARTS' && (
-              <span style={{
-                fontFamily: mono, fontSize: 8, color: muted,
-                border: '1px solid var(--border-light)',
-                padding: '1px 5px', borderRadius: 2, textTransform: 'uppercase',
-              }}>Live · TradingView</span>
-            )}
+            <span style={{
+              fontFamily: mono, fontSize: 8, color: muted,
+              border: '1px solid var(--border-light)',
+              padding: '2px 6px', borderRadius: 3, letterSpacing: '0.08em',
+            }}>
+              {view === 'BOARD' ? '15M DELAY · STOOQ' : 'LIVE · TRADINGVIEW'}
+            </span>
 
-            {/* Error indicator */}
             {error && (
-              <span style={{ fontFamily: mono, fontSize: 8, color: downColor }}>⚠ FEED ERROR</span>
+              <span style={{ fontFamily: mono, fontSize: 8, color: downColor, fontWeight: 700 }}>⚠ FEED ERROR</span>
             )}
           </div>
         </div>
@@ -560,7 +554,7 @@ export default function IranOilBoard() {
               fontFamily: mono, fontSize: 8, color: muted,
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             }}>
-              <span>Data via TradingView · WTI (USOIL) · Brent (UKOIL) · Nat Gas (NATURALGAS) · USO</span>
+              <span>Data via TradingView · WTI (USOIL) · Brent (UKOIL) · Nat Gas (UNG) · USO</span>
               <a href="https://www.tradingview.com" target="_blank" rel="noopener noreferrer"
                 style={{ color: muted, textDecoration: 'none', opacity: 0.6 }}>
                 Powered by TradingView ↗
