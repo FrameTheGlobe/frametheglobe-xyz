@@ -64,6 +64,7 @@ export default function IranOilBoard() {
   const dubai   = prices.find(p => p.symbol === 'DUBAI');
   const urals   = prices.find(p => p.symbol === 'REBCO');
   const wcs     = prices.find(p => p.symbol === 'WCS');
+  const uso     = prices.find(p => p.symbol === 'USO');
 
   const upColor   = '#27ae60';
   const downColor = '#c93a20';
@@ -304,6 +305,22 @@ export default function IranOilBoard() {
                     {arrowIcon(natgas.change)} {sign(natgas.change)}{fmt(Math.abs(natgas.change))}
                 </span>
                 <span style={{ fontFamily: mono, fontSize: 8, color: muted }}>USD/MMBtu</span>
+            </div>
+          )}
+          {uso && (
+            <div style={{
+              flex: '1 1 200px',
+              display:     'flex',
+              alignItems:  'center',
+              gap:         12,
+              padding:     '12px 18px',
+              borderRight: '1px solid var(--border-light)',
+            }}>
+                <span style={{ fontFamily: mono, fontSize: 9, fontWeight: 700, textTransform: 'uppercase', color: muted, minWidth: 30 }}>USO</span>
+                <span key={`USO-${flashGen}`} className="ftg-price-flash" style={{ fontFamily: mono, fontSize: 18, fontWeight: 900 }}>${fmt(uso.price)}</span>
+                <span style={{ fontFamily: mono, fontSize: 11, fontWeight: 600, color: priceColor(uso.change) }}>
+                    {arrowIcon(uso.change)} {sign(uso.change)}{fmt(Math.abs(uso.change))} ({sign(uso.changePercent)}{fmt(uso.changePercent)}%)
+                </span>
             </div>
           )}
           <div style={{

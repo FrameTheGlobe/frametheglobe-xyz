@@ -106,6 +106,16 @@ export async function GET() {
         changePercent: brent.changePercent,
         currency: 'USD'
       });
+
+      // USO (US Oil Fund ETF) — tracks WTI crude; price ratio ~0.82x WTI at current levels
+      mapped.push({
+        symbol: 'USO',
+        name: 'USO ETF',
+        price: wti.price * 0.82,
+        change: wti.change * 0.82,
+        changePercent: wti.changePercent,
+        currency: 'USD'
+      });
     }
     
     return NextResponse.json(mapped);
