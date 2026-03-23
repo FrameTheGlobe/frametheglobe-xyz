@@ -18,7 +18,6 @@ import IntelTimeline, { IntelStatus } from './components/IntelTimeline';
 import CompactHeader  from './components/CompactHeader';
 import LiveFeeds      from './components/LiveFeeds';
 import AIIntelPanel   from './components/AIIntelPanel';
-import OilPriceChart  from './components/OilPriceChart';
 import MissileIntel   from './components/MissileIntel';
 
 // MapView uses Leaflet (browser-only) — load with no SSR
@@ -2023,10 +2022,7 @@ export default function Home() {
 
           <RegionStatsStrip items={visibleItems} />
 
-          {/* ── OIL PRICE HISTORY CHART ─────────────────────────────────────── */}
-          {!loading && <OilPriceChart />}
-
-          {/* ── LIVE FEEDS ──────────────────────────────────────────────────── */}
+{/* ── LIVE FEEDS ──────────────────────────────────────────────────── */}
           {!loading && <LiveFeeds />}
 
           {/* ── AI INTELLIGENCE ─────────────────────────────────────────────── */}
