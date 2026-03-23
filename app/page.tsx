@@ -18,6 +18,7 @@ import IntelTimeline, { IntelStatus } from './components/IntelTimeline';
 import CompactHeader  from './components/CompactHeader';
 import LiveFeeds      from './components/LiveFeeds';
 import AIIntelPanel   from './components/AIIntelPanel';
+import OilPriceChart  from './components/OilPriceChart';
 import MissileIntel   from './components/MissileIntel';
 
 // MapView uses Leaflet (browser-only) — load with no SSR
@@ -130,6 +131,8 @@ type Cluster = {
   hasMarketSignal?: boolean;
   marketImpactHint?: string;
   linkedSymbols?: string[];
+  missileCount?: number;
+  hasMissileSignal?: boolean;
 };
 
 // ── Lens definitions ──────────────────────────────────────────────────────────
@@ -326,6 +329,19 @@ function buildClusters(items: FeedItem[]): Cluster[] {
       const marketKeywords = ['oil', 'brent', 'wti', 'opec', 'gas', 'energy', 'sanctions', 'currency'];
       const hasMarketSignal = marketKeywords.some(k => titleWords.has(k)) || finalItems.some(i => marketKeywords.some(mk => i.title.toLowerCase().includes(mk) || i.summary.toLowerCase().includes(mk)));
 
+      // Missile intelligence detection
+      const missileKeywords = [
+        'missile', 'ballistic', 'cruise missile', 'shahed', 'fateh', 'sejjil',
+        'iron dome', "david's sling", 'arrow system', 'jericho', 'intercept',
+        'airstrike', 'drone strike', 'rocket fire', 'barrage'
+      ];
+      const missileEvents = finalItems.filter(item => {
+        const text = `${item.title} ${item.summary}`.toLowerCase();
+        return missileKeywords.some(keyword => text.includes(keyword));
+      });
+      const missileCount = missileEvents.length;
+      const hasMissileSignal = missileCount > 0;
+
       return {
         id: `cluster-${idx}`,
         title: finalItems[0]?.title || 'Untitled',
@@ -337,6 +353,8 @@ function buildClusters(items: FeedItem[]): Cluster[] {
         avgTrust,
         avgRelevance,
         hasMarketSignal,
+        missileCount,
+        hasMissileSignal,
       };
     })
     .sort((a, b) => b.score - a.score);
@@ -2005,11 +2023,14 @@ export default function Home() {
 
           <RegionStatsStrip items={visibleItems} />
 
+          {/* ── OIL PRICE HISTORY CHART ─────────────────────────────────────── */}
+          {!loading && <OilPriceChart />}
+
           {/* ── LIVE FEEDS ──────────────────────────────────────────────────── */}
           {!loading && <LiveFeeds />}
 
           {/* ── AI INTELLIGENCE ─────────────────────────────────────────────── */}
-          {!loading && items.length > 0 && <AIIntelPanel />}
+          {!loading && items.length > 0 && <AIIntelPanel items={items} />}
 
           {/* ── DAILY BRIEFING ─────────────────────────────────────────────── */}
           {!loading && briefClusters.length > 0 && !briefingDismissed && briefingOpen && (
@@ -2585,6 +2606,15 @@ export default function Home() {
                           border: '1px solid rgba(241, 196, 15, 0.3)', padding: '2px 5px', borderRadius: 2,
                         }}>
                           Market
+                        </span>
+                      )}
+                      {cluster.hasMissileSignal && (
+                        <span style={{
+                          fontFamily: 'var(--font-mono)', fontSize: 10,
+                          color: '#fff', background: 'rgba(239, 68, 68, 0.9)',
+                          border: '1px solid rgba(239, 68, 68, 0.3)', padding: '2px 5px', borderRadius: 2,
+                        }}>
+                          🚀 {cluster.missileCount}
                         </span>
                       )}
                       <span style={{

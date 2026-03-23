@@ -231,12 +231,23 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
     [items]
   );
 
-  // Sub-lens filtered
+  // Sub-lens filtered — deduplicate by URL to prevent duplicate key errors
   const lensedItems = useMemo(() => {
-    if (iranLens === 'all') return iranItems;
-    const def = IRAN_LENSES.find(l => l.id === iranLens);
-    if (!def) return iranItems;
-    return iranItems.filter(i => matchesKeywords(i, def.keywords));
+    const base = (() => {
+      if (iranLens === 'all') return iranItems;
+      const def = IRAN_LENSES.find(l => l.id === iranLens);
+      if (!def) return iranItems;
+      return iranItems.filter(i => matchesKeywords(i, def.keywords));
+    })();
+    const seen = new Set<string>();
+    return base.filter(item => {
+      const key = item.link && item.link !== '#' && item.link.startsWith('http')
+        ? item.link
+        : `${item.sourceId}::${item.title}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   }, [iranItems, iranLens]);
 
   // Count per lens (for badges)
@@ -257,6 +268,62 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
   const nowMs = useMemo(() => Date.now(), [displayed]);
 
   const iranSourceCount = SOURCES.filter(s => s.region === 'iranian').length;
+
+  // Live missile event counts — split by attributed actor
+  const missileStatsByActor = useMemo(() => {
+    const MISSILE_KEYS: Record<string, string[]> = {
+      'Ballistic': ['ballistic missile', 'sejjil', 'fateh', 'emad', 'qiam', 'shahab', 'kheibar', 'jericho'],
+      'Cruise':    ['cruise missile', 'cruise'],
+      'Drone':     ['shahed', 'drone strike', 'drone attack', 'uav', 'kamikaze'],
+      'Iron Dome': ['iron dome'],
+      'Intercept': ['intercept', 'shot down', 'arrow system', "david's sling"],
+      'Airstrike': ['airstrike', 'air strike', 'f-35', 'f-16'],
+    };
+
+    // Keywords that attribute an item to Iran/proxies (offensive launches)
+    const IRAN_KW = [
+      'iran', 'irgc', 'hezbollah', 'hamas', 'houthi', 'islamic republic',
+      'sejjil', 'fateh', 'emad', 'qiam', 'shahab', 'kheibar', 'shahed',
+      'arash', 'iranian missile', 'iranian drone', 'proxy',
+    ];
+
+    // Keywords that attribute an item to Israel (offensive + defensive systems)
+    const ISRAEL_KW = [
+      'israel', 'idf', 'israeli', 'iron dome', "david's sling", 'arrow system',
+      'iaf', 'mossad', 'f-35', 'f-16', 'tel aviv', 'jerusalem',
+      'israeli airstrike', 'israeli forces',
+    ];
+
+    const categorize = (subset: typeof iranItems) => {
+      const counts: Record<string, number> = {};
+      for (const [label, keywords] of Object.entries(MISSILE_KEYS)) {
+        counts[label] = subset.filter(item => {
+          const text = `${item.title} ${item.summary}`.toLowerCase();
+          return keywords.some(k => text.includes(k));
+        }).length;
+      }
+      return counts;
+    };
+
+    const iranItems_ = iranItems.filter(item => {
+      const text = `${item.title} ${item.summary}`.toLowerCase();
+      return IRAN_KW.some(k => text.includes(k));
+    });
+
+    const israelItems_ = iranItems.filter(item => {
+      const text = `${item.title} ${item.summary}`.toLowerCase();
+      return ISRAEL_KW.some(k => text.includes(k));
+    });
+
+    return {
+      iran:   categorize(iranItems_),
+      israel: categorize(israelItems_),
+      iranTotal:   Object.values(categorize(iranItems_)).reduce((a, b) => a + b, 0),
+      israelTotal: Object.values(categorize(israelItems_)).reduce((a, b) => a + b, 0),
+    };
+  }, [iranItems]);
+
+  const totalMissileEvents = missileStatsByActor.iranTotal + missileStatsByActor.israelTotal;
 
   if (items.length === 0) return null;
 
@@ -344,6 +411,189 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
 
           {/* ── Crude Oil Price Board ────────────────────────────────────── */}
           <IranOilBoard />
+
+          {/* ── Live Missile Intelligence ────────────────────────────────── */}
+          {totalMissileEvents > 0 && (
+            <div style={{
+              border: '1px solid var(--border-light)',
+              borderLeft: '3px solid #ef4444',
+              borderRadius: '0 4px 4px 0',
+              background: 'var(--surface)',
+              overflow: 'hidden',
+            }}>
+              {/* Header */}
+              <div style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: 9,
+                fontWeight: 900,
+                letterSpacing: '0.1em',
+                color: '#ef4444',
+                textTransform: 'uppercase',
+                padding: '10px 14px 8px',
+                borderBottom: '1px solid var(--border-light)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}>
+                <span>🚀 Live Missile Intelligence</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: 8 }}>
+                  {totalMissileEvents} events detected
+                </span>
+              </div>
+
+              {/* Two-column split: Iran | Israel */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+
+                {/* ── Iran / Proxy Column ─────────────────────── */}
+                <div style={{
+                  padding: '10px 12px',
+                  borderRight: '1px solid var(--border-light)',
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    marginBottom: 8,
+                  }}>
+                    <span style={{ fontSize: 14 }}>🇮🇷</span>
+                    <span style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: 9,
+                      fontWeight: 700,
+                      letterSpacing: '0.1em',
+                      textTransform: 'uppercase',
+                      color: '#ef4444',
+                    }}>Iran / Proxy Forces</span>
+                    <span style={{
+                      marginLeft: 'auto',
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: 9,
+                      color: 'var(--text-muted)',
+                    }}>{missileStatsByActor.iranTotal} events</span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 5 }}>
+                    {Object.entries(missileStatsByActor.iran)
+                      .filter(([, count]) => count > 0)
+                      .map(([label, count]) => (
+                        <div key={label} style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          padding: '6px 4px',
+                          background: 'rgba(239,68,68,0.06)',
+                          border: '1px solid rgba(239,68,68,0.2)',
+                          borderRadius: 3,
+                        }}>
+                          <span style={{
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: 18,
+                            fontWeight: 900,
+                            color: '#ef4444',
+                            lineHeight: 1,
+                          }}>{count}</span>
+                          <span style={{
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: 7,
+                            fontWeight: 700,
+                            color: 'var(--text-muted)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.06em',
+                            marginTop: 3,
+                            textAlign: 'center',
+                          }}>{label}</span>
+                        </div>
+                      ))
+                    }
+                    {missileStatsByActor.iranTotal === 0 && (
+                      <div style={{
+                        gridColumn: '1 / -1',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: 10,
+                        color: 'var(--text-muted)',
+                        padding: '8px 0',
+                        textAlign: 'center',
+                      }}>
+                        No events in current window
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* ── Israel Column ───────────────────────────── */}
+                <div style={{ padding: '10px 12px' }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    marginBottom: 8,
+                  }}>
+                    <span style={{ fontSize: 14 }}>🇮🇱</span>
+                    <span style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: 9,
+                      fontWeight: 700,
+                      letterSpacing: '0.1em',
+                      textTransform: 'uppercase',
+                      color: '#3b82f6',
+                    }}>Israel / IDF</span>
+                    <span style={{
+                      marginLeft: 'auto',
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: 9,
+                      color: 'var(--text-muted)',
+                    }}>{missileStatsByActor.israelTotal} events</span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 5 }}>
+                    {Object.entries(missileStatsByActor.israel)
+                      .filter(([, count]) => count > 0)
+                      .map(([label, count]) => (
+                        <div key={label} style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          padding: '6px 4px',
+                          background: 'rgba(59,130,246,0.06)',
+                          border: '1px solid rgba(59,130,246,0.2)',
+                          borderRadius: 3,
+                        }}>
+                          <span style={{
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: 18,
+                            fontWeight: 900,
+                            color: '#3b82f6',
+                            lineHeight: 1,
+                          }}>{count}</span>
+                          <span style={{
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: 7,
+                            fontWeight: 700,
+                            color: 'var(--text-muted)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.06em',
+                            marginTop: 3,
+                            textAlign: 'center',
+                          }}>{label}</span>
+                        </div>
+                      ))
+                    }
+                    {missileStatsByActor.israelTotal === 0 && (
+                      <div style={{
+                        gridColumn: '1 / -1',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: 10,
+                        color: 'var(--text-muted)',
+                        padding: '8px 0',
+                        textAlign: 'center',
+                      }}>
+                        No events in current window
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          )}
 
           {/* ── Mobile Injected Brief (Strategic Brief) ─────────────────── */}
           {brief && (
@@ -591,7 +841,7 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
               </div>
             ) : (
               <div className="ftg-iran-article-list" style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                {displayed.map(item => {
+                {displayed.map((item, index) => {
                   const ageMs     = nowMs - new Date(item.pubDate).getTime();
                   const isBreaking = ageMs < 30 * 60_000;
                   const isNew      = ageMs < 2 * 3600_000;
@@ -599,7 +849,7 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
                   return (
                     <article
                       className="ftg-iran-article-card"
-                      key={(item.link && item.link !== '#' && item.link.startsWith('http') ? item.link : null) ?? `${item.sourceId}::${item.title}::${item.pubDate}`}
+                      key={`${item.sourceId}::${item.title}::${item.pubDate}::${index}`}
                       style={{
                         borderTop:    '1px solid var(--border-light)',
                         borderRight:  '1px solid var(--border-light)',
