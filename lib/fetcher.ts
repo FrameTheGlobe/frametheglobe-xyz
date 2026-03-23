@@ -194,6 +194,37 @@ const PHRASE_BOOSTS: [string, number][] = [
   ['air defense', 2.1],
   ['cyber attack', 2.3],
   ['terrorist attack', 2.2],
+  // Israeli missile systems (very high priority)
+  ['iron dome interception', 3.2],
+  ['iron dome activated', 3.0],
+  ['david\'s sling launched', 2.9],
+  ['arrow system intercept', 3.1],
+  ['patriot battery', 2.8],
+  ['jericho missile test', 3.3],
+  ['f-35 airstrike', 2.9],
+  ['f-16 fighter jet', 2.7],
+  ['israeli airstrike', 2.8],
+  ['idf operation', 2.6],
+  // Iranian missile systems (very high priority)
+  ['shahed drone launched', 3.2],
+  ['fateh missile fired', 3.0],
+  ['sejjil missile test', 3.3],
+  ['zolfaghar missile', 2.9],
+  ['emad missile launched', 2.8],
+  ['qiam missile fired', 2.7],
+  ['irgc missile drill', 2.9],
+  ['ballistic missile launch', 3.1],
+  ['cruise missile strike', 2.8],
+  ['missile attack', 2.9],
+  // Missile intelligence details
+  ['missile range', 2.2],
+  ['interception rate', 2.3],
+  ['missile defense', 2.4],
+  ['air raid siren', 2.5],
+  ['explosion heard', 2.2],
+  ['surface-to-surface', 2.3],
+  ['long-range missile', 2.6],
+  ['short-range missile', 2.1],
 ];
 
 function computeRelevanceScore(text: string): number {

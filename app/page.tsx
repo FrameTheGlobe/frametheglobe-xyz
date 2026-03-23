@@ -18,6 +18,7 @@ import IntelTimeline, { IntelStatus } from './components/IntelTimeline';
 import CompactHeader  from './components/CompactHeader';
 import LiveFeeds      from './components/LiveFeeds';
 import AIIntelPanel   from './components/AIIntelPanel';
+import MissileIntel   from './components/MissileIntel';
 
 // MapView uses Leaflet (browser-only) — load with no SSR
 const MapView = dynamic(() => import('./components/MapView'), { ssr: false });
@@ -60,6 +61,14 @@ const DEFAULT_ALERT_PROFILES: AlertProfile[] = [
     lenses: ['nuclear'],
     regions: [],
     threshold: 2.5,
+  },
+  {
+    id: 'missile-intelligence',
+    name: 'Missile Intelligence',
+    keywords: ['missile', 'ballistic', 'cruise', 'shahed', 'fateh', 'sejjil', 'iron dome', 'david\'s sling', 'arrow', 'jericho', 'intercept', 'launch', 'airstrike', 'drone strike'],
+    lenses: ['gaza', 'lebanon', 'afghanistan', 'pakistan'],
+    regions: [],
+    threshold: 2.8,
   },
   {
     id: 'oil-markets',
@@ -713,10 +722,12 @@ function SidebarPanel({
 
       {sidebarTab === 'intel' && (
         <div style={{ animation: 'fadeInScale 0.2s ease forwards' }}>
-          <div style={{ fontSize: 10, color: 'var(--accent)', textTransform: 'uppercase', fontWeight: 900, marginBottom: 16, borderBottom: '1px solid var(--accent-light)', paddingBottom: 6 }}>
+          <MissileIntel items={items} limit={8} />
+          
+          <div style={{ fontSize: 10, color: 'var(--accent)', textTransform: 'uppercase', fontWeight: 900, marginBottom: 16, marginTop: 20, borderBottom: '1px solid var(--accent-light)', paddingBottom: 6 }}>
              THEATER_INTEL_FOLDERS
           </div>
-          {clusters.slice(0, 10).map((cluster, i) => (
+          {clusters.slice(0, 6).map((cluster, i) => (
             <div key={cluster.id} style={{ marginBottom: 14, padding: '14px', border: '1px solid var(--border-light)', borderRadius: 6, background: 'var(--surface)', position: 'relative' }}>
                <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 4, background: 'var(--accent)' }} />
                <div style={{ fontSize: 14, fontWeight: 900, color: 'var(--text-primary)', marginBottom: 8, lineHeight: 1.2 }}>{cluster.title}</div>
