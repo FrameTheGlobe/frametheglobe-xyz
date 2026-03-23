@@ -277,11 +277,11 @@ export default function AIIntelPanel({ items }: Props) {
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
           {data && (
             <span style={{ fontFamily:'var(--font-mono)', fontSize:8,
-              color: data.generatedBy === 'claude-ai' ? '#22c55e' : '#f59e0b',
-              background: data.generatedBy === 'claude-ai' ? 'rgba(34,197,94,0.08)' : 'rgba(245,158,11,0.08)',
-              border: `1px solid ${data.generatedBy === 'claude-ai' ? 'rgba(34,197,94,0.3)' : 'rgba(245,158,11,0.3)'}`,
+              color: data.generatedBy === 'groq-ai' ? '#22c55e' : '#f59e0b',
+              background: data.generatedBy === 'groq-ai' ? 'rgba(34,197,94,0.08)' : 'rgba(245,158,11,0.08)',
+              border: `1px solid ${data.generatedBy === 'groq-ai' ? 'rgba(34,197,94,0.3)' : 'rgba(245,158,11,0.3)'}`,
               padding:'2px 7px', borderRadius:2, letterSpacing:'0.06em' }}>
-              {data.generatedBy === 'claude-ai' ? '🤖 AI ANALYSIS' : '🔢 ALGORITHMIC'}
+              {data.generatedBy === 'groq-ai' ? '🤖 GROQ AI' : '🔢 ALGORITHMIC'}
             </span>
           )}
           {lastRefresh && (

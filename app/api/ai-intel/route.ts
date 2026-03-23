@@ -5,8 +5,8 @@
  * The client already has the news items — this avoids relying on the
  * server-side in-memory cache (which is always empty on Vercel cold lambdas).
  *
- * If ANTHROPIC_API_KEY is set, sends the top 40 headlines to Claude and
- * returns a structured intelligence assessment.
+ * If GROQ_API_KEY is set, sends the top 40 headlines to Groq (llama-3.3-70b)
+ * and returns a structured intelligence assessment.
  *
  * Falls back to deterministic algorithmic synthesis when no key is present.
  *
@@ -67,7 +67,7 @@ export type SigintItem = {
 export type AIIntelPayload = {
   generatedAt: string;
   totalStoriesAnalysed: number;
-  generatedBy: 'claude-ai' | 'algorithmic';
+  generatedBy: 'groq-ai' | 'algorithmic';
   strategicRisk: {
     score: number;
     label: 'CRITICAL' | 'ELEVATED' | 'MODERATE' | 'LOW';
@@ -111,10 +111,10 @@ type MinItem = {
   relevanceScore?: number;
 };
 
-// ── Claude API call ────────────────────────────────────────────────────────
+// ── Groq API call ─────────────────────────────────────────────────────────
 
 async function callClaude(items: MinItem[]): Promise<AIIntelPayload | null> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) return null;
 
   const headlines = items.slice(0, 40).map((item, i) =>
@@ -168,27 +168,27 @@ Rules:
 - All analysis must be grounded in the actual headlines provided`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
+        'Authorization': `Bearer ${apiKey}`,
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
+        model: 'llama-3.3-70b-versatile',
         max_tokens: 3000,
+        temperature: 0.3,
         messages: [{ role: 'user', content: prompt }],
       }),
     });
 
     if (!res.ok) {
-      console.error('[FTG ai-intel] Claude API error:', res.status);
+      console.error('[FTG ai-intel] Groq API error:', res.status, await res.text());
       return null;
     }
 
     const data = await res.json();
-    const text = data?.content?.[0]?.text ?? '';
+    const text = data?.choices?.[0]?.message?.content ?? '';
 
     // Strip any accidental markdown fences
     const cleaned = text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
@@ -313,14 +313,14 @@ function algorithmicSynth(items: MinItem[]): Omit<AIIntelPayload, 'generatedAt' 
       trend: riskScore > 65 ? 'Rising' : riskScore < 35 ? 'Declining' : 'Stable',
       deltaPoints: Math.round((Math.random() - 0.4) * 6),
       primaryDrivers,
-      analystNote: `Algorithmic synthesis from ${items.length} stories across ${uniqueSources} sources. ${highTh > 0 ? `${highTh} theater(s) at elevated posture.` : 'No theaters at critical threshold.'} Add ANTHROPIC_API_KEY for AI-powered narrative analysis.`,
+      analystNote: `Algorithmic synthesis from ${items.length} stories across ${uniqueSources} sources. ${highTh > 0 ? `${highTh} theater(s) at elevated posture.` : 'No theaters at critical threshold.'} Add GROQ_API_KEY for AI-powered narrative analysis.`,
     },
     theaters,
     instability,
     forecasts,
     insights: {
       worldBrief: `${items.length} stories ingested from ${uniqueSources} active sources. Primary flash-points: ${primaryDrivers.join(', ')}. Strategic risk index at ${riskScore} (${riskLabel}). ${highTh > 0 ? `${highTh} theater(s) at elevated readiness.` : 'Theaters within normal readiness parameters.'}`,
-      focalPoints: entities.length > 0 ? `Highest-frequency entities this cycle: ${entities.join(', ')}. ${cyCount > 3 ? 'Significant cyber activity detected.' : ''} ${sCount > 5 ? 'Supply chain stress signals present.' : ''} Set ANTHROPIC_API_KEY for analyst-grade commentary.` : 'Insufficient feed data. Refresh to load latest intelligence.',
+      focalPoints: entities.length > 0 ? `Highest-frequency entities this cycle: ${entities.join(', ')}. ${cyCount > 3 ? 'Significant cyber activity detected.' : ''} ${sCount > 5 ? 'Supply chain stress signals present.' : ''} Set GROQ_API_KEY for analyst-grade commentary.` : 'Insufficient feed data. Refresh to load latest intelligence.',
     },
     diplomaticStatus: [
       { actor: 'US–Iran Nuclear Talks', status: 'MONITORING', detail: 'No active negotiations; JCPOA framework dormant.', color: '#f39c12' },
@@ -373,7 +373,7 @@ export async function POST(request: Request) {
       ...partial,
       generatedAt: new Date().toISOString(),
       totalStoriesAnalysed: items.length,
-      generatedBy: claudeResult ? 'claude-ai' : 'algorithmic',
+      generatedBy: claudeResult ? 'groq-ai' : 'algorithmic',
       sigint,
     };
 
