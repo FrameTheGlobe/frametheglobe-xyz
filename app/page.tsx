@@ -16,6 +16,8 @@ import DailyBriefing, { BriefCluster } from './components/DailyBriefing';
 import CrossSourceComparison, { CompItem } from './components/CrossSourceComparison';
 import IntelTimeline, { IntelStatus } from './components/IntelTimeline';
 import CompactHeader  from './components/CompactHeader';
+import LiveFeeds      from './components/LiveFeeds';
+import AIIntelPanel   from './components/AIIntelPanel';
 
 // MapView uses Leaflet (browser-only) — load with no SSR
 const MapView = dynamic(() => import('./components/MapView'), { ssr: false });
@@ -1991,6 +1993,12 @@ export default function Home() {
           </div>
 
           <RegionStatsStrip items={visibleItems} />
+
+          {/* ── LIVE FEEDS ──────────────────────────────────────────────────── */}
+          {!loading && <LiveFeeds />}
+
+          {/* ── AI INTELLIGENCE ─────────────────────────────────────────────── */}
+          {!loading && items.length > 0 && <AIIntelPanel />}
 
           {/* ── DAILY BRIEFING ─────────────────────────────────────────────── */}
           {!loading && briefClusters.length > 0 && !briefingDismissed && briefingOpen && (
