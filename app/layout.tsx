@@ -105,8 +105,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${lora.variable} ${ibmPlexMono.variable}`}>
       <body>{children}</body>
-      <Analytics />
-      <SpeedInsights />
+      {process.env.NODE_ENV === 'production' && (
+        <>
+          <Analytics />
+          <SpeedInsights />
+        </>
+      )}
     </html>
   );
 }
