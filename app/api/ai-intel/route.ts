@@ -178,26 +178,39 @@ Rules:
         model: 'llama-3.3-70b-versatile',
         max_tokens: 3000,
         temperature: 0.3,
-        messages: [{ role: 'user', content: prompt }],
+        // Force pure JSON output — no commentary, no markdown wrapping
+        response_format: { type: 'json_object' },
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a senior strategic intelligence analyst. Always respond with valid JSON only — no markdown, no explanation, no code blocks.',
+          },
+          { role: 'user', content: prompt },
+        ],
       }),
     });
 
     if (!res.ok) {
-      console.error('[FTG ai-intel] Groq API error:', res.status, await res.text());
+      const errText = await res.text();
+      console.error('[FTG ai-intel] Groq API error:', res.status, errText);
       return null;
     }
 
     const data = await res.json();
-    const text = data?.choices?.[0]?.message?.content ?? '';
+    const raw = data?.choices?.[0]?.message?.content ?? '';
 
-    // Strip any accidental markdown fences
-    const cleaned = text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
-    const parsed = JSON.parse(cleaned);
+    // Robust JSON extraction: find the outermost { } block even if
+    // the model adds preamble text despite the system prompt.
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error('[FTG ai-intel] No JSON object found in Groq response');
+      return null;
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return parsed as any;
+    return JSON.parse(jsonMatch[0]) as any;
   } catch (err) {
-    console.error('[FTG ai-intel] Claude parse error:', err);
+    console.error('[FTG ai-intel] Groq parse error:', err);
     return null;
   }
 }
