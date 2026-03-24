@@ -160,29 +160,29 @@ function PriceCard({ quote, flashGen, accentDot }: { quote: MetalQuote; flashGen
   return (
     <div style={{
       flex: '1 1 170px',
-      padding: '14px 16px',
+      padding: '16px 18px',
       borderRight: '1px solid var(--border-light)',
-      display: 'flex', flexDirection: 'column', gap: 4,
+      display: 'flex', flexDirection: 'column', gap: 5,
     }}>
       {accentDot && (
-        <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: accentDot, marginBottom: 2 }} />
+        <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: accentDot, marginBottom: 1 }} />
       )}
-      <span style={{ fontFamily: mono, fontSize: 10, fontWeight: 700, color: muted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+      <span style={{ fontFamily: mono, fontSize: 11, fontWeight: 700, color: muted, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
         {quote.name}
       </span>
       <span key={`${quote.symbol}-${flashGen}`} className="ftg-price-flash"
-        style={{ fontFamily: mono, fontSize: 22, fontWeight: 900, color: 'var(--text-primary)', lineHeight: 1 }}>
+        style={{ fontFamily: mono, fontSize: 24, fontWeight: 900, color: 'var(--text-primary)', lineHeight: 1 }}>
         {'$' + fmtLarge(quote.price)}
       </span>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <span style={{ fontFamily: mono, fontSize: 11, fontWeight: 700, color: pc }}>
+        <span style={{ fontFamily: mono, fontSize: 12, fontWeight: 700, color: pc }}>
           {arrowIcon(quote.change)} {sign(quote.change)}{fmt(Math.abs(quote.change), 2)}
         </span>
-        <span style={{ fontFamily: mono, fontSize: 10, color: pc }}>
+        <span style={{ fontFamily: mono, fontSize: 11, color: pc }}>
           ({sign(quote.changePercent)}{fmt(Math.abs(quote.changePercent), 2)}%)
         </span>
       </div>
-      <span style={{ fontFamily: mono, fontSize: 9, color: muted, marginTop: 2 }}>
+      <span style={{ fontFamily: mono, fontSize: 10, color: muted, marginTop: 1 }}>
         {quote.unit}
       </span>
     </div>
@@ -319,8 +319,8 @@ export default function PreciousMetalsBoard() {
       {!loading && !error && view === 'BOARD' && (
         <>
           {/* Futures prices */}
-          <div style={{ padding: '8px 16px 4px', borderBottom: '1px solid var(--border-light)' }}>
-            <span style={{ fontFamily: mono, fontSize: 9, fontWeight: 700, color: muted, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+          <div style={{ padding: '10px 16px 6px', borderBottom: '1px solid var(--border-light)' }}>
+            <span style={{ fontFamily: mono, fontSize: 11, fontWeight: 700, color: muted, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
               Spot / Futures Prices
             </span>
           </div>
@@ -337,27 +337,27 @@ export default function PreciousMetalsBoard() {
             {/* Gold / Silver ratio sidebar */}
             <div style={{
               flex: '1 1 220px',
-              padding: '14px 16px',
-              display: 'flex', flexDirection: 'column', gap: 6,
+              padding: '16px 18px',
+              display: 'flex', flexDirection: 'column', gap: 7,
             }}>
-              <span style={{ fontFamily: mono, fontSize: 9, fontWeight: 700, color: ACCENT, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              <span style={{ fontFamily: mono, fontSize: 10, fontWeight: 700, color: ACCENT, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                 Gold / Silver Ratio
               </span>
               {gsRatio !== null ? (
                 <>
-                  <span style={{ fontFamily: mono, fontSize: 26, fontWeight: 900, color: 'var(--text-primary)', lineHeight: 1 }}>
+                  <span style={{ fontFamily: mono, fontSize: 28, fontWeight: 900, color: 'var(--text-primary)', lineHeight: 1 }}>
                     {fmt(gsRatio, 1)}
                   </span>
-                  <span style={{ fontFamily: mono, fontSize: 10, color: muted, lineHeight: 1.5 }}>
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: muted, lineHeight: 1.6 }}>
                     {gsRatio > 80
                       ? 'Above 80 — silver historically cheap vs gold. Elevated ratio signals risk-off flight to gold.'
                       : gsRatio < 50
                       ? 'Below 50 — silver outperforming. Industrial demand may be leading monetary demand.'
-                      : 'Within historical 50-80 range. Balanced monetary/industrial demand signal.'}
+                      : 'Within historical 50–80 range. Balanced monetary/industrial demand signal.'}
                   </span>
                 </>
               ) : (
-                <span style={{ fontFamily: mono, fontSize: 11, color: muted }}>—</span>
+                <span style={{ fontFamily: mono, fontSize: 12, color: muted }}>—</span>
               )}
             </div>
           </div>
@@ -365,10 +365,10 @@ export default function PreciousMetalsBoard() {
           {/* ETF proxies row */}
           {etfs.length > 0 && (
             <>
-              <div style={{ padding: '8px 16px 4px', borderBottom: '1px solid var(--border-light)' }}>
-                <span style={{ fontFamily: mono, fontSize: 9, fontWeight: 700, color: muted, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              <div style={{ padding: '10px 16px 6px', borderBottom: '1px solid var(--border-light)' }}>
+                <span style={{ fontFamily: mono, fontSize: 11, fontWeight: 700, color: muted, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                   Liquid ETF Proxies
-                  <span style={{ fontWeight: 400, marginLeft: 8 }}>GLD (SPDR Gold Shares) · SLV (iShares Silver Trust)</span>
+                  <span style={{ fontWeight: 400, marginLeft: 8, fontSize: 10 }}>GLD (SPDR Gold Shares) · SLV (iShares Silver Trust)</span>
                 </span>
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', borderBottom: '1px solid var(--border-light)' }}>
@@ -377,13 +377,13 @@ export default function PreciousMetalsBoard() {
                 ))}
                 <div style={{
                   flex: '2 1 320px',
-                  padding: '14px 16px',
-                  display: 'flex', flexDirection: 'column', gap: 5,
+                  padding: '16px 18px',
+                  display: 'flex', flexDirection: 'column', gap: 7,
                 }}>
-                  <span style={{ fontFamily: mono, fontSize: 9, fontWeight: 700, color: ACCENT, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                  <span style={{ fontFamily: mono, fontSize: 10, fontWeight: 700, color: ACCENT, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                     Safe Haven Context
                   </span>
-                  <span style={{ fontFamily: mono, fontSize: 10, color: muted, lineHeight: 1.6 }}>
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: muted, lineHeight: 1.6 }}>
                     Gulf central banks (UAE, Saudi Arabia) hold <strong style={{ color: 'var(--text-primary)' }}>gold as petrodollar hedge</strong>.
                     A 30-day Hormuz closure historically adds <strong style={{ color: ACCENT }}>+$80–$150/oz</strong> to gold spot.
                     Iran has accelerated gold purchases to circumvent SWIFT/sanctions since 2018.
@@ -427,19 +427,21 @@ export default function PreciousMetalsBoard() {
                 }}>
                   <span style={{ fontSize: 16, lineHeight: 1 }}>{item.icon}</span>
                   <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                      <span style={{ fontFamily: mono, fontSize: 10, fontWeight: 900, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
+                      <span style={{ fontFamily: mono, fontSize: 11, fontWeight: 900, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                         {item.metal}
                       </span>
                       <span style={{
                         fontFamily: mono, fontSize: 9, fontWeight: 700,
                         color: sensitivityColor(item.sensitivity),
+                        border: `1px solid ${sensitivityColor(item.sensitivity)}`,
+                        padding: '1px 5px', borderRadius: 2,
                         textTransform: 'uppercase', letterSpacing: '0.06em',
                       }}>
                         {item.sensitivity}
                       </span>
                     </div>
-                    <span style={{ fontFamily: mono, fontSize: 10, color: muted, lineHeight: 1.5 }}>
+                    <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: muted, lineHeight: 1.6 }}>
                       {item.mechanic}
                     </span>
                   </div>

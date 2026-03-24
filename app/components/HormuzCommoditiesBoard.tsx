@@ -165,26 +165,26 @@ function PriceCard({ quote, flashGen }: { quote: AgriQuote; flashGen: number }) 
   return (
     <div style={{
       flex: '1 1 160px',
-      padding: '14px 16px',
+      padding: '16px 18px',
       borderRight: '1px solid var(--border-light)',
-      display: 'flex', flexDirection: 'column', gap: 4,
+      display: 'flex', flexDirection: 'column', gap: 5,
     }}>
-      <span style={{ fontFamily: mono, fontSize: 10, fontWeight: 700, color: muted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+      <span style={{ fontFamily: mono, fontSize: 11, fontWeight: 700, color: muted, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
         {quote.name}
       </span>
       <span key={`${quote.symbol}-${flashGen}`} className="ftg-price-flash"
-        style={{ fontFamily: mono, fontSize: 22, fontWeight: 900, color: 'var(--text-primary)', lineHeight: 1 }}>
+        style={{ fontFamily: mono, fontSize: 24, fontWeight: 900, color: 'var(--text-primary)', lineHeight: 1 }}>
         {'$' + fmt(quote.price, decimals)}
       </span>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <span style={{ fontFamily: mono, fontSize: 11, fontWeight: 700, color: pc }}>
+        <span style={{ fontFamily: mono, fontSize: 12, fontWeight: 700, color: pc }}>
           {arrowIcon(quote.change)} {sign(quote.change)}{fmt(Math.abs(quote.change), decimals)}
         </span>
-        <span style={{ fontFamily: mono, fontSize: 10, color: pc }}>
+        <span style={{ fontFamily: mono, fontSize: 11, color: pc }}>
           ({sign(quote.changePercent)}{fmt(Math.abs(quote.changePercent), 2)}%)
         </span>
       </div>
-      <span style={{ fontFamily: mono, fontSize: 9, color: muted, marginTop: 2 }}>
+      <span style={{ fontFamily: mono, fontSize: 10, color: muted, marginTop: 1 }}>
         {quote.unit}
       </span>
     </div>
@@ -320,14 +320,14 @@ export default function HormuzCommoditiesBoard() {
         <>
           {/* Urea cost drivers: CF Industries + Mosaic */}
           <div style={{
-            padding: '6px 14px 4px',
+            padding: '10px 16px 6px',
             borderBottom: '1px solid var(--border-light)',
             background: 'rgba(255,255,255,0.01)',
           }}>
-            <span style={{ fontFamily: mono, fontSize: 9, fontWeight: 700, color: muted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+            <span style={{ fontFamily: mono, fontSize: 11, fontWeight: 700, color: muted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
               UREA &amp; POTASH PROXIES
             </span>
-            <span style={{ fontFamily: mono, fontSize: 8, color: muted, marginLeft: 8, opacity: 0.6 }}>
+            <span style={{ fontFamily: mono, fontSize: 10, color: muted, marginLeft: 8, opacity: 0.7 }}>
               CF Industries (NYSE:CF) · Mosaic Co. (NYSE:MOS)
             </span>
           </div>
@@ -337,37 +337,37 @@ export default function HormuzCommoditiesBoard() {
             ))}
             {natgas && (
               <div style={{
-                flex: '1 1 160px', padding: '14px 16px',
-                display: 'flex', flexDirection: 'column', gap: 4,
+                flex: '1 1 160px', padding: '16px 18px',
+                display: 'flex', flexDirection: 'column', gap: 5,
                 borderRight: '1px solid var(--border-light)',
               }}>
-                <span style={{ fontFamily: mono, fontSize: 10, fontWeight: 700, color: muted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                <span style={{ fontFamily: mono, fontSize: 11, fontWeight: 700, color: muted, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
                   Nat Gas (Input Cost)
                 </span>
                 <span key={`NG-${flashGen}`} className="ftg-price-flash"
-                  style={{ fontFamily: mono, fontSize: 22, fontWeight: 900, color: 'var(--text-primary)', lineHeight: 1 }}>
+                  style={{ fontFamily: mono, fontSize: 24, fontWeight: 900, color: 'var(--text-primary)', lineHeight: 1 }}>
                   ${fmt(natgas.price)}
                 </span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontFamily: mono, fontSize: 11, fontWeight: 700, color: priceColor(natgas.change) }}>
+                  <span style={{ fontFamily: mono, fontSize: 12, fontWeight: 700, color: priceColor(natgas.change) }}>
                     {arrowIcon(natgas.change)} {sign(natgas.change)}{fmt(Math.abs(natgas.change))}
                   </span>
-                  <span style={{ fontFamily: mono, fontSize: 10, color: priceColor(natgas.change) }}>
+                  <span style={{ fontFamily: mono, fontSize: 11, color: priceColor(natgas.change) }}>
                     ({sign(natgas.changePercent)}{fmt(Math.abs(natgas.changePercent), 2)}%)
                   </span>
                 </div>
-                <span style={{ fontFamily: mono, fontSize: 9, color: muted, marginTop: 2 }}>USD/MMBtu · ~75% of urea cost</span>
+                <span style={{ fontFamily: mono, fontSize: 10, color: muted, marginTop: 1 }}>USD/MMBtu · ~75% of urea cost</span>
               </div>
             )}
             {/* Urea context note */}
             <div style={{
-              flex: '2 1 240px', padding: '14px 16px',
-              display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 6,
+              flex: '2 1 240px', padding: '16px 18px',
+              display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 7,
             }}>
-              <span style={{ fontFamily: mono, fontSize: 9, fontWeight: 700, color: '#f39c12', letterSpacing: '0.07em' }}>
+              <span style={{ fontFamily: mono, fontSize: 10, fontWeight: 700, color: '#f39c12', letterSpacing: '0.07em' }}>
                 IRAN UREA EXPOSURE
               </span>
-              <span style={{ fontFamily: mono, fontSize: 9, color: muted, lineHeight: 1.5 }}>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: muted, lineHeight: 1.6 }}>
                 Iran produces ~7.5 Mt/yr urea — ~8% of global supply.
                 A 30-day Hormuz closure historically adds <strong>$40–80/t</strong> to spot urea prices.
               </span>
@@ -376,11 +376,11 @@ export default function HormuzCommoditiesBoard() {
 
           {/* Grain markets */}
           <div style={{
-            padding: '6px 14px 4px',
+            padding: '10px 16px 6px',
             borderBottom: '1px solid var(--border-light)',
             background: 'rgba(255,255,255,0.01)',
           }}>
-            <span style={{ fontFamily: mono, fontSize: 9, fontWeight: 700, color: muted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+            <span style={{ fontFamily: mono, fontSize: 11, fontWeight: 700, color: muted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
               GRAIN MARKETS · FERTILIZER COST PASS-THROUGH
             </span>
           </div>
@@ -389,13 +389,13 @@ export default function HormuzCommoditiesBoard() {
               <PriceCard key={q.symbol} quote={q} flashGen={flashGen} />
             ))}
             <div style={{
-              flex: '2 1 240px', padding: '14px 16px',
-              display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 6,
+              flex: '2 1 240px', padding: '16px 18px',
+              display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 7,
             }}>
-              <span style={{ fontFamily: mono, fontSize: 9, fontWeight: 700, color: '#2ecc71', letterSpacing: '0.07em' }}>
+              <span style={{ fontFamily: mono, fontSize: 10, fontWeight: 700, color: '#2ecc71', letterSpacing: '0.07em' }}>
                 FERTILIZER → FOOD CHAIN
               </span>
-              <span style={{ fontFamily: mono, fontSize: 9, color: muted, lineHeight: 1.5 }}>
+              <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: muted, lineHeight: 1.6 }}>
                 Nitrogen fertilizer is ~30-40% of wheat/corn production cost.
                 Hormuz closure creates a <strong>4–6 month lag</strong> before grain prices fully reflect the disruption.
               </span>
@@ -412,10 +412,10 @@ export default function HormuzCommoditiesBoard() {
                 background: 'transparent', border: 'none', cursor: 'pointer',
               }}
             >
-              <span style={{ fontFamily: mono, fontSize: 9, fontWeight: 700, color: muted, letterSpacing: '0.1em' }}>
+              <span style={{ fontFamily: mono, fontSize: 10, fontWeight: 700, color: muted, letterSpacing: '0.1em' }}>
                 ⚓ STRAIT OF HORMUZ — COMMODITY SENSITIVITY MATRIX
               </span>
-              <span style={{ fontFamily: mono, fontSize: 9, color: muted }}>{impactOpen ? '▲ HIDE' : '▼ SHOW'}</span>
+              <span style={{ fontFamily: mono, fontSize: 10, color: muted }}>{impactOpen ? '▲ HIDE' : '▼ SHOW'}</span>
             </button>
 
             {impactOpen && (
@@ -431,12 +431,12 @@ export default function HormuzCommoditiesBoard() {
                   }}>
                     <span style={{ fontSize: 14, flexShrink: 0 }}>{impact.icon}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-                        <span style={{ fontFamily: mono, fontSize: 10, fontWeight: 700, color: 'var(--text-primary)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontFamily: mono, fontSize: 11, fontWeight: 700, color: 'var(--text-primary)' }}>
                           {impact.commodity}
                         </span>
                         <span style={{
-                          fontFamily: mono, fontSize: 8, fontWeight: 700,
+                          fontFamily: mono, fontSize: 9, fontWeight: 700,
                           color: sensitivityColor(impact.sensitivity),
                           border: `1px solid ${sensitivityColor(impact.sensitivity)}`,
                           padding: '1px 5px', borderRadius: 2, letterSpacing: '0.07em',
@@ -444,7 +444,7 @@ export default function HormuzCommoditiesBoard() {
                           {impact.sensitivity}
                         </span>
                       </div>
-                      <span style={{ fontFamily: mono, fontSize: 9, color: muted, lineHeight: 1.5 }}>
+                      <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: muted, lineHeight: 1.6 }}>
                         {impact.mechanic}
                       </span>
                     </div>
