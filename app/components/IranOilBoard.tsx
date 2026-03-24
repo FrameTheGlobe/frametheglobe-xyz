@@ -297,12 +297,12 @@ export default function IranOilBoard() {
 
             {/* Meta badges */}
             {timeLabel && (
-              <span style={{ fontFamily: mono, fontSize: 8, color: muted, letterSpacing: '0.05em' }}>
+              <span style={{ fontFamily: mono, fontSize: 10, color: muted, letterSpacing: '0.05em' }}>
                 UPDATED {timeLabel}
               </span>
             )}
             <span style={{
-              fontFamily: mono, fontSize: 8, color: muted,
+              fontFamily: mono, fontSize: 9, color: muted,
               border: '1px solid var(--border-light)',
               padding: '2px 6px', borderRadius: 3, letterSpacing: '0.08em',
             }}>
@@ -342,12 +342,12 @@ export default function IranOilBoard() {
                   }}>
                     <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                        <div style={{ fontFamily: mono, fontSize: 9, fontWeight: 700,
-                          letterSpacing: '0.12em', textTransform: 'uppercase', color: muted }}>
+                        <div style={{ fontFamily: mono, fontSize: 11, fontWeight: 700,
+                          letterSpacing: '0.10em', textTransform: 'uppercase', color: muted }}>
                           {p.name}
                         </div>
                         <div style={{
-                          fontFamily: mono, fontSize: 7, padding: '1px 5px',
+                          fontFamily: mono, fontSize: 9, padding: '1px 5px',
                           background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-light)',
                           borderRadius: 2, color: muted,
                         }}>VOL: {meta.vol}</div>
@@ -374,10 +374,10 @@ export default function IranOilBoard() {
                       marginTop: 12, paddingTop: 10, borderTop: '1px dashed var(--border-light)',
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     }}>
-                      <span style={{ fontFamily: mono, fontSize: 7, color: muted }}>
+                      <span style={{ fontFamily: mono, fontSize: 9, color: muted }}>
                         SENTIMENT: <span style={{ color }}>{meta.sent}</span>
                       </span>
-                      <span style={{ fontFamily: mono, fontSize: 7, color: muted }}>USD/BBL</span>
+                      <span style={{ fontFamily: mono, fontSize: 9, color: muted }}>USD/BBL</span>
                     </div>
                   </div>
                 );
@@ -392,20 +392,20 @@ export default function IranOilBoard() {
                 display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
               }}>
                 <div>
-                  <div style={{ fontFamily: mono, fontSize: 9, fontWeight: 700,
-                    letterSpacing: '0.12em', textTransform: 'uppercase', color: '#27ae60', marginBottom: 10 }}>
+                  <div style={{ fontFamily: mono, fontSize: 11, fontWeight: 700,
+                    letterSpacing: '0.10em', textTransform: 'uppercase', color: '#27ae60', marginBottom: 10 }}>
                     Hormuz Monitor
                   </div>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 8 }}>
                     <span style={{ fontFamily: mono, fontSize: 22, fontWeight: 900, color: '#27ae60' }}>OPEN</span>
                     <span style={{ fontFamily: mono, fontSize: 10, color: muted, textTransform: 'uppercase' }}>/ Normal</span>
                   </div>
-                  <div style={{ fontFamily: mono, fontSize: 9, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                  <div style={{ fontFamily: mono, fontSize: 10, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
                     Daily throughput: 19.8M bpd.<br />
                     No active IRGC blockade detected.
                   </div>
                 </div>
-                <div style={{ marginTop: 10, fontFamily: mono, fontSize: 7, color: '#27ae60', fontWeight: 700 }}>
+                <div style={{ marginTop: 10, fontFamily: mono, fontSize: 9, color: '#27ae60', fontWeight: 700 }}>
                   STATUS: SECURE
                 </div>
               </div>
@@ -419,20 +419,20 @@ export default function IranOilBoard() {
                 display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
               }}>
                 <div>
-                  <div style={{ fontFamily: mono, fontSize: 9, fontWeight: 700,
-                    letterSpacing: '0.12em', textTransform: 'uppercase', color: '#e67e22', marginBottom: 10 }}>
+                  <div style={{ fontFamily: mono, fontSize: 11, fontWeight: 700,
+                    letterSpacing: '0.10em', textTransform: 'uppercase', color: '#e67e22', marginBottom: 10 }}>
                     Red Sea Corridor
                   </div>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 8 }}>
                     <span style={{ fontFamily: mono, fontSize: 22, fontWeight: 900, color: '#e67e22' }}>CAUTION</span>
                     <span style={{ fontFamily: mono, fontSize: 10, color: muted, textTransform: 'uppercase' }}>/ Elevated</span>
                   </div>
-                  <div style={{ fontFamily: mono, fontSize: 9, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                  <div style={{ fontFamily: mono, fontSize: 10, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
                     Active drone alerts in Bab-el-Mandeb.<br />
                     Escort required for LH class tankers.
                   </div>
                 </div>
-                <div style={{ marginTop: 10, fontFamily: mono, fontSize: 7, color: '#e67e22', fontWeight: 700 }}>
+                <div style={{ marginTop: 10, fontFamily: mono, fontSize: 9, color: '#e67e22', fontWeight: 700 }}>
                   STATUS: RISK LEVEL 3
                 </div>
               </div>
@@ -454,9 +454,9 @@ export default function IranOilBoard() {
                     borderRight: i % 2 === 0 ? '1px solid var(--border-light)' : 'none',
                     borderBottom: i < 2 ? '1px solid var(--border-light)' : 'none',
                   }}>
-                    <div style={{ fontFamily: mono, fontSize: 7, color: muted, marginBottom: 4 }}>{s.l}</div>
-                    <div style={{ fontFamily: mono, fontSize: 13, fontWeight: 800 }}>{s.v}</div>
-                    <div style={{ fontFamily: mono, fontSize: 6,
+                    <div style={{ fontFamily: mono, fontSize: 9, color: muted, marginBottom: 4 }}>{s.l}</div>
+                    <div style={{ fontFamily: mono, fontSize: 14, fontWeight: 800 }}>{s.v}</div>
+                    <div style={{ fontFamily: mono, fontSize: 8,
                       color: s.s === 'LOW' || s.s === 'RISING' ? downColor : upColor }}>
                       {s.s}
                     </div>
@@ -476,7 +476,7 @@ export default function IranOilBoard() {
                   flex: '1 1 300px', display: 'flex', alignItems: 'center', gap: 12,
                   padding: '12px 18px', borderRight: '1px solid var(--border-light)',
                 }}>
-                  <span style={{ fontFamily: mono, fontSize: 9, fontWeight: 700,
+                  <span style={{ fontFamily: mono, fontSize: 10, fontWeight: 700,
                     textTransform: 'uppercase', color: muted, minWidth: 60 }}>Nat Gas</span>
                   <span key={`NG-${flashGen}`} className="ftg-price-flash"
                     style={{ fontFamily: mono, fontSize: 18, fontWeight: 900 }}>
@@ -485,7 +485,7 @@ export default function IranOilBoard() {
                   <span style={{ fontFamily: mono, fontSize: 11, fontWeight: 600, color: priceColor(natgas.change) }}>
                     {arrowIcon(natgas.change)} {sign(natgas.change)}{fmt(Math.abs(natgas.change))}
                   </span>
-                  <span style={{ fontFamily: mono, fontSize: 8, color: muted }}>USD/MMBtu</span>
+                  <span style={{ fontFamily: mono, fontSize: 9, color: muted }}>USD/MMBtu</span>
                 </div>
               )}
               {uso && (
@@ -493,8 +493,8 @@ export default function IranOilBoard() {
                   flex: '1 1 200px', display: 'flex', alignItems: 'center', gap: 12,
                   padding: '12px 18px', borderRight: '1px solid var(--border-light)',
                 }}>
-                  <span style={{ fontFamily: mono, fontSize: 9, fontWeight: 700,
-                    textTransform: 'uppercase', color: muted, minWidth: 30 }}>USO <span style={{ fontWeight: 400, fontSize: 7, opacity: 0.7 }}>ETF</span></span>
+                  <span style={{ fontFamily: mono, fontSize: 10, fontWeight: 700,
+                    textTransform: 'uppercase', color: muted, minWidth: 30 }}>USO <span style={{ fontWeight: 400, fontSize: 9, opacity: 0.7 }}>ETF</span></span>
                   <span key={`USO-${flashGen}`} className="ftg-price-flash"
                     style={{ fontFamily: mono, fontSize: 18, fontWeight: 900 }}>
                     ${fmt(uso.price)}
@@ -509,17 +509,38 @@ export default function IranOilBoard() {
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontFamily: mono, fontSize: 9, fontWeight: 700, color: muted }}>
+                  <span style={{ fontFamily: mono, fontSize: 11, fontWeight: 700, color: muted }}>
                     WAR RISK PREMIUM:
                   </span>
                   <span style={{ fontFamily: mono, fontSize: 16, fontWeight: 900, color: 'var(--text-primary)' }}>
                     +$4.20 / bbl
                   </span>
                 </div>
-                <div style={{ fontFamily: mono, fontSize: 8, color: downColor, fontWeight: 700, letterSpacing: '0.05em' }}>
+                <div style={{ fontFamily: mono, fontSize: 9, color: downColor, fontWeight: 700, letterSpacing: '0.05em' }}>
                   MARKET SENTIMENT: VOLATILITY SKEW ↗
                 </div>
               </div>
+            </div>
+
+            {/* Source attribution — Board view */}
+            <div style={{
+              padding: '7px 16px',
+              borderTop: '1px solid var(--border-light)',
+              background: 'rgba(255,255,255,0.01)',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              flexWrap: 'wrap', gap: 6,
+            }}>
+              <span style={{ fontFamily: mono, fontSize: 10, color: muted }}>
+                Price data via{' '}
+                <a href="https://stooq.com" target="_blank" rel="noopener noreferrer"
+                  style={{ color: muted, textDecoration: 'underline', textDecorationStyle: 'dotted' }}>
+                  Stooq.com
+                </a>
+                {' '}· CL.F (WTI) · CB.F (Brent) · NG.F (Nat Gas) · USO.US (NYSE Arca ETF) · ~15 min delay
+              </span>
+              <span style={{ fontFamily: mono, fontSize: 10, color: muted, opacity: 0.6, whiteSpace: 'nowrap' }}>
+                Synthetic grades: WCS · Urals · Dubai (spread estimates)
+              </span>
             </div>
           </>
         )}
@@ -668,14 +689,22 @@ export default function IranOilBoard() {
             })()}
 
             <div style={{
-              padding: '6px 14px 8px',
+              padding: '8px 16px',
               borderTop: '1px solid var(--border-light)',
-              fontFamily: mono, fontSize: 8, color: muted,
+              background: 'rgba(255,255,255,0.01)',
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              flexWrap: 'wrap', gap: 6,
             }}>
-              <span>Charts via TradingView · WTI (USOIL) · Brent (UKOIL) · Nat Gas (UNG) · USO (NYSE Arca, real-time via Stooq) · Prices 15m delay</span>
+              <span style={{ fontFamily: mono, fontSize: 10, color: muted }}>
+                Charts via{' '}
+                <a href="https://www.tradingview.com" target="_blank" rel="noopener noreferrer"
+                  style={{ color: muted, textDecoration: 'underline', textDecorationStyle: 'dotted' }}>
+                  TradingView
+                </a>
+                {' '}· WTI (USOIL) · Brent (UKOIL) · Nat Gas (UNG) · USO ETF (NYSE Arca)
+              </span>
               <a href="https://www.tradingview.com" target="_blank" rel="noopener noreferrer"
-                style={{ color: muted, textDecoration: 'none', opacity: 0.6 }}>
+                style={{ fontFamily: mono, fontSize: 10, color: muted, textDecoration: 'none', opacity: 0.7, whiteSpace: 'nowrap' }}>
                 Powered by TradingView ↗
               </a>
             </div>
