@@ -24,6 +24,7 @@ export const SOURCES: Source[] = [
   { id: 'jpost',          name: 'Jerusalem Post',         url: 'https://www.jpost.com/rss/rssfeedsheadlines.aspx',             region: 'levant',   color: '#d35400' },
   { id: 'ynetnews',       name: 'Ynet News (IL)',         url: 'https://www.ynetnews.com/category/3082/rss',                   region: 'levant',   color: '#c0392b' },
   { id: 'haaretz',        name: 'Haaretz English',        url: 'https://www.haaretz.com/srv/haaretz-en.rss',                   region: 'levant',   color: '#f39c12' },
+  { id: 'plus972',        name: '+972 Magazine',          url: 'https://www.972mag.com/feed',                                 region: 'levant',   color: '#8e44ad' },
 
   // ── Levant — Palestine / Gaza ─────────────────────────────────────────
   { id: 'wafa',           name: 'WAFA (Palestine)',       url: 'https://english.wafa.ps/rss.aspx',                             region: 'levant',   color: '#2ecc71', prefiltered: true },
