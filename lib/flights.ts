@@ -7,9 +7,6 @@
  * Primary endpoint: https://api.adsb.lol/v2/point/{lat}/{lon}/{radius_nm}
  *   → All aircraft within radius of the theater center
  *
- * Fallback: OpenSky Network bounding-box API (free, ~100 anon calls/day)
- *   → Register free at opensky-network.org for 10× the calls
- *
  * All ADS-B data is publicly broadcast by aircraft transponders — the same
  * data used by FlightRadar24, FlightAware, ADS-B Exchange, etc.
  *
@@ -43,7 +40,7 @@ export type FlightPayload = {
   total:     number;
   strategic: number;      // count of strategic aircraft
   fetchedAt: string;
-  source:    'adsblol' | 'opensky' | 'stale' | 'error';
+  source:    'adsblol' | 'stale' | 'error';
 };
 
 // ── Theater bounding box ──────────────────────────────────────────────────────
@@ -280,41 +277,6 @@ function parseAdsbLol(raw: any): Aircraft | null {
   };
 }
 
-// ── Parse OpenSky state vector arrays ────────────────────────────────────────
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function parseOpenSky(state: any[]): Aircraft | null {
-  if (!state || state[5] == null || state[6] == null) return null;
-  if (state[8] === true) return null;  // on ground
-
-  const hex         = (state[0] as string || '').toLowerCase().trim();
-  const callsign    = (state[1] as string || '').trim();
-  const country     = (state[2] as string) || countryFromHex(hex);
-  const lon         = state[5] as number;
-  const lat         = state[6] as number;
-  const altM        = (state[7] as number) || 0;
-  const altFt       = Math.round(altM * 3.281);
-  if (altFt < 500) return null;
-
-  const speedMs     = (state[9] as number) || 0;
-  const speedKts    = Math.round(speedMs * 1.944);
-  const heading     = (state[10] as number) || 0;
-  const vrMs        = (state[11] as number) || 0;
-  const vertRateFpm = Math.round(vrMs * 197);
-  const squawk      = (state[14] as string || '').trim();
-
-  if (!inTheaterBounds(lat, lon)) return null;
-
-  const { isStrategic, hint } = classifyAircraft(hex, callsign, '', country);
-
-  return {
-    hex, callsign: callsign || hex.toUpperCase(),
-    registration: '', typeCode: '', country,
-    lat, lon, altFt, speedKts, heading, vertRateFpm,
-    squawk, category: '', seenSecs: 0,
-    isStrategic, strategicHint: hint,
-  };
-}
-
 // ── Main fetch function ───────────────────────────────────────────────────────
 export async function fetchFlights(): Promise<FlightPayload> {
   const now = Date.now();
@@ -350,43 +312,7 @@ export async function fetchFlights(): Promise<FlightPayload> {
     return payload;
 
   } catch (err1) {
-    console.warn('[FTG] adsb.lol flight fetch failed, trying OpenSky:', (err1 as Error).message);
-  }
-
-  // ── Fallback: OpenSky Network (bounding box, ~100 anon calls/day) ──────────
-  // Register free at opensky-network.org to get 10× more daily calls.
-  try {
-    const { lamin, lomin, lamax, lomax } = THEATER_BOUNDS;
-    const creds = (process.env.OPENSKY_USER && process.env.OPENSKY_PASS)
-      ? { username: process.env.OPENSKY_USER, password: process.env.OPENSKY_PASS }
-      : undefined;
-    const url = `https://opensky-network.org/api/states/all?lamin=${lamin}&lomin=${lomin}&lamax=${lamax}&lomax=${lomax}`;
-    const res  = await axios.get(url, {
-      timeout: 12_000,
-      auth:    creds,
-      headers: { 'User-Agent': 'FrameTheGlobe/1.0 (+https://frametheglobe.xyz)' },
-    });
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const states: any[][] = res.data?.states ?? [];
-    const aircraft: Aircraft[] = states
-      .map(parseOpenSky)
-      .filter((a): a is Aircraft => a !== null);
-
-    const payload: FlightPayload = {
-      aircraft,
-      total:     aircraft.length,
-      strategic: aircraft.filter(a => a.isStrategic).length,
-      fetchedAt: new Date().toISOString(),
-      source:    'opensky',
-    };
-
-    _cache     = payload;
-    _lastFetch = now;
-    return payload;
-
-  } catch (err2) {
-    console.error('[FTG] OpenSky flight fetch also failed:', (err2 as Error).message);
+    console.warn('[FTG] adsb.lol flight fetch failed:', (err1 as Error).message);
   }
 
   // ── Both failed — return stale cache or empty ─────────────────────────────

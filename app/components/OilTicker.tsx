@@ -149,6 +149,7 @@ export default function OilTicker({ items = [] }: Props) {
           if (p.symbol === 'RB.F' || p.symbol === 'HO.F') Icon = "⛽";
           if (p.symbol === 'UX.F') Icon = "⚛️";
           if (p.symbol === 'LU.F') Icon = "🪨";
+          if (p.symbol === 'USO.US') Icon = "📈";
 
           return (
             <div key={p.symbol} style={{ 

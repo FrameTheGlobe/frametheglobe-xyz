@@ -2,7 +2,7 @@
  * GET /api/flights
  *
  * Returns live aircraft positions for the Iran War Theater, sourced from
- * community ADS-B networks (adsb.lol primary, OpenSky fallback).
+ * the adsb.lol community ADS-B network (no API key required).
  *
  * The server-side 5-minute cache means the upstream API is called at most
  * ~288 times/day regardless of how many clients are connected.

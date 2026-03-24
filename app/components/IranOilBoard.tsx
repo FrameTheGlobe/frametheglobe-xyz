@@ -185,7 +185,7 @@ export default function IranOilBoard() {
   const dubai  = prices.find(p => p.symbol === 'DUBAI');
   const urals  = prices.find(p => p.symbol === 'REBCO');
   const wcs    = prices.find(p => p.symbol === 'WCS');
-  const uso    = prices.find(p => p.symbol === 'USO');
+  const uso    = prices.find(p => p.symbol === 'USO.US');
 
   const mono      = 'var(--font-mono)';
   const muted     = 'var(--text-muted)';
@@ -494,7 +494,7 @@ export default function IranOilBoard() {
                   padding: '12px 18px', borderRight: '1px solid var(--border-light)',
                 }}>
                   <span style={{ fontFamily: mono, fontSize: 9, fontWeight: 700,
-                    textTransform: 'uppercase', color: muted, minWidth: 30 }}>USO</span>
+                    textTransform: 'uppercase', color: muted, minWidth: 30 }}>USO <span style={{ fontWeight: 400, fontSize: 7, opacity: 0.7 }}>ETF</span></span>
                   <span key={`USO-${flashGen}`} className="ftg-price-flash"
                     style={{ fontFamily: mono, fontSize: 18, fontWeight: 900 }}>
                     ${fmt(uso.price)}
@@ -673,7 +673,7 @@ export default function IranOilBoard() {
               fontFamily: mono, fontSize: 8, color: muted,
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             }}>
-              <span>Charts via TradingView · WTI (USOIL) · Brent (UKOIL) · Nat Gas (UNG) · USO · Prices via Stooq</span>
+              <span>Charts via TradingView · WTI (USOIL) · Brent (UKOIL) · Nat Gas (UNG) · USO (NYSE Arca, real-time via Stooq) · Prices 15m delay</span>
               <a href="https://www.tradingview.com" target="_blank" rel="noopener noreferrer"
                 style={{ color: muted, textDecoration: 'none', opacity: 0.6 }}>
                 Powered by TradingView ↗

@@ -18,7 +18,8 @@ export async function GET() {
     // CL.F = WTI Crude, CB.F = Brent Crude, NG.F = Natural Gas
     // RB.F = Gasoline, HO.F = Heating Oil, UX.F = Uranium, TG.F = Dutch TTF Gas
     // LU.F = Coal, LF.F = Gasoil
-    const symbols = 'cl.f+cb.f+ng.f+rb.f+ho.f+ux.f+tg.f+lu.f+lf.f';
+    // uso.us = United States Oil Fund LP (NYSE Arca ETF, tracks WTI front-month futures)
+    const symbols = 'cl.f+cb.f+ng.f+rb.f+ho.f+ux.f+tg.f+lu.f+lf.f+uso.us';
     const url = `https://stooq.com/q/l/?s=${symbols}&f=sd2t2ohlcv&h&e=json`;
 
     const res = await fetch(url, {
@@ -58,7 +59,8 @@ export async function GET() {
       if (r.symbol === 'UX.F') name = 'Uranium (UX)';
       if (r.symbol === 'TG.F') name = 'Dutch TTF Gas';
       if (r.symbol === 'LU.F') name = 'Rotterdam Coal';
-      if (r.symbol === 'LF.F') name = 'Maritime Gasoil';
+      if (r.symbol === 'LF.F')  name = 'Maritime Gasoil';
+      if (r.symbol === 'USO.US') name = 'US Oil Fund (USO)';
 
       return {
         symbol: r.symbol || '?',
@@ -107,15 +109,6 @@ export async function GET() {
         currency: 'USD'
       });
 
-      // USO (US Oil Fund ETF) — tracks WTI crude; price ratio ~0.82x WTI at current levels
-      mapped.push({
-        symbol: 'USO',
-        name: 'USO ETF',
-        price: wti.price * 0.82,
-        change: wti.change * 0.82,
-        changePercent: wti.changePercent,
-        currency: 'USD'
-      });
     }
     
     return NextResponse.json(mapped);

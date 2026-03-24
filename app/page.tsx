@@ -1070,6 +1070,25 @@ function ScrollToTop() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+// SIGNIFICANCE BADGE (client-side scoring, no API call)
+// ══════════════════════════════════════════════════════════════════════════════
+const SIG_CRIT = ['nuclear','warhead','invasion','mass casualties','imminent','annihilat'];
+const SIG_HIGH = ['missile','airstrike','attack','killed','bomb','offensive','escalat','strike','assassination'];
+const SIG_ELEV = ['tensions','military','sanctions','threat','conflict','deploy','intercept','artillery'];
+
+function getSignificanceBadge(item: FeedItem): { label: string; color: string; bg: string; border: string } | null {
+  const text  = `${item.title} ${item.summary ?? ''}`.toLowerCase();
+  const score = item.relevanceScore ?? 0;
+  if (SIG_CRIT.some(k => text.includes(k)) && score > 1.5)
+    return { label: '🔴 CRITICAL', color: '#ef4444', bg: 'rgba(239,68,68,0.1)', border: 'rgba(239,68,68,0.35)' };
+  if (SIG_HIGH.some(k => text.includes(k)) || score > 2.5)
+    return { label: '🟠 HIGH', color: '#f97316', bg: 'rgba(249,115,22,0.1)', border: 'rgba(249,115,22,0.35)' };
+  if (SIG_ELEV.some(k => text.includes(k)) || score > 1.5)
+    return { label: '🟡 ELEVATED', color: '#eab308', bg: 'rgba(234,179,8,0.1)', border: 'rgba(234,179,8,0.35)' };
+  return null;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // MAIN PAGE
 // ══════════════════════════════════════════════════════════════════════════════
 export default function Home() {
@@ -1114,6 +1133,11 @@ export default function Home() {
   const [briefingDismissed, setBriefingDismissed] = useState(false);
   const [hasMounted, setHasMounted]               = useState(false);
   const [missionTime, setMissionTime]             = useState<string | null>(null);
+
+  // ── AI Features: article briefs + cluster threads ─────────────────────
+  const [expandedBriefs, setExpandedBriefs]   = useState<Set<string>>(new Set());
+  const [articleBriefs, setArticleBriefs]     = useState<Map<string, { brief: string; significance: string; loading: boolean }>>(new Map());
+  const [expandedClusters, setExpandedClusters] = useState<Set<string>>(new Set());
 
   // ── Mission Timer (Client-only to avoid hydration mismatch) ──────────────
   useEffect(() => {
@@ -1621,6 +1645,40 @@ export default function Home() {
     });
   }, []);
 
+  const toggleCluster = useCallback((clusterId: string) => {
+    setExpandedClusters(prev => {
+      const next = new Set(prev);
+      if (next.has(clusterId)) next.delete(clusterId); else next.add(clusterId);
+      return next;
+    });
+  }, []);
+
+  const toggleBrief = useCallback(async (item: FeedItem, key: string) => {
+    if (expandedBriefs.has(key)) {
+      setExpandedBriefs(prev => { const n = new Set(prev); n.delete(key); return n; });
+      return;
+    }
+    setExpandedBriefs(prev => new Set([...prev, key]));
+    if (articleBriefs.has(key)) return;
+    setArticleBriefs(prev => new Map([...prev, [key, { brief: '', significance: 'MONITOR', loading: true }]]));
+    try {
+      const res = await fetch('/api/article-brief', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: item.title, summary: item.summary, sourceName: item.sourceName, region: item.region }),
+        cache: 'no-store',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setArticleBriefs(prev => new Map([...prev, [key, { brief: data.brief, significance: data.significance, loading: false }]]));
+      } else {
+        setArticleBriefs(prev => new Map([...prev, [key, { brief: 'Brief unavailable.', significance: 'MONITOR', loading: false }]]));
+      }
+    } catch {
+      setArticleBriefs(prev => new Map([...prev, [key, { brief: 'Brief unavailable.', significance: 'MONITOR', loading: false }]]));
+    }
+  }, [expandedBriefs, articleBriefs]);
+
   const dismissBriefing = useCallback(() => {
     setBriefingDismissed(true);
     setBriefingOpen(false);
@@ -1761,6 +1819,31 @@ export default function Home() {
     });
     return set;
   }, [clusters]);
+
+  // ── Cluster lead map: which items lead a multi-item cluster ──────────────
+  const clusterLeadMap = useMemo(() => {
+    const map = new Map<string, { clusterId: string; siblings: FeedItem[]; isLead: boolean }>();
+    clusters.forEach(cluster => {
+      if (cluster.items.length < 2) return;
+      cluster.items.forEach((item, idx) => {
+        const key = item.link || `${item.sourceId}::${item.title}`;
+        const siblings = cluster.items.filter((_, j) => j !== idx);
+        map.set(key, { clusterId: cluster.id, siblings, isLead: idx === 0 });
+      });
+    });
+    return map;
+  }, [clusters]);
+
+  // ── Filtered stream: only lead + standalone items (non-leads hidden until expanded) ──
+  const streamItems = useMemo(() => {
+    return visibleItems.filter(item => {
+      const key = item.link || `${item.sourceId}::${item.title}`;
+      const info = clusterLeadMap.get(key);
+      if (!info) return true;
+      if (info.isLead) return true;
+      return expandedClusters.has(info.clusterId);
+    });
+  }, [visibleItems, clusterLeadMap, expandedClusters]);
 
   // ── Watchlist matches ─────────────────────────────────────────────────────
   const watchlistMatches = useMemo(() => {
@@ -2356,7 +2439,7 @@ export default function Home() {
           /* ── STREAM view ──────────────────────────────────────────── */
           ) : viewMode === 'list' ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-              {visibleItems.map((item, i) => {
+              {streamItems.map((item, i) => {
                 const badge = getAgeBadge(item.pubDate);
                 const isPinned = pinnedKeys.includes(keyForItem(item));
                 const isFocused = focusedIdx === i;
@@ -2367,6 +2450,12 @@ export default function Home() {
                 const hasCrossConsensus = surprisingSet.has(itemKey);
                 const compSiblings = comparisonMap.get(itemKey);
                 const compExpanded = expandedComparisons.has(itemKey);
+                const sigBadge = getSignificanceBadge(item);
+                const clusterInfo = clusterLeadMap.get(itemKey);
+                const isClusterLead = clusterInfo?.isLead ?? false;
+                const clusterExpanded = clusterInfo ? expandedClusters.has(clusterInfo.clusterId) : false;
+                const briefExpanded = expandedBriefs.has(itemKey);
+                const briefData = articleBriefs.get(itemKey);
                 return (
                   <article
                     key={keyForItem(item)}
@@ -2500,6 +2589,18 @@ export default function Home() {
                                 Cross-Consensus
                               </span>
                             )}
+                            {/* ── Significance badge (always shown) ───────────── */}
+                            {sigBadge && (
+                              <span style={{
+                                fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700,
+                                color: sigBadge.color, background: sigBadge.bg,
+                                border: `1px solid ${sigBadge.border}`,
+                                padding: '2px 7px', borderRadius: 2,
+                                letterSpacing: '0.06em', flexShrink: 0,
+                              }}>
+                                {sigBadge.label}
+                              </span>
+                            )}
                             <a
                               href={item.link || undefined}
                               target="_blank"
@@ -2554,6 +2655,58 @@ export default function Home() {
                               </div>
                             ) : null;
                           })()}
+
+                          {/* ── What this means (AI brief expand) ───────────── */}
+                          <div style={{ marginTop: 6 }}>
+                            <button
+                              onClick={() => toggleBrief(item, itemKey)}
+                              style={{
+                                fontFamily: 'var(--font-mono)', fontSize: 10,
+                                color: briefExpanded ? '#22c55e' : 'var(--text-muted)',
+                                background: briefExpanded ? 'rgba(34,197,94,0.08)' : 'transparent',
+                                border: `1px solid ${briefExpanded ? 'rgba(34,197,94,0.3)' : 'var(--border-light)'}`,
+                                borderRadius: 3, padding: '2px 9px',
+                                cursor: 'pointer', letterSpacing: '0.06em',
+                                transition: 'all 0.15s',
+                              }}
+                            >
+                              {briefExpanded ? '▲ Close' : '🧠 What this means'}
+                            </button>
+                            {briefExpanded && (
+                              <div style={{
+                                marginTop: 8,
+                                padding: '10px 14px',
+                                background: 'var(--bg)',
+                                border: '1px solid var(--border-light)',
+                                borderLeft: '3px solid #22c55e',
+                                borderRadius: '0 4px 4px 0',
+                                animation: 'fadeUp 0.2s ease both',
+                              }}>
+                                {briefData?.loading ? (
+                                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.06em' }}>
+                                    ⟳ Generating analysis…
+                                  </span>
+                                ) : (
+                                  <>
+                                    {briefData?.significance && briefData.significance !== 'MONITOR' && (
+                                      <span style={{
+                                        fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700,
+                                        color: briefData.significance === 'CRITICAL' ? '#ef4444' : briefData.significance === 'HIGH' ? '#f97316' : '#eab308',
+                                        background: briefData.significance === 'CRITICAL' ? 'rgba(239,68,68,0.1)' : briefData.significance === 'HIGH' ? 'rgba(249,115,22,0.1)' : 'rgba(234,179,8,0.1)',
+                                        border: `1px solid ${briefData.significance === 'CRITICAL' ? 'rgba(239,68,68,0.3)' : briefData.significance === 'HIGH' ? 'rgba(249,115,22,0.3)' : 'rgba(234,179,8,0.3)'}`,
+                                        padding: '1px 6px', borderRadius: 2, marginBottom: 6, display: 'inline-block', letterSpacing: '0.08em',
+                                      }}>
+                                        {briefData.significance}
+                                      </span>
+                                    )}
+                                    <p style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.65, margin: 0, marginTop: briefData?.significance && briefData.significance !== 'MONITOR' ? 6 : 0 }}>
+                                      {briefData?.brief || 'No analysis available.'}
+                                    </p>
+                                  </>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -2609,6 +2762,94 @@ export default function Home() {
                         items={compSiblings}
                         onClose={() => toggleComparison(itemKey)}
                       />
+                    )}
+
+                    {/* ── Cluster thread (lead articles only) ──────────── */}
+                    {isClusterLead && clusterInfo && clusterInfo.siblings.length > 0 && (
+                      <div style={{ marginTop: 10 }}>
+                        <button
+                          onClick={() => toggleCluster(clusterInfo.clusterId)}
+                          style={{
+                            fontFamily: 'var(--font-mono)', fontSize: 10,
+                            color: clusterExpanded ? 'var(--accent)' : 'var(--text-muted)',
+                            background: 'transparent',
+                            border: `1px solid ${clusterExpanded ? 'var(--accent)' : 'var(--border-light)'}`,
+                            borderRadius: 3, padding: '2px 9px',
+                            cursor: 'pointer', letterSpacing: '0.06em',
+                            display: 'flex', alignItems: 'center', gap: 5,
+                            transition: 'all 0.15s',
+                          }}
+                        >
+                          <span style={{
+                            display: 'inline-block', width: 5, height: 5, borderRadius: '50%',
+                            background: clusterExpanded ? 'var(--accent)' : 'var(--text-muted)',
+                          }} />
+                          {clusterExpanded
+                            ? `▲ Hide ${clusterInfo.siblings.length} related`
+                            : `▼ ${clusterInfo.siblings.length} related ${clusterInfo.siblings.length === 1 ? 'story' : 'stories'}`}
+                        </button>
+                        {clusterExpanded && (
+                          <div style={{
+                            marginTop: 6,
+                            borderLeft: '2px solid var(--border-light)',
+                            paddingLeft: 12,
+                            display: 'flex', flexDirection: 'column', gap: 6,
+                          }}>
+                            {clusterInfo.siblings.map(sib => {
+                              const sibKey = sib.link || `${sib.sourceId}::${sib.title}`;
+                              const sibSig = getSignificanceBadge(sib);
+                              return (
+                                <div key={sibKey} style={{
+                                  padding: '8px 12px',
+                                  background: 'var(--bg)',
+                                  border: '1px solid var(--border-light)',
+                                  borderLeft: `2px solid ${REGION_DOTS[sib.region] || '#999'}`,
+                                  borderRadius: '0 3px 3px 0',
+                                  animation: 'fadeUp 0.18s ease both',
+                                }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 3 }}>
+                                    {sibSig && (
+                                      <span style={{
+                                        fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700,
+                                        color: sibSig.color, background: sibSig.bg,
+                                        border: `1px solid ${sibSig.border}`,
+                                        padding: '1px 5px', borderRadius: 2, letterSpacing: '0.06em', flexShrink: 0,
+                                      }}>
+                                        {sibSig.label}
+                                      </span>
+                                    )}
+                                    <a
+                                      href={sib.link || undefined}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={() => markRead(sibKey)}
+                                      style={{
+                                        fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 600,
+                                        color: 'var(--text-primary)', textDecoration: 'none',
+                                        lineHeight: 1.35, flex: 1,
+                                        transition: 'color 0.1s',
+                                      }}
+                                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
+                                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+                                    >
+                                      {sib.title}
+                                    </a>
+                                  </div>
+                                  <div style={{
+                                    fontFamily: 'var(--font-mono)', fontSize: 9,
+                                    color: 'var(--text-muted)', letterSpacing: '0.03em',
+                                    display: 'flex', gap: 8,
+                                  }}>
+                                    <span style={{ color: REGION_DOTS[sib.region] || '#999' }}>{sib.sourceName}</span>
+                                    <span>/</span>
+                                    <span>{timeAgo(sib.pubDate)}</span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
                     )}
                   </article>
                 );

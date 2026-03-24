@@ -117,7 +117,7 @@ async function callClaude(items: MinItem[]): Promise<AIIntelPayload | null> {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) return null;
 
-  const headlines = items.slice(0, 40).map((item, i) =>
+  const headlines = items.slice(0, 25).map((item, i) =>
     `${i + 1}. [${item.region ?? 'global'}] ${item.sourceName ?? '?'}: ${item.title}`
   ).join('\n');
 
@@ -162,7 +162,7 @@ Return JSON with exactly this structure (all fields required):
   ]
 }
 
-Rules: replace ALL placeholder text with real analysis from the headlines. level must be one of CRIT/ELEV/HIGH/NORM/UNKN. trend for theaters must be escalating/stable/de-escalating.`;
+Rules: replace ALL placeholder text with real analysis from the headlines. level must be one of CRIT/ELEV/HIGH/NORM/UNKN. trend for theaters must be escalating/stable/de-escalating. Keep all string values SHORT (max 2 sentences). Do not pad or repeat.`;
 
   try {
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -173,7 +173,7 @@ Rules: replace ALL placeholder text with real analysis from the headlines. level
       },
       body: JSON.stringify({
         model: 'llama-3.1-8b-instant',
-        max_tokens: 4000,
+        max_tokens: 3000,
         temperature: 0.3,
         // Force pure JSON output — no commentary, no markdown wrapping
         response_format: { type: 'json_object' },
