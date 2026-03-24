@@ -121,51 +121,48 @@ async function callClaude(items: MinItem[]): Promise<AIIntelPayload | null> {
     `${i + 1}. [${item.region ?? 'global'}] ${item.sourceName ?? '?'}: ${item.title}`
   ).join('\n');
 
-  const prompt = `You are a senior strategic intelligence analyst producing a classified briefing. Analyse these ${items.length} live news headlines and respond with ONLY valid JSON — no markdown, no commentary, just the JSON object.
+  const prompt = `Analyse these ${items.length} live geopolitical news headlines and return a JSON intelligence assessment.
 
-LIVE INTELLIGENCE FEED (${new Date().toUTCString()}):
+LIVE FEED (${new Date().toUTCString()}):
 ${headlines}
 
-Respond with this exact schema:
+Return JSON with exactly this structure (all fields required):
 {
-  "strategicRisk": {
-    "score": <0-100 integer based on global tension>,
-    "label": "<LOW|MODERATE|ELEVATED|CRITICAL>",
-    "trend": "<Rising|Stable|Declining>",
-    "deltaPoints": <integer -10 to +10>,
-    "primaryDrivers": ["<entity or issue>", "<entity>", "<entity>"],
-    "analystNote": "<1-2 sentences of genuine strategic analysis>"
-  },
+  "strategicRisk": { "score": 55, "label": "ELEVATED", "trend": "Rising", "deltaPoints": 3, "primaryDrivers": ["Iran", "China", "Ukraine"], "analystNote": "Two sentences of genuine analysis." },
   "theaters": [
-    { "id": "iran", "name": "Iran Theater", "level": "<CRIT|ELEV|HIGH|NORM|UNKN>", "summary": "<2 sentences>", "airOps": <0-99>, "groundAssets": <0-99>, "navalAssets": <0-50>, "recentEvents": <integer>, "trend": "<escalating|stable|de-escalating>" },
-    { "id": "ukraine", "name": "Eastern European Theater", "level": "<level>", "summary": "<2 sentences>", "airOps": <int>, "groundAssets": <int>, "navalAssets": <int>, "recentEvents": <int>, "trend": "<trend>" },
-    { "id": "taiwan", "name": "Indo-Pacific Theater", "level": "<level>", "summary": "<2 sentences>", "airOps": <int>, "groundAssets": <int>, "navalAssets": <int>, "recentEvents": <int>, "trend": "<trend>" },
-    { "id": "blacksea", "name": "Black Sea / Caucasus", "level": "<level>", "summary": "<2 sentences>", "airOps": <int>, "groundAssets": <int>, "navalAssets": <int>, "recentEvents": <int>, "trend": "<trend>" }
+    { "id": "iran",     "name": "Iran Theater",              "level": "ELEV", "summary": "Two sentences.", "airOps": 12, "groundAssets": 45, "navalAssets": 8,  "recentEvents": 6, "trend": "escalating" },
+    { "id": "ukraine",  "name": "Eastern European Theater",  "level": "HIGH", "summary": "Two sentences.", "airOps": 30, "groundAssets": 80, "navalAssets": 5,  "recentEvents": 12, "trend": "stable" },
+    { "id": "taiwan",   "name": "Indo-Pacific Theater",      "level": "NORM", "summary": "Two sentences.", "airOps": 8,  "groundAssets": 20, "navalAssets": 15, "recentEvents": 3, "trend": "stable" },
+    { "id": "blacksea", "name": "Black Sea / Caucasus",      "level": "NORM", "summary": "Two sentences.", "airOps": 5,  "groundAssets": 15, "navalAssets": 4,  "recentEvents": 2, "trend": "de-escalating" }
   ],
   "instability": [
-    { "country": "<name>", "flag": "<emoji>", "score": <0-100>, "unrest": <0-100>, "conflict": <0-100>, "sanctions": <0-100>, "infoWarfare": <0-100>, "delta": <int>, "trend": "<up|stable|down>" }
+    { "country": "Iran",    "flag": "🇮🇷", "score": 78, "unrest": 60, "conflict": 85, "sanctions": 90, "infoWarfare": 70, "delta": 2, "trend": "up" },
+    { "country": "Russia",  "flag": "🇷🇺", "score": 72, "unrest": 55, "conflict": 80, "sanctions": 88, "infoWarfare": 75, "delta": 0, "trend": "stable" },
+    { "country": "Ukraine", "flag": "🇺🇦", "score": 68, "unrest": 50, "conflict": 82, "sanctions": 40, "infoWarfare": 60, "delta": 1, "trend": "up" },
+    { "country": "China",   "flag": "🇨🇳", "score": 55, "unrest": 30, "conflict": 45, "sanctions": 50, "infoWarfare": 80, "delta": 1, "trend": "up" },
+    { "country": "Israel",  "flag": "🇮🇱", "score": 65, "unrest": 40, "conflict": 75, "sanctions": 20, "infoWarfare": 55, "delta": 0, "trend": "stable" }
   ],
   "forecasts": [
-    { "id": "fc-1", "category": "<Conflict|Market|Supply Chain|Political|Military|Cyber|Infra>", "title": "<specific actionable forecast>", "probability": <0-100>, "horizon": "<24h|7d|30d>", "confidence": "<High|Medium|Low>", "basis": "<brief evidence>" }
+    { "id": "fc-1", "category": "Conflict",  "title": "Specific forecast based on headlines.", "probability": 65, "horizon": "7d",  "confidence": "Medium", "basis": "Evidence from headlines." },
+    { "id": "fc-2", "category": "Market",    "title": "Specific forecast based on headlines.", "probability": 72, "horizon": "30d", "confidence": "High",   "basis": "Evidence from headlines." },
+    { "id": "fc-3", "category": "Political", "title": "Specific forecast based on headlines.", "probability": 48, "horizon": "7d",  "confidence": "Low",    "basis": "Evidence from headlines." },
+    { "id": "fc-4", "category": "Military",  "title": "Specific forecast based on headlines.", "probability": 55, "horizon": "24h", "confidence": "Medium", "basis": "Evidence from headlines." }
   ],
   "insights": {
-    "worldBrief": "<3-4 sentences of genuine world situation analysis based on the headlines>",
-    "focalPoints": "<3-4 sentences of key focal points an analyst should watch>"
+    "worldBrief": "Three to four sentences of genuine world situation analysis grounded in the actual headlines.",
+    "focalPoints": "Three to four sentences on key developments analysts should watch based on the headlines."
   },
   "diplomaticStatus": [
-    { "actor": "<negotiating parties>", "status": "<ACTIVE|STALLED|COLLAPSED|MONITORING>", "detail": "<1 sentence>", "color": "<#hex>" }
+    { "actor": "US-Iran", "status": "STALLED",  "detail": "One sentence.", "color": "#e67e22" },
+    { "actor": "Russia-Ukraine", "status": "COLLAPSED", "detail": "One sentence.", "color": "#c0392b" }
   ],
   "economicWarfare": [
-    { "label": "<sanctions/trade/currency label>", "value": "<metric>", "detail": "<1 sentence>", "trend": "<rising|stable|easing>" }
+    { "label": "Iran Sanctions", "value": "High", "detail": "One sentence.", "trend": "rising" },
+    { "label": "Russia SWIFT",   "value": "Active", "detail": "One sentence.", "trend": "stable" }
   ]
 }
 
-Rules:
-- instability: include 5-8 countries with highest tension, sorted by score desc
-- forecasts: include 4-7 specific, actionable forecasts — not generic
-- diplomaticStatus: include 2-4 active diplomatic situations mentioned in headlines
-- economicWarfare: include 2-4 economic pressure points from headlines
-- All analysis must be grounded in the actual headlines provided`;
+Rules: replace ALL placeholder text with real analysis from the headlines. level must be one of CRIT/ELEV/HIGH/NORM/UNKN. trend for theaters must be escalating/stable/de-escalating.`;
 
   try {
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -176,7 +173,7 @@ Rules:
       },
       body: JSON.stringify({
         model: 'llama-3.3-70b-versatile',
-        max_tokens: 3000,
+        max_tokens: 6000,
         temperature: 0.3,
         // Force pure JSON output — no commentary, no markdown wrapping
         response_format: { type: 'json_object' },
