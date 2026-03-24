@@ -96,7 +96,7 @@ function algorithmicBrief(title: string, summary: string, region: string): Artic
   return {
     brief: `This development in ${regionLabel} warrants monitoring for downstream effects on regional stability. `
       + `The story touches on ${significance === 'CRITICAL' || significance === 'HIGH' ? 'active conflict or escalation dynamics' : 'political or security developments'} `
-      + `that may influence energy markets and allied force postures. Add GROQ_API_KEY for AI-powered analysis.`,
+      + `that may influence energy markets and allied force postures. AI-powered analysis temporarily unavailable.`,
     significance,
     generatedBy: 'algorithmic',
   };

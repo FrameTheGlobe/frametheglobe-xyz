@@ -35,6 +35,35 @@ type CacheEntry = {
 
 const SOURCE_CACHE: Record<string, CacheEntry> = {};
 
+// ── Dead source skip list ────────────────────────────────────────────────────
+// After SKIP_THRESHOLD consecutive failures, a source is skipped for SKIP_TTL_MS.
+const SKIP_THRESHOLD = 3;
+const SKIP_TTL_MS    = 30 * 60 * 1000; // 30 minutes
+type SkipEntry = { failures: number; skippedAt: number | null };
+const SKIP_MAP: Record<string, SkipEntry> = {};
+
+function isSourceSkipped(id: string): boolean {
+  const e = SKIP_MAP[id];
+  if (!e || e.skippedAt === null) return false;
+  if (Date.now() - e.skippedAt > SKIP_TTL_MS) {
+    // Cooldown expired — give it another chance
+    e.failures  = 0;
+    e.skippedAt = null;
+    return false;
+  }
+  return true;
+}
+
+function recordFailure(id: string): void {
+  const e = SKIP_MAP[id] ?? (SKIP_MAP[id] = { failures: 0, skippedAt: null });
+  e.failures++;
+  if (e.failures >= SKIP_THRESHOLD) e.skippedAt = Date.now();
+}
+
+function recordSuccess(id: string): void {
+  if (SKIP_MAP[id]) SKIP_MAP[id] = { failures: 0, skippedAt: null };
+}
+
 /**
  * Per-source TTL: 15 minutes.
  *
@@ -47,7 +76,7 @@ export const CACHE_TTL_MS = 15 * 60 * 1000;
 
 // rss-parser instance — used only for parseString() now; headers are on the
 // manual fetch() call so we can inject conditional-GET headers per request.
-const parser = new Parser({ timeout: 6000 });
+const parser = new Parser({ timeout: 4000 });
 
 const BASE_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (compatible; FrameTheGlobe/4.1.3; +https://frametheglobe.xyz)',
@@ -403,7 +432,19 @@ export async function fetchFeed(source: {
     };
   }
 
+  // Return stale cache immediately if this source is in the skip window
   const cacheKey = source.id;
+  if (isSourceSkipped(cacheKey)) {
+    const cached = SOURCE_CACHE[cacheKey];
+    return {
+      items: cached?.items ?? [],
+      health: {
+        id: source.id, name: source.name, region: source.region,
+        ok: false, itemCount: cached?.items.length ?? 0, fromCache: true,
+        errorMsg: 'Skipped (repeated failures)',
+      },
+    };
+  }
   const now = Date.now();
   const cached = SOURCE_CACHE[cacheKey];
 
@@ -422,7 +463,7 @@ export async function fetchFeed(source: {
 
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 6_000);
+    const timeout = setTimeout(() => controller.abort(), 4_000);
 
     let res: Response;
     try {
@@ -516,6 +557,7 @@ export async function fetchFeed(source: {
       : items.filter(matchesIranTheater);
 
     SOURCE_CACHE[cacheKey] = { items: filteredItems, timestamp: now, etag, lastModified };
+    recordSuccess(cacheKey);
 
     return {
       items: filteredItems,
@@ -534,6 +576,7 @@ export async function fetchFeed(source: {
         ? errorMsg          // e.g. "HTTP 403"
         : 'Fetch error';
     console.error(`[FTG] Feed fetch failed: ${source.id} — ${errorMsg}`);
+    recordFailure(cacheKey);
 
     // Return stale cache if available rather than nothing
     if (cached) {
@@ -566,8 +609,8 @@ export async function fetchFeed(source: {
  * which can look like abuse to smaller feed providers. Cached sources return
  * instantly from memory so batching adds no meaningful latency for them.
  */
-const BATCH_SIZE  = 20;
-const BATCH_DELAY = 50; // ms between batches
+const BATCH_SIZE  = 35;  // all sources in one Promise.allSettled — individual timeouts guard hangs
+const BATCH_DELAY = 0;   // no artificial stagger needed
 
 export async function fetchAllFeeds(sources: Parameters<typeof fetchFeed>[0][]): Promise<{
   items: FeedItem[];
@@ -589,8 +632,8 @@ export async function fetchAllFeeds(sources: Parameters<typeof fetchFeed>[0][]):
       }
     });
 
-    // Brief pause between batches — skip after the last one
-    if (i + BATCH_SIZE < sources.length) {
+    // Brief pause between batches — only if delay is set and there are more batches
+    if (BATCH_DELAY > 0 && i + BATCH_SIZE < sources.length) {
       await new Promise(resolve => setTimeout(resolve, BATCH_DELAY));
     }
   }

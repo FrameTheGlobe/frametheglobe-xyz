@@ -7,7 +7,8 @@
  * interval keeps running between requests.
  */
 
-import { FeedItem, SourceHealth } from './fetcher';
+import { FeedItem, SourceHealth, fetchAllFeeds } from './fetcher';
+import { SOURCES } from './sources';
 
 export type NewsPayload = {
   items: FeedItem[];
@@ -106,6 +107,44 @@ export function setNewsCache(data: NewsPayload): void {
       _subscribers.delete(id);
     }
   }
+}
+
+// ── Background warm cache ────────────────────────────────────────────────────
+/**
+ * Proactively re-fetches all sources every 8 minutes so the cache is always
+ * pre-warmed. First-time visitors get a cached response instantly instead of
+ * waiting 3-8 s for a cold fetch.
+ *
+ * Guards against double-interval from HMR by tracking the reference.
+ */
+const BACKGROUND_REFRESH_MS = 8 * 60 * 1000; // 8 min — just under the 10-min store TTL
+let _bgInterval: ReturnType<typeof setInterval> | null = null;
+
+function startBackgroundRefresh(): void {
+  if (_bgInterval) return; // already running (guard against HMR double-start)
+  _bgInterval = setInterval(async () => {
+    if (!isCacheStale()) return; // still fresh — nothing to do
+    try {
+      const { items, health } = await fetchAllFeeds(SOURCES);
+      items.sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
+      setNewsCache({
+        items,
+        total:         items.length,
+        fetchedAt:     new Date().toISOString(),
+        sourceCount:   SOURCES.length,
+        failedSources: health.filter(h => !h.ok).length,
+        health,
+      });
+      console.log(`[FTG] Background refresh: ${items.length} items from ${SOURCES.length} sources`);
+    } catch (err) {
+      console.warn('[FTG] Background refresh failed:', (err as Error).message);
+    }
+  }, BACKGROUND_REFRESH_MS);
+}
+
+// Start only on the server (never in browser/edge builds)
+if (typeof window === 'undefined') {
+  startBackgroundRefresh();
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

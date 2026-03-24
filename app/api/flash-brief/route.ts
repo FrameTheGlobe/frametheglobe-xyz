@@ -119,7 +119,7 @@ function algorithmicBrief(items: MinItem[]): FlashBriefPayload {
     + (nucCount > 0 ? `${nucCount} nuclear/diplomatic signals detected. ` : '')
     + (topItem ? `Lead story: "${topItem.title.slice(0, 90)}${topItem.title.length > 90 ? '…' : ''}". ` : '')
     + (mktCount > 0 ? `Energy market indicators present in ${mktCount} stories — watch for price correlation signals. ` : '')
-    + `Add GROQ_API_KEY for AI-powered narrative synthesis.`;
+    + `AI narrative synthesis temporarily unavailable — algorithmic summary active.`;
 
   return {
     brief,

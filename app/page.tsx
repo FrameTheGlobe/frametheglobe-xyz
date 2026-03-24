@@ -1362,6 +1362,16 @@ export default function Home() {
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
+  // ── localStorage cache helpers ────────────────────────────────────────────
+  const LS_KEY     = 'ftg_news_v2';
+  const LS_MAX_AGE = 30 * 60 * 1000; // 30 min — older than this is too stale to show
+
+  const saveToLocalStorage = useCallback((items: FeedItem[], health: SourceHealth[]) => {
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify({ items, health, savedAt: Date.now() }));
+    } catch { /* quota exceeded or incognito */ }
+  }, []);
+
   // ── Data fetching (manual / fallback) ────────────────────────────────────
   const fetchNews = useCallback(async () => {
     setLoading(true);
@@ -1375,6 +1385,7 @@ export default function Home() {
         setItems(data.items || []);
         if (Array.isArray(data.health)) setSourceHealth(data.health);
         lastFetchedAtRef.current = Date.now();
+        saveToLocalStorage(data.items || [], data.health || []);
       } else {
         console.error('[FTG] News fetch error:', newsRes.reason);
         setItems([]);
@@ -1397,6 +1408,21 @@ export default function Home() {
 
   // ── SSE live feed (replaces polling) ─────────────────────────────────────
   useEffect(() => {
+    // Restore stale localStorage cache instantly — gives users immediate content
+    // while the real network fetch runs in the background.
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (raw) {
+        const { items: cachedItems, health: cachedHealth, savedAt } = JSON.parse(raw);
+        if (Date.now() - savedAt < LS_MAX_AGE && Array.isArray(cachedItems) && cachedItems.length > 0) {
+          setItems(cachedItems);
+          if (Array.isArray(cachedHealth)) setSourceHealth(cachedHealth);
+          setLoading(false);
+          lastFetchedAtRef.current = savedAt;
+        }
+      }
+    } catch { /* ignore parse errors */ }
+
     // Trigger initial HTTP load so we have data immediately
     fetchNews();
 
@@ -1424,6 +1450,7 @@ export default function Home() {
       if (Array.isArray(data.health)) setSourceHealth(data.health);
       setLoading(false);
       lastFetchedAtRef.current = Date.now();
+      saveToLocalStorage(data.items, data.health ?? []);
     };
 
     const stopPolling = () => {

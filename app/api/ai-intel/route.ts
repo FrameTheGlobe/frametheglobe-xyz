@@ -323,7 +323,7 @@ function algorithmicSynth(items: MinItem[]): Omit<AIIntelPayload, 'generatedAt' 
       trend: riskScore > 65 ? 'Rising' : riskScore < 35 ? 'Declining' : 'Stable',
       deltaPoints: Math.round((Math.random() - 0.4) * 6),
       primaryDrivers,
-      analystNote: `Algorithmic synthesis from ${items.length} stories across ${uniqueSources} sources. ${highTh > 0 ? `${highTh} theater(s) at elevated posture.` : 'No theaters at critical threshold.'} Add GROQ_API_KEY for AI-powered narrative analysis.`,
+      analystNote: `Algorithmic synthesis from ${items.length} stories across ${uniqueSources} sources. ${highTh > 0 ? `${highTh} theater(s) at elevated posture.` : 'No theaters at critical threshold.'} AI narrative analysis temporarily unavailable — algorithmic synthesis active.`,
     },
     theaters,
     instability,
