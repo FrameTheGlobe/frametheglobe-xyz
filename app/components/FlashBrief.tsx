@@ -148,7 +148,14 @@ export default function FlashBrief({ items }: Props) {
 
       {/* ── Body ─────────────────────────────────────────────────── */}
       {!collapsed && (
-        <div style={{ padding: '14px 16px' }}>
+        <div style={{
+          padding: '14px 16px',
+          height: 256,
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+        }}>
           {loading && !data && (
             <div style={{
               fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)',
@@ -161,8 +168,8 @@ export default function FlashBrief({ items }: Props) {
           )}
 
           {data && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {/* Main brief text */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, height: '100%' }}>
+              {/* Main brief text — fixed region, text fills in */}
               <p style={{
                 fontFamily: 'var(--font-body)',
                 fontSize: 15,
@@ -170,13 +177,15 @@ export default function FlashBrief({ items }: Props) {
                 lineHeight: 1.7,
                 margin: 0,
                 fontWeight: 400,
+                flex: 1,
+                overflow: 'hidden',
               }}>
-                {briefText || <span style={{ color: 'var(--text-muted)', opacity: 0.5 }}>▋</span>}
+                {(briefText || '').slice(0, 600) || <span style={{ color: 'var(--text-muted)', opacity: 0.5 }}>▋</span>}
               </p>
 
               {/* Footer */}
               <div style={{
-                display: 'flex', alignItems: 'center', gap: 12,
+                display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0,
                 paddingTop: 10, borderTop: '1px solid var(--border-light)',
               }}>
                 <span style={{
