@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { SOURCES } from '@/lib/sources';
 import IranOilBoard from './IranOilBoard';
+import PreciousMetalsBoard from './PreciousMetalsBoard';
 import HormuzCommoditiesBoard from './HormuzCommoditiesBoard';
 import LiveFeeds from './LiveFeeds';
 import AIIntelPanel from './AIIntelPanel';
@@ -418,6 +419,9 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
 
           {/* ── Crude Oil Price Board ────────────────────────────────────── */}
           <IranOilBoard />
+
+          {/* ── Precious Metals — Safe Haven & Geopolitical Risk Tracker ─── */}
+          <PreciousMetalsBoard />
 
           {/* ── Hormuz Agri & Fertilizer Commodity Impact ───────────────── */}
           <HormuzCommoditiesBoard />
