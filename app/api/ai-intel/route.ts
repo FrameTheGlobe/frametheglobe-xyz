@@ -172,8 +172,8 @@ Rules: replace ALL placeholder text with real analysis from the headlines. level
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        max_tokens: 6000,
+        model: 'llama-3.1-8b-instant',
+        max_tokens: 4000,
         temperature: 0.3,
         // Force pure JSON output — no commentary, no markdown wrapping
         response_format: { type: 'json_object' },
