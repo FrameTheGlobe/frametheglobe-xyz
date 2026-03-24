@@ -411,14 +411,14 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
           {/* ── War Cost Counter ─────────────────────────────────────────── */}
           <IranWarCostBoard />
 
+          {/* ── Crude Oil Price Board ────────────────────────────────────── */}
+          <IranOilBoard />
+
           {/* ── Live Feeds ─────────────────────────────────────────────── */}
           <LiveFeeds />
 
           {/* ── AI Intelligence ─────────────────────────────────────────── */}
           <AIIntelPanel items={items} />
-
-          {/* ── Crude Oil Price Board ────────────────────────────────────── */}
-          <IranOilBoard />
 
           {/* ── Live Missile Intelligence ────────────────────────────────── */}
           {totalMissileEvents > 0 && (
