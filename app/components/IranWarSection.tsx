@@ -4,6 +4,8 @@ import { useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { SOURCES } from '@/lib/sources';
 import IranOilBoard from './IranOilBoard';
+import LiveFeeds from './LiveFeeds';
+import AIIntelPanel from './AIIntelPanel';
 
 // Dynamic import prevents SSR — IranWarCostBoard uses new Date() in state
 // which would cause a server/client hydration mismatch.
@@ -408,6 +410,12 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
 
           {/* ── War Cost Counter ─────────────────────────────────────────── */}
           <IranWarCostBoard />
+
+          {/* ── Live Feeds ─────────────────────────────────────────────── */}
+          <LiveFeeds />
+
+          {/* ── AI Intelligence ─────────────────────────────────────────── */}
+          <AIIntelPanel items={items} />
 
           {/* ── Crude Oil Price Board ────────────────────────────────────── */}
           <IranOilBoard />

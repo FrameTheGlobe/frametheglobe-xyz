@@ -2056,12 +2056,6 @@ export default function Home() {
 
         {/* Main feed */}
         <main className="ftg-main">
-          {/* ── LIVE FEEDS ──────────────────────────────────────────────────── */}
-          {!loading && <LiveFeeds />}
-
-          {/* ── AI INTELLIGENCE ─────────────────────────────────────────────── */}
-          {!loading && items.length > 0 && <AIIntelPanel items={items} />}
-
           {/* ── Iran War Theater ─────────────────────────────────── */}
           <IranWarSection 
             items={items} 
