@@ -160,7 +160,13 @@ export async function POST(request: Request) {
         }
       : algorithmicBrief(items);
 
-    _cache = { payload, at: Date.now(), fingerprint: fp };
+    // Only persist AI-generated results in the long-lived cache.
+    // Algorithmic fallbacks are intentionally NOT cached so that the next
+    // request retries Groq — preventing a brief Groq outage from blocking
+    // AI briefs for the full 60-minute TTL window.
+    if (payload.generatedBy === 'groq-ai') {
+      _cache = { payload, at: Date.now(), fingerprint: fp };
+    }
 
     const res = NextResponse.json(payload);
     res.headers.set('Cache-Control', 'no-store');
