@@ -285,6 +285,10 @@ function buildClusters(items: FeedItem[]): Cluster[] {
     .map((clusterItems, idx) => {
       // ── ADVANCED SCORING ALGORITHM 2.0 ─────────────────────────────────────
       const finalItems = clusterItems.sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
+      // Pick cluster title from the highest-trust source (not just the newest item)
+      const bestTitleItem = [...finalItems].sort((a, b) =>
+        (SOURCE_TRUST[b.sourceId.toLowerCase()] ?? 0.5) - (SOURCE_TRUST[a.sourceId.toLowerCase()] ?? 0.5)
+      )[0];
       const newestTime = new Date(finalItems[0]?.pubDate || 0).getTime();
       const hoursOld = (Date.now() - newestTime) / (1000 * 60 * 60);
 
@@ -343,7 +347,7 @@ function buildClusters(items: FeedItem[]): Cluster[] {
 
       return {
         id: `cluster-${idx}`,
-        title: finalItems[0]?.title || 'Untitled',
+        title: bestTitleItem?.title || finalItems[0]?.title || 'Untitled',
         items: finalItems,
         score,
         consensus,
@@ -1133,6 +1137,9 @@ export default function Home() {
   const [briefingDismissed, setBriefingDismissed] = useState(false);
   const [hasMounted, setHasMounted]               = useState(false);
   const [missionTime, setMissionTime]             = useState<string | null>(null);
+  // Tick counter bumped every 60s — forces time-dependent memos (intelEvents,
+  // getAgeBadge, timeAgo) to recompute so timestamps stay live.
+  const [_timeTick, setTimeTick] = useState(0);
 
   // ── AI Features: article briefs + cluster threads ─────────────────────
   const [expandedBriefs, setExpandedBriefs]   = useState<Set<string>>(new Set());
@@ -1145,7 +1152,9 @@ export default function Home() {
     const update = () => setMissionTime(new Date().toISOString().slice(11, 19));
     update();
     const t = setInterval(update, 1000);
-    return () => clearInterval(t);
+    // Bump the time tick every 60s so timeAgo labels refresh
+    const tickTimer = setInterval(() => setTimeTick((n: number) => n + 1), 60_000);
+    return () => { clearInterval(t); clearInterval(tickTimer); };
   }, []);
 
   // ── Debounce search ───────────────────────────────────────────────────────
@@ -1570,13 +1579,13 @@ export default function Home() {
     const STRATEGIC_KEYWORDS = ['pipeline', 'sanctions', 'treaty', 'oil price', 'production cut', 'uranium', 'iaea', 'veto', 'blockade'];
     const SOURCE_WEIGHTS: Record<string, number> = { 'gdelt': 5, 'osint': 8, 'gcaptain': 6, 'timesofisrael': 2, 'aljazeera': 2 };
 
-    // 1. Gather candidates (last 48 hours for the Brief)
+    // 1. Gather candidates (last 12 hours for the Brief — keeps it "live")
     const now = Date.now();
-    const TWO_DAYS = 48 * 3600_000;
+    const BRIEF_WINDOW = 12 * 3600_000;
     
     // 2. Score and Filter
     const scored = items
-      .filter(item => (now - new Date(item.pubDate).getTime()) < TWO_DAYS)
+      .filter(item => (now - new Date(item.pubDate).getTime()) < BRIEF_WINDOW)
       .map(item => {
         let score = 0;
         const lowTitle = item.title.toLowerCase();
@@ -1590,13 +1599,13 @@ export default function Home() {
         if (CRITICAL_KEYWORDS.some(kw => lowTitle.includes(kw))) score += 12;
         if (STRATEGIC_KEYWORDS.some(kw => lowTitle.includes(kw))) score += 7;
 
-        // Recency Decay: Max +10 for new items, decays linearly over 48h
+        // Recency Decay: steep exponential — items lose half their bonus every 2h
         const hoursOld = (now - new Date(item.pubDate).getTime()) / 3600_000;
-        score += Math.max(0, 10 - (hoursOld / 4.8));
+        score += 15 * Math.exp(-hoursOld / 2.5);
 
         return { ...item, intensityScore: score };
       })
-      .filter(item => item.intensityScore > 8)
+      .filter(item => item.intensityScore > 10)
       .sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
 
     // 3. Simple Deduplication (KeySet approach)
@@ -1625,7 +1634,7 @@ export default function Home() {
         description: item.title
       };
     });
-  }, [items]);
+  }, [items, _timeTick]);
 
   const toggleSource = useCallback((id: string) => {
     setActiveSources(prev => {
@@ -1713,8 +1722,9 @@ export default function Home() {
   }, []);
 
   const filteredBySource = useMemo(() => {
+    // Pass 1: URL / exact-key dedup
     const seen = new Set<string>();
-    return items.filter(i => {
+    const urlDeduped = items.filter((i: FeedItem) => {
       if (!activeSources.has(i.sourceId)) return false;
       const k = (i.link && i.link !== '#' && i.link.startsWith('http'))
         ? i.link
@@ -1723,6 +1733,33 @@ export default function Home() {
       seen.add(k);
       return true;
     });
+
+    // Pass 2: Title-similarity dedup — collapse near-duplicate headlines
+    // within a 6h window, keeping the version from the highest-trust source.
+    const SIM_THRESHOLD = 0.65;
+    const SIM_WINDOW_MS = 6 * 3600_000;
+    const keySets = urlDeduped.map((i: FeedItem) => titleToKeySet(i.title));
+    const dropped = new Set<number>();
+
+    for (let i = 0; i < urlDeduped.length; i++) {
+      if (dropped.has(i)) continue;
+      const timeI = new Date(urlDeduped[i].pubDate).getTime();
+      for (let j = i + 1; j < urlDeduped.length; j++) {
+        if (dropped.has(j)) continue;
+        const timeJ = new Date(urlDeduped[j].pubDate).getTime();
+        if (Math.abs(timeI - timeJ) > SIM_WINDOW_MS) continue;
+        const sim = jaccardSimilarity(keySets[i], keySets[j]);
+        if (sim >= SIM_THRESHOLD) {
+          // Keep the higher-trust source, drop the other
+          const trustI = SOURCE_TRUST[urlDeduped[i].sourceId.toLowerCase()] ?? 0.5;
+          const trustJ = SOURCE_TRUST[urlDeduped[j].sourceId.toLowerCase()] ?? 0.5;
+          dropped.add(trustI >= trustJ ? j : i);
+          if (dropped.has(i)) break; // i was dropped, stop comparing
+        }
+      }
+    }
+
+    return urlDeduped.filter((_: FeedItem, idx: number) => !dropped.has(idx));
   }, [items, activeSources]);
 
   const filteredByLens = useMemo(
@@ -1744,7 +1781,12 @@ export default function Home() {
   );
 
   const visibleItems = useMemo(() => {
-  let filtered = filteredByRegion.filter(i => itemMatchesSearch(i, debouncedSearch));
+  // 24h hard cutoff — keeps the feed fresh; older items still available via clusters
+  const MAX_AGE_MS = 24 * 3600_000;
+  const cutoff = Date.now() - MAX_AGE_MS;
+  let filtered = filteredByRegion
+    .filter(i => new Date(i.pubDate).getTime() > cutoff)
+    .filter(i => itemMatchesSearch(i, debouncedSearch));
   // Apply active alert profile if set
   if (activeAlertProfile) {
     const profile = alertProfiles.find(p => p.id === activeAlertProfile);

@@ -86,28 +86,54 @@ const BASE_HEADERS = {
 
 // ── SOURCE TRUST MAP ───────────────────────────────────────────────────────
 export const SOURCE_TRUST: Record<string, number> = {
-  // High-tier: established wires, state agencies, major outlets
-  reuters: 1.0,
-  ap: 1.0,
-  bloomberg: 0.95,
-  ft: 0.95,
-  wsj: 0.92,
-  bbc: 0.90,
-  aljazeera: 0.88,
-  timesofisrael: 0.85,
-  tass: 0.84,
-  xinhua: 0.84,
-  // Mid-tier: regional specialists, OSINT aggregators
-  gdelt: 0.78,
-  gcaptain: 0.76,
-  acled: 0.75,
-  meir: 0.73,
-  irna: 0.71,
-  tasnim: 0.70,
-  // Lower-tier: opinion-heavy, tabloid, or less vetted
-  presstv: 0.60,
-  fars: 0.58,
-  // Default fallback for unknown sources
+  // ── High-tier: wires, state agencies, major outlets ─────────────────────
+  reuters: 1.0, 'reuters-markets': 0.98, apnews: 1.0,
+  bbc: 0.92, guardian: 0.90, aljazeera: 0.88,
+  foreignpolicy: 0.88, breakingdefense: 0.85,
+  // ── Levant — Israel ─────────────────────────────────────────────────────
+  timesofisrael: 0.85, jpost: 0.82, ynetnews: 0.80, haaretz: 0.87, plus972: 0.75,
+  // ── Levant — Palestine / Gaza ───────────────────────────────────────────
+  wafa: 0.70, palchronicle: 0.68, electronicintifada: 0.65, mondoweiss: 0.67,
+  // ── Levant — Lebanon ────────────────────────────────────────────────────
+  lorienttoday: 0.78, naharnet: 0.72, 'nna-lebanon': 0.70,
+  // ── Iranian / Iran-adjacent ─────────────────────────────────────────────
+  mehr: 0.68, financialtribune: 0.66, tasnim: 0.65,
+  radiofarda: 0.78, iranwire: 0.74, iranintl: 0.76,
+  // ── Gulf / MENA ─────────────────────────────────────────────────────────
+  arabnews: 0.80, gulfnews: 0.78, thenational: 0.82,
+  middleeasteye: 0.76, rudaw: 0.72, alarabiya: 0.80, aawsat: 0.78,
+  // ── South Asia ──────────────────────────────────────────────────────────
+  dawn: 0.84, samaa: 0.72, ary: 0.70, geo: 0.72, thenews: 0.74, expresstribune: 0.73,
+  tolonews: 0.72, pajhwok: 0.70, khaama: 0.68, theprint: 0.78,
+  // ── Analysis / Think-tanks ──────────────────────────────────────────────
+  warontherocks: 0.88, mei: 0.86, crisisgroup: 0.90,
+  atlanticcouncil: 0.85, almonitor: 0.84, 'resp-statecraft': 0.82, thecradle: 0.65,
+  // ── OSINT / Independent ─────────────────────────────────────────────────
+  dropsite: 0.72, bellingcat: 0.88, theintercept: 0.82, propublica: 0.90,
+  antiwar: 0.60, middleeastmonitor: 0.68, mintpress: 0.58,
+  // ── Global Markets & Logistics ──────────────────────────────────────────
+  oilprice: 0.76, gcaptain: 0.78, eurasiareview: 0.72,
+  naturalgasworld: 0.74, energymonitor: 0.74,
+  zerohedge: 0.55, 'zerohedge-geo': 0.55,
+  // ── GDELT ───────────────────────────────────────────────────────────────
+  'gdelt-iran-conflict': 0.72, 'gdelt-iran-nuclear': 0.72, 'gdelt-proxies': 0.72,
+  'gdelt-gaza': 0.72, 'gdelt-lebanon': 0.72, 'gdelt-hormuz': 0.72,
+  'gdelt-afghanistan': 0.72, 'gdelt-pakistan': 0.72,
+  gdelt: 0.72, acled: 0.75,
+  // ── UN / Humanitarian ───────────────────────────────────────────────────
+  'un-news-mideast': 0.90, unrwa: 0.85, 'unsc-press': 0.92,
+  'reliefweb-afghanistan': 0.85, 'reliefweb-iran': 0.85,
+  'reliefweb-palestine': 0.85, 'reliefweb-lebanon': 0.85, 'reliefweb-mideast': 0.85,
+  // ── Wikinews / OSINT tracking ───────────────────────────────────────────
+  wikinews: 0.65, 'liveleak-osint': 0.62,
+  // ── China ───────────────────────────────────────────────────────────────
+  xinhua: 0.78, globaltimes: 0.60, scmp: 0.84, rfa: 0.76,
+  caixin: 0.80, sixthtone: 0.74, asiatimes: 0.76,
+  // ── Russia ──────────────────────────────────────────────────────────────
+  tass: 0.75, rtnews: 0.55, sputnik: 0.52, moscowtimes: 0.82,
+  // ── Legacy / fallback ───────────────────────────────────────────────────
+  bloomberg: 0.95, ft: 0.95, wsj: 0.92,
+  meir: 0.73, irna: 0.71, presstv: 0.60, fars: 0.58,
 };
 
 // ── WEIGHTED KEYWORDS & PHRASES ───────────────────────────────────────────────
@@ -638,5 +664,24 @@ export async function fetchAllFeeds(sources: Parameters<typeof fetchFeed>[0][]):
     }
   }
 
-  return { items: allItems, health: allHealth };
+  // ── Server-side URL dedup ────────────────────────────────────────────────
+  // GDELT queries overlap heavily (e.g. "Iran conflict" and "Iran nuclear"
+  // both return the same article). Dedup by URL before sending to clients.
+  const seenUrls = new Set<string>();
+  const dedupedItems: FeedItem[] = [];
+  for (const item of allItems) {
+    const key = item.link && item.link.startsWith('http') ? item.link : `${item.sourceId}::${item.title}`;
+    if (seenUrls.has(key)) continue;
+    seenUrls.add(key);
+    dedupedItems.push(item);
+  }
+
+  // ── Cross-source novelty penalty (post-merge) ────────────────────────────
+  // Now that all sources are merged, recompute novelty so duplicates across
+  // sources are properly penalised.
+  for (const item of dedupedItems) {
+    item.noveltyPenalty = computeNoveltyPenalty(item, dedupedItems);
+  }
+
+  return { items: dedupedItems, health: allHealth };
 }
