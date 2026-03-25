@@ -1597,7 +1597,7 @@ export default function Home() {
         return { ...item, intensityScore: score };
       })
       .filter(item => item.intensityScore > 8)
-      .sort((a, b) => b.intensityScore - a.intensityScore);
+      .sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
 
     // 3. Simple Deduplication (KeySet approach)
     const seenSigs = new Set<string>();
