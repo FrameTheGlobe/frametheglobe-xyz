@@ -44,8 +44,8 @@ const flatColor = '#7f8c8d';
 const CHART_SYMBOLS = [
   { id: 'gold',     tv: 'AMEX:GLD',  name: 'Gold (GLD ETF)',          color: '#f1c40f' },
   { id: 'silver',   tv: 'AMEX:SLV',  name: 'Silver (SLV ETF)',        color: '#bdc3c7' },
-  { id: 'platinum', tv: 'NYSE:PPLT', name: 'Platinum (PPLT ETF)',      color: '#3498db' },
-  { id: 'palladium',tv: 'NYSE:PALL', name: 'Palladium (PALL ETF)',     color: '#9b59b6' },
+  { id: 'platinum', tv: 'AMEX:PPLT', name: 'Platinum (PPLT ETF)',      color: '#3498db' },
+  { id: 'palladium',tv: 'AMEX:PALL', name: 'Palladium (PALL ETF)',     color: '#9b59b6' },
 ];
 
 const HORMUZ_IMPACTS = [

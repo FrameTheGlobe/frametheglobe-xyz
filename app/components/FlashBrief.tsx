@@ -38,16 +38,22 @@ export default function FlashBrief({ items }: Props) {
   const [collapsed,   setCollapsed]   = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
 
+  // Keep a ref so load() can always access the latest items without
+  // being recreated every time the feed updates (which caused infinite regen).
+  const itemsRef = useRef<FeedItem[]>(items);
+  useEffect(() => { itemsRef.current = items; }, [items]);
+
   const briefText = useTypewriter(data?.brief ?? '', 12);
 
   const load = useCallback(async (force = false) => {
-    if (!items.length) return;
+    const current = itemsRef.current;
+    if (!current.length) return;
     setLoading(true);
     try {
       const res = await fetch('/api/flash-brief', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: items.slice(0, 20), forceRefresh: force }),
+        body: JSON.stringify({ items: current.slice(0, 20), forceRefresh: force }),
         cache: 'no-store',
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -58,9 +64,17 @@ export default function FlashBrief({ items }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [items]);
+  }, []); // stable — no items dependency
 
-  useEffect(() => { if (items.length > 0) load(); }, [load, items.length]);
+  // Load once on mount (when items first arrive), then hourly.
+  const hasLoadedRef = useRef(false);
+  useEffect(() => {
+    if (items.length > 0 && !hasLoadedRef.current) {
+      hasLoadedRef.current = true;
+      load();
+    }
+  }, [items.length, load]);
+
   useEffect(() => {
     const id = setInterval(() => load(), 60 * 60 * 1000);
     return () => clearInterval(id);
@@ -150,11 +164,9 @@ export default function FlashBrief({ items }: Props) {
       {!collapsed && (
         <div style={{
           padding: '14px 16px',
-          height: 256,
-          overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'space-between',
+          gap: 12,
         }}>
           {loading && !data && (
             <div style={{
@@ -177,15 +189,13 @@ export default function FlashBrief({ items }: Props) {
                 lineHeight: 1.7,
                 margin: 0,
                 fontWeight: 400,
-                flex: 1,
-                overflow: 'hidden',
               }}>
-                {(briefText || '').slice(0, 600) || <span style={{ color: 'var(--text-muted)', opacity: 0.5 }}>▋</span>}
+                {briefText || <span style={{ color: 'var(--text-muted)', opacity: 0.5 }}>▋</span>}
               </p>
 
               {/* Footer */}
               <div style={{
-                display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0,
+                display: 'flex', alignItems: 'center', gap: 12,
                 paddingTop: 10, borderTop: '1px solid var(--border-light)',
               }}>
                 <span style={{
