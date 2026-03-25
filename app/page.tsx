@@ -1804,6 +1804,44 @@ export default function Home() {
     [visibleItems, pinnedKeys, keyForItem]
   );
 
+  // Detect new coverage for pinned stories: for each pinned item, count how
+  // many other items in the full feed share ≥40% Jaccard title similarity
+  // within 12h — these are "updates" to that pinned story.
+  const pinnedUpdateMap = useMemo(() => {
+    const map = new Map<string, { count: number; latest: FeedItem | null }>();
+    if (pinnedItems.length === 0) return map;
+
+    const pinnedSets = pinnedItems.map(p => ({
+      key: keyForItem(p),
+      keySet: titleToKeySet(p.title),
+      time: new Date(p.pubDate).getTime(),
+    }));
+
+    for (const item of items) {
+      const iKey = keyForItem(item);
+      // Skip if this item is itself pinned
+      if (pinnedKeys.includes(iKey)) continue;
+      const iSet = titleToKeySet(item.title);
+      const iTime = new Date(item.pubDate).getTime();
+
+      for (const p of pinnedSets) {
+        if (Math.abs(iTime - p.time) > 12 * 3600_000) continue;
+        if (jaccardSimilarity(p.keySet, iSet) >= 0.35) {
+          const existing = map.get(p.key);
+          if (!existing) {
+            map.set(p.key, { count: 1, latest: item });
+          } else {
+            existing.count++;
+            if (new Date(item.pubDate).getTime() > new Date(existing.latest!.pubDate).getTime()) {
+              existing.latest = item;
+            }
+          }
+        }
+      }
+    }
+    return map;
+  }, [pinnedItems, items, pinnedKeys, keyForItem]);
+
   const sourceCountMap = useMemo(
     () => items.reduce<Record<string, number>>((acc, i) => {
       acc[i.sourceId] = (acc[i.sourceId] || 0) + 1;
@@ -2484,6 +2522,97 @@ export default function Home() {
               </div>
             )}
           </div>
+
+          {/* ── PINNED INTEL BAR ────────────────────────────────────────── */}
+          {pinnedItems.length > 0 && (
+            <div style={{
+              marginBottom: 8,
+              padding: '10px 16px',
+              borderRadius: 4,
+              border: '1px solid var(--accent-light)',
+              background: 'var(--surface)',
+              position: 'sticky',
+              top: 0,
+              zIndex: 80,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+            }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                marginBottom: pinnedItems.length > 0 ? 8 : 0,
+              }}>
+                <span style={{
+                  fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 900,
+                  color: 'var(--accent)', letterSpacing: '0.1em', textTransform: 'uppercase',
+                }}>
+                  ★ PINNED INTEL ({pinnedItems.length})
+                </span>
+                <button
+                  onClick={() => setPinnedKeys([])}
+                  style={{
+                    fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)',
+                    border: 'none', background: 'transparent', cursor: 'pointer',
+                    textDecoration: 'underline', padding: 0,
+                  }}
+                >
+                  Clear all
+                </button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {pinnedItems.map(item => {
+                  const pKey = keyForItem(item);
+                  const updates = pinnedUpdateMap.get(pKey);
+                  return (
+                    <div key={pKey} style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      padding: '6px 10px', borderRadius: 3,
+                      background: 'var(--bg)',
+                      border: '1px solid var(--border-light)',
+                    }}>
+                      <button
+                        onClick={() => togglePin(item)}
+                        style={{
+                          border: 'none', background: 'transparent', cursor: 'pointer',
+                          fontSize: 13, padding: 0, color: 'var(--accent)', flexShrink: 0,
+                        }}
+                        title="Unpin"
+                      >★</button>
+                      <a
+                        href={item.link || undefined}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          flex: 1, fontSize: 12, fontWeight: 600, lineHeight: 1.3,
+                          color: 'var(--text-primary)', textDecoration: 'none',
+                          fontFamily: 'var(--font-display)',
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {item.title}
+                      </a>
+                      <span style={{
+                        fontFamily: 'var(--font-mono)', fontSize: 9,
+                        color: 'var(--text-muted)', flexShrink: 0,
+                      }}>
+                        {timeAgo(item.pubDate)}
+                      </span>
+                      {updates && updates.count > 0 && (
+                        <span style={{
+                          fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 800,
+                          color: '#fff', background: 'var(--accent)',
+                          padding: '1px 6px', borderRadius: 3, flexShrink: 0,
+                          animation: 'fadeUp 0.3s ease both',
+                        }}
+                        title={updates.latest ? `Latest: ${updates.latest.title}` : undefined}
+                        >
+                          +{updates.count} update{updates.count > 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* ── LOADING screen ─────────────────────────────────────────── */}
           {showLoadingScreen ? (
