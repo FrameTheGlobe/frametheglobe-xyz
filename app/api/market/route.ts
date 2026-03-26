@@ -10,7 +10,45 @@ interface StooqSymbol {
 }
 
 export const runtime = 'nodejs';
-export const revalidate = 60; 
+export const revalidate = 60;
+
+// ── Yahoo Finance live Brent fix ──────────────────────────────────────────────
+// Stooq CB.F returns the previous session's settlement price (stale intraday).
+// The live price comes from the specific NYMEX front-month contract e.g. BZK26.NYM.
+// We compute the symbol dynamically so it auto-rolls each month.
+function getBrentFrontMonthSymbol(): string {
+  // Futures month codes: F=Jan G=Feb H=Mar J=Apr K=May M=Jun N=Jul Q=Aug U=Sep V=Oct X=Nov Z=Dec
+  const CODES = 'FGHJKMNQUVXZ';
+  const now   = new Date();
+  const month = now.getMonth();   // 0-indexed
+  const day   = now.getDate();
+  const year  = now.getFullYear();
+  // Crude rolls ~20th of the month; after rollover the active contract is +2 months out
+  const offset         = day >= 20 ? 2 : 1;
+  const fmIndex        = (month + offset) % 12;
+  const fmYear         = month + offset >= 12 ? year + 1 : year;
+  return `BZ${CODES[fmIndex]}${String(fmYear).slice(-2)}.NYM`;
+}
+
+async function fetchLiveBrent(): Promise<{ price: number; prevClose: number } | null> {
+  try {
+    const sym = getBrentFrontMonthSymbol();
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1m&range=1d`;
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+      next:    { revalidate: 60 },
+    });
+    if (!res.ok) return null;
+    const data  = await res.json();
+    const meta  = data?.chart?.result?.[0]?.meta;
+    const price = meta?.regularMarketPrice as number | undefined;
+    const prev  = meta?.chartPreviousClose as number | undefined;
+    if (!price || price <= 0) return null;
+    return { price, prevClose: prev ?? price };
+  } catch {
+    return null;
+  }
+}
 
 export async function GET() {
   try {
@@ -22,13 +60,17 @@ export async function GET() {
     const symbols = 'cl.f+cb.f+ng.f+rb.f+ho.f+ux.f+tg.f+lu.f+lf.f+uso.us';
     const url = `https://stooq.com/q/l/?s=${symbols}&f=sd2t2ohlcv&h&e=json`;
 
-    const res = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'application/json',
-      },
-      next: { revalidate: 60 }
-    });
+    // Fetch Stooq (all symbols) and live Brent (Yahoo Finance) in parallel
+    const [res, liveBrent] = await Promise.all([
+      fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'application/json',
+        },
+        next: { revalidate: 60 },
+      }),
+      fetchLiveBrent(),
+    ]);
 
     if (!res.ok) {
       throw new Error(`Stooq responded with ${res.status}`);
@@ -71,6 +113,20 @@ export async function GET() {
         currency: 'USD'
       };
     });
+
+    // ── Override stale Brent with live Yahoo Finance price ─────────────────
+    // Stooq CB.F returns the previous session's settlement; Yahoo Finance's
+    // specific NYMEX front-month contract (e.g. BZK26.NYM) is live intraday.
+    if (liveBrent) {
+      const brentEntry = mapped.find((m: any) => m.symbol === 'CB.F');
+      if (brentEntry) {
+        const change        = liveBrent.price - liveBrent.prevClose;
+        const changePercent = (change / liveBrent.prevClose) * 100;
+        brentEntry.price         = liveBrent.price;
+        brentEntry.change        = change;
+        brentEntry.changePercent = changePercent;
+      }
+    }
 
     // ── Synthetic Regional Grades ──────────────────────────────────────────
     // OTC grades like WCS, Urals, and Dubai are often priced as spreads 
