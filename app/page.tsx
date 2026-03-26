@@ -19,6 +19,7 @@ import CompactHeader  from './components/CompactHeader';
 import LiveFeeds      from './components/LiveFeeds';
 import AIIntelPanel   from './components/AIIntelPanel';
 import MissileIntel   from './components/MissileIntel';
+import PolymarketBoard from './components/PolymarketBoard';
 
 // MapView uses Leaflet (browser-only) — load with no SSR
 const MapView = dynamic(() => import('./components/MapView'), { ssr: false });
@@ -2051,6 +2052,7 @@ export default function Home() {
         <aside className={`sidebar-col${sidebarOpen ? ' open' : ''}`}>
           <div style={{ position: 'sticky', top: 80, display: 'flex', flexDirection: 'column', gap: 14 }}>
             {!loading && <LiveVideoWidget />}
+            {!loading && <PolymarketBoard />}
             <SidebarPanel
               search={search}
               onSearch={setSearch}

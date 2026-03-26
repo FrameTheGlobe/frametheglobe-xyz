@@ -6,7 +6,6 @@ import { SOURCES } from '@/lib/sources';
 import IranOilBoard from './IranOilBoard';
 import PreciousMetalsBoard from './PreciousMetalsBoard';
 import HormuzCommoditiesBoard from './HormuzCommoditiesBoard';
-import PolymarketBoard from './PolymarketBoard';
 import LiveFeeds from './LiveFeeds';
 import AIIntelPanel from './AIIntelPanel';
 import FlashBrief from './FlashBrief';
@@ -433,8 +432,7 @@ export default function IranWarSection({ items, sourceCountMap, brief, pinnedKey
           {/* ── Live Feeds ─────────────────────────────────────────────── */}
           <LiveFeeds />
 
-          {/* ── Polymarket Prediction Markets ───────────────────────────── */}
-          <PolymarketBoard />
+          {/* PolymarketBoard moved to left sidebar */}
 
           {/* ── AI Intelligence ─────────────────────────────────────────── */}
           <AIIntelPanel items={items} />

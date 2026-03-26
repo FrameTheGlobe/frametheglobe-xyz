@@ -3,65 +3,124 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { PolymarketEntry } from '@/app/api/polymarket/route';
 
-const CATEGORY_COLOR: Record<string, string> = {
+const CAT_COLOR: Record<string, string> = {
   REGIME:   '#e74c3c',
   CONFLICT: '#e67e22',
   NUCLEAR:  '#9b59b6',
 };
 
-const CATEGORY_ICON: Record<string, string> = {
-  REGIME:   '🏛️',
-  CONFLICT: '✈️',
-  NUCLEAR:  '☢️',
+const CAT_ICON: Record<string, string> = {
+  REGIME:   '🏛',
+  CONFLICT: '✈',
+  NUCLEAR:  '☢',
 };
 
-function ProbBar({ yes, category }: { yes: number; category: string }) {
-  const pct   = Math.round(yes * 100);
-  const color = CATEGORY_COLOR[category] ?? '#3498db';
-  const risk  = pct >= 60 ? 'CRITICAL' : pct >= 30 ? 'ELEVATED' : pct >= 10 ? 'MODERATE' : 'LOW';
-  const riskColor = pct >= 60 ? '#e74c3c' : pct >= 30 ? '#e67e22' : pct >= 10 ? '#f1c40f' : '#2ecc71';
+function riskLabel(pct: number) {
+  if (pct >= 60) return { label: 'CRIT',  color: '#e74c3c' };
+  if (pct >= 30) return { label: 'HIGH',  color: '#e67e22' };
+  if (pct >= 10) return { label: 'MOD',   color: '#f1c40f' };
+  return               { label: 'LOW',   color: '#2ecc71' };
+}
+
+function MarketRow({ m }: { m: PolymarketEntry }) {
+  const pct   = Math.round(m.yesPrice * 100);
+  const color = CAT_COLOR[m.category] ?? '#3498db';
+  const risk  = riskLabel(pct);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{
-          fontFamily:    'var(--font-mono)',
-          fontSize:      22,
-          fontWeight:    700,
-          color,
-          letterSpacing: '-0.02em',
-        }}>
-          {pct}%
-        </span>
-        <span style={{
-          fontFamily:    'var(--font-mono)',
-          fontSize:      9,
-          color:         riskColor,
-          letterSpacing: '0.1em',
-          fontWeight:    600,
-          padding:       '2px 6px',
-          border:        `1px solid ${riskColor}`,
-          borderRadius:  3,
-        }}>
-          {risk}
-        </span>
-      </div>
+    <a
+      href={m.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={m.label}
+      style={{
+        display:        'block',
+        textDecoration: 'none',
+        padding:        '7px 10px',
+        borderLeft:     `2px solid ${color}`,
+        background:     'var(--surface)',
+        borderRadius:   '0 3px 3px 0',
+        marginBottom:   4,
+        transition:     'background 0.15s',
+      }}
+      onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-hover)')}
+      onMouseLeave={e => (e.currentTarget.style.background = 'var(--surface)')}
+    >
+      {/* Label row */}
       <div style={{
-        height:       6,
+        display:        'flex',
+        alignItems:     'flex-start',
+        justifyContent: 'space-between',
+        gap:            6,
+        marginBottom:   5,
+      }}>
+        <span style={{
+          fontSize:   10,
+          color:      'var(--text-primary)',
+          lineHeight: 1.35,
+          fontFamily: 'var(--font-body)',
+          fontWeight: 500,
+          flex:       1,
+          minWidth:   0,
+        }}>
+          {m.label}
+        </span>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, flexShrink: 0 }}>
+          <span style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize:   13,
+            fontWeight: 700,
+            color,
+            letterSpacing: '-0.01em',
+          }}>
+            {pct}%
+          </span>
+          <span style={{
+            fontFamily:  'var(--font-mono)',
+            fontSize:    7,
+            color:       risk.color,
+            border:      `1px solid ${risk.color}`,
+            borderRadius: 2,
+            padding:     '0px 3px',
+            letterSpacing: '0.05em',
+          }}>
+            {risk.label}
+          </span>
+        </div>
+      </div>
+
+      {/* Thin probability bar */}
+      <div style={{
+        height:       3,
         background:   'var(--border-light)',
-        borderRadius: 3,
+        borderRadius: 2,
         overflow:     'hidden',
       }}>
         <div style={{
           width:        `${pct}%`,
           height:       '100%',
           background:   color,
-          borderRadius: 3,
-          transition:   'width 0.6s ease',
-          boxShadow:    pct > 20 ? `0 0 8px ${color}60` : 'none',
+          borderRadius: 2,
+          transition:   'width 0.5s ease',
+          boxShadow:    pct > 20 ? `0 0 4px ${color}60` : 'none',
         }} />
       </div>
-    </div>
+
+      {/* Volume footer */}
+      <div style={{
+        marginTop:  4,
+        fontSize:   8,
+        color:      'var(--text-muted)',
+        fontFamily: 'var(--font-mono)',
+        opacity:    0.7,
+      }}>
+        vol {m.volume >= 1_000_000
+          ? `$${(m.volume / 1_000_000).toFixed(1)}M`
+          : m.volume >= 1_000
+            ? `$${(m.volume / 1_000).toFixed(0)}K`
+            : `$${m.volume.toFixed(0)}`}
+      </div>
+    </a>
   );
 }
 
@@ -70,15 +129,22 @@ export default function PolymarketBoard() {
   const [loading,   setLoading]   = useState(true);
   const [collapsed, setCollapsed] = useState(false);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
+  const [error,     setError]     = useState(false);
 
   const load = useCallback(async () => {
+    setError(false);
     try {
       const res = await fetch('/api/polymarket', { cache: 'no-store' });
-      if (!res.ok) return;
-      setData(await res.json());
-      setUpdatedAt(new Date());
+      if (!res.ok) { setError(true); return; }
+      const json = await res.json();
+      if (Array.isArray(json) && json.length > 0) {
+        setData(json);
+        setUpdatedAt(new Date());
+      } else {
+        setError(true);
+      }
     } catch {
-      // silent fail
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -86,7 +152,7 @@ export default function PolymarketBoard() {
 
   useEffect(() => {
     load();
-    const id = setInterval(load, 5 * 60 * 1000); // refresh every 5 min
+    const id = setInterval(load, 5 * 60 * 1000);
     return () => clearInterval(id);
   }, [load]);
 
@@ -95,190 +161,153 @@ export default function PolymarketBoard() {
     return acc;
   }, {});
 
-  const categoryOrder = ['REGIME', 'CONFLICT', 'NUCLEAR'];
+  const categoryOrder = (['NUCLEAR', 'REGIME', 'CONFLICT'] as const).filter(c => byCategory[c]?.length);
 
   return (
-    <section style={{
-      background:   'var(--bg)',
+    <div style={{
       border:       '1px solid var(--border-light)',
       borderTop:    '2px solid #9b59b6',
-      borderRadius: '0 0 6px 6px',
-      marginBottom: 12,
+      borderRadius: '0 0 5px 5px',
+      background:   'var(--bg)',
       fontFamily:   'var(--font-mono)',
+      overflow:     'hidden',
     }}>
-      {/* ── Header ─────────────────────────────────────────────────────── */}
-      <div style={{
-        display:        'flex',
-        alignItems:     'center',
-        justifyContent: 'space-between',
-        padding:        '10px 16px',
-        borderBottom:   collapsed ? 'none' : '1px solid var(--border-light)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      {/* Header */}
+      <button
+        onClick={() => setCollapsed(c => !c)}
+        style={{
+          width:          '100%',
+          display:        'flex',
+          alignItems:     'center',
+          justifyContent: 'space-between',
+          padding:        '8px 10px',
+          background:     'none',
+          border:         'none',
+          cursor:         'pointer',
+          borderBottom:   collapsed ? 'none' : '1px solid var(--border-light)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={{
-            width: 8, height: 8, borderRadius: '50%',
+            width:     6, height: 6, borderRadius: '50%',
             background: '#9b59b6',
-            boxShadow:  '0 0 6px #9b59b6',
-            display:    'inline-block',
+            boxShadow:  '0 0 5px #9b59b6',
+            flexShrink: 0,
           }} />
-          <span style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.12em', fontWeight: 600 }}>
-            PREDICTION MARKETS · IRAN WAR THEATER
+          <span style={{ fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.1em', fontWeight: 700 }}>
+            PRED·MARKETS
           </span>
           <span style={{
-            fontSize:    9,
-            color:       '#9b59b6',
-            letterSpacing: '0.08em',
-            padding:     '1px 6px',
-            border:      '1px solid #9b59b6',
-            borderRadius: 3,
+            fontSize:     8,
+            color:        '#9b59b6',
+            border:       '1px solid #9b59b6',
+            borderRadius: 2,
+            padding:      '0 4px',
+            letterSpacing: '0.06em',
           }}>
-            POLYMARKET
+            PM
           </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {updatedAt && (
-            <span style={{ fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.06em' }}>
-              UPDATED {updatedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            <span style={{ fontSize: 7, color: 'var(--text-muted)', opacity: 0.7 }}>
+              {updatedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
           )}
-          <button
-            onClick={() => setCollapsed(c => !c)}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: 'var(--text-muted)', fontSize: 11, padding: '2px 6px',
-            }}
-          >
+          <span style={{ fontSize: 9, color: 'var(--text-muted)' }}>
             {collapsed ? '▼' : '▲'}
-          </button>
+          </span>
         </div>
-      </div>
+      </button>
 
-      {/* ── Body ───────────────────────────────────────────────────────── */}
       {!collapsed && (
-        <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ padding: '8px 8px 10px' }}>
 
+          {/* Loading state */}
           {loading && (
-            <div style={{ color: 'var(--text-muted)', fontSize: 10, letterSpacing: '0.08em' }}>
-              Loading prediction market data…
+            <div style={{
+              padding:    '12px 0',
+              textAlign:  'center',
+              fontSize:   9,
+              color:      'var(--text-muted)',
+              letterSpacing: '0.08em',
+            }}>
+              FETCHING MARKETS…
             </div>
           )}
 
-          {!loading && categoryOrder.map(cat => {
-            const markets = byCategory[cat];
-            if (!markets?.length) return null;
-            const color = CATEGORY_COLOR[cat];
-            const icon  = CATEGORY_ICON[cat];
+          {/* Error state */}
+          {!loading && error && (
+            <div style={{
+              padding:    '10px 8px',
+              fontSize:   9,
+              color:      'var(--text-muted)',
+              lineHeight: 1.5,
+              letterSpacing: '0.06em',
+              textAlign:  'center',
+            }}>
+              <div style={{ marginBottom: 6, opacity: 0.7 }}>NO LIVE MARKETS</div>
+              <button
+                onClick={load}
+                style={{
+                  fontSize:     8,
+                  color:        '#9b59b6',
+                  border:       '1px solid #9b59b6',
+                  borderRadius: 3,
+                  padding:      '2px 8px',
+                  background:   'none',
+                  cursor:       'pointer',
+                  letterSpacing: '0.05em',
+                }}
+              >
+                RETRY
+              </button>
+            </div>
+          )}
 
-            return (
-              <div key={cat}>
-                {/* Category label */}
-                <div style={{
-                  display:      'flex',
-                  alignItems:   'center',
-                  gap:          6,
-                  marginBottom: 10,
+          {/* Markets grouped by category */}
+          {!loading && !error && categoryOrder.map(cat => (
+            <div key={cat} style={{ marginBottom: 10 }}>
+              <div style={{
+                display:      'flex',
+                alignItems:   'center',
+                gap:          5,
+                marginBottom: 5,
+                paddingBottom: 3,
+                borderBottom: `1px solid ${CAT_COLOR[cat]}25`,
+              }}>
+                <span style={{ fontSize: 9 }}>{CAT_ICON[cat]}</span>
+                <span style={{
+                  fontSize:      8,
+                  color:         CAT_COLOR[cat],
+                  letterSpacing: '0.1em',
+                  fontWeight:    700,
                 }}>
-                  <span style={{ fontSize: 12 }}>{icon}</span>
-                  <span style={{
-                    fontSize:      9,
-                    color,
-                    letterSpacing: '0.12em',
-                    fontWeight:    700,
-                  }}>
-                    {cat}
-                  </span>
-                  <div style={{ flex: 1, height: 1, background: `${color}30` }} />
-                </div>
-
-                {/* Market cards */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {markets.map(m => (
-                    <div key={m.conditionId} style={{
-                      background:   'var(--surface)',
-                      border:       '1px solid var(--border-light)',
-                      borderLeft:   `3px solid ${CATEGORY_COLOR[m.category]}`,
-                      borderRadius: '0 4px 4px 0',
-                      padding:      '10px 12px',
-                    }}>
-                      {/* Question */}
-                      <div style={{
-                        fontSize:     12,
-                        color:        'var(--text-primary)',
-                        lineHeight:   1.4,
-                        marginBottom: 8,
-                        fontFamily:   'var(--font-body)',
-                        fontWeight:   500,
-                      }}>
-                        {m.label}
-                      </div>
-
-                      {/* Probability bar */}
-                      <ProbBar yes={m.yesPrice} category={m.category} />
-
-                      {/* Footer */}
-                      <div style={{
-                        display:       'flex',
-                        alignItems:    'center',
-                        justifyContent:'space-between',
-                        marginTop:     8,
-                      }}>
-                        <span style={{
-                          fontSize:      9,
-                          color:         'var(--text-muted)',
-                          letterSpacing: '0.06em',
-                        }}>
-                          VOL ${m.volume >= 1_000_000
-                            ? `${(m.volume / 1_000_000).toFixed(1)}M`
-                            : m.volume >= 1_000
-                              ? `${(m.volume / 1_000).toFixed(0)}K`
-                              : m.volume.toFixed(0)} USDC
-                        </span>
-                        <a
-                          href={m.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            fontSize:      9,
-                            color:         '#9b59b6',
-                            letterSpacing: '0.06em',
-                            textDecoration:'none',
-                          }}
-                        >
-                          POLYMARKET ↗
-                        </a>
-                      </div>
-
-                      {/* Description */}
-                      <div style={{
-                        fontSize:   10,
-                        color:      'var(--text-muted)',
-                        lineHeight: 1.5,
-                        marginTop:  6,
-                        fontFamily: 'var(--font-body)',
-                        opacity:    0.75,
-                      }}>
-                        {m.description}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                  {cat}
+                </span>
+                <span style={{ fontSize: 7, color: 'var(--text-muted)', marginLeft: 'auto' }}>
+                  {byCategory[cat].length}
+                </span>
               </div>
-            );
-          })}
+              {byCategory[cat].map(m => <MarketRow key={m.conditionId} m={m} />)}
+            </div>
+          ))}
 
           {/* Attribution */}
-          <div style={{
-            fontSize:      9,
-            color:         'var(--text-muted)',
-            letterSpacing: '0.05em',
-            opacity:       0.6,
-            borderTop:     '1px solid var(--border-light)',
-            paddingTop:    8,
-          }}>
-            Data via Polymarket — decentralized prediction markets · ~5 min refresh · Not financial advice
-          </div>
+          {!loading && !error && data.length > 0 && (
+            <div style={{
+              fontSize:   7,
+              color:      'var(--text-muted)',
+              opacity:    0.5,
+              paddingTop: 4,
+              borderTop:  '1px solid var(--border-light)',
+              letterSpacing: '0.04em',
+            }}>
+              via Polymarket · ~5 min · not financial advice
+            </div>
+          )}
         </div>
       )}
-    </section>
+    </div>
   );
 }
