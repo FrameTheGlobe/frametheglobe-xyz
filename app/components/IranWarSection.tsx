@@ -430,11 +430,11 @@ export default function IranWarSection({ items, sourceCountMap, brief, pinnedKey
           {/* ── Hormuz Agri & Fertilizer Commodity Impact ───────────────── */}
           <HormuzCommoditiesBoard />
 
-          {/* ── Polymarket Prediction Markets ───────────────────────────── */}
-          <PolymarketBoard />
-
           {/* ── Live Feeds ─────────────────────────────────────────────── */}
           <LiveFeeds />
+
+          {/* ── Polymarket Prediction Markets ───────────────────────────── */}
+          <PolymarketBoard />
 
           {/* ── AI Intelligence ─────────────────────────────────────────── */}
           <AIIntelPanel items={items} />
