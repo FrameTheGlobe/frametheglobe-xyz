@@ -223,9 +223,12 @@ interface Props {
   items:          FeedItem[];
   sourceCountMap: Record<string, number>;
   brief?:         React.ReactNode;
+  pinnedKeys:     string[];
+  onTogglePin:    (item: FeedItem) => void;
+  keyForItem:     (item: FeedItem) => string;
 }
 
-export default function IranWarSection({ items, sourceCountMap, brief }: Props) {
+export default function IranWarSection({ items, sourceCountMap, brief, pinnedKeys, onTogglePin, keyForItem }: Props) {
   const [collapsed,  setCollapsed]  = useState(false);
   const [iranLens,   setIranLens]   = useState<IranLens>('all');
   const [showAll,    setShowAll]    = useState(false);
@@ -951,6 +954,23 @@ export default function IranWarSection({ items, sourceCountMap, brief }: Props) 
                         letterSpacing: '0.03em',
                         flexWrap:   'wrap',
                       }}>
+                        {(() => {
+                          const isPinned = pinnedKeys.includes(keyForItem(item));
+                          return (
+                            <button
+                              onClick={() => onTogglePin(item)}
+                              style={{
+                                border: 'none', background: 'transparent',
+                                cursor: 'pointer', fontSize: 13, padding: 0,
+                                color: isPinned ? 'var(--accent)' : 'var(--text-muted)',
+                                transition: 'color 0.1s',
+                              }}
+                            >
+                              {isPinned ? '★ Unpin' : '☆ Pin'}
+                            </button>
+                          );
+                        })()}
+                        <span style={{ color: 'var(--border-light)' }}>/</span>
                         <span style={{ color: item.sourceColor || 'var(--accent)', fontWeight: 600 }}>
                           {item.sourceName}
                         </span>

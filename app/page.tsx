@@ -2251,6 +2251,9 @@ export default function Home() {
             items={items} 
             sourceCountMap={sourceCountMap} 
             brief={<IntelTimeline events={intelEvents} />}
+            pinnedKeys={pinnedKeys}
+            onTogglePin={togglePin}
+            keyForItem={keyForItem}
           />
 
           {/* ── Widgets row (TopStorylines, RapidResponse, Macro, Oil) ── */}
