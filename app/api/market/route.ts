@@ -95,23 +95,36 @@ export async function GET() {
       { yf: 'USO',     out: 'USO.US', name: 'US Oil Fund (USO)'},
     ];
 
-    // Stooq only — Yahoo Finance returns zero / no data for these
-    const STOOQ_ONLY: { stooq: string; name: string }[] = [
-      { stooq: 'UX.F', name: 'Uranium (UX)'    },
-      { stooq: 'TG.F', name: 'Dutch TTF Gas'   },
-      { stooq: 'LU.F', name: 'Rotterdam Coal'  },
-      { stooq: 'LF.F', name: 'Maritime Gasoil' },
+    // All symbols fetched from Stooq as graceful fallback
+    const ALL_STOOQ: { stooq: string; name: string }[] = [
+      { stooq: 'CL.F',   name: 'WTI Crude'         },
+      { stooq: 'CB.F',   name: 'Brent Crude'        },
+      { stooq: 'NG.F',   name: 'Natural Gas'        },
+      { stooq: 'RB.F',   name: 'Gasoline RBOB'      },
+      { stooq: 'HO.F',   name: 'Heating Oil'        },
+      { stooq: 'USO.US', name: 'US Oil Fund (USO)'  },
+      { stooq: 'UX.F',   name: 'Uranium (UX)'       },
+      { stooq: 'TG.F',   name: 'Dutch TTF Gas'      },
+      { stooq: 'LU.F',   name: 'Rotterdam Coal'     },
+      { stooq: 'LF.F',   name: 'Maritime Gasoil'    },
     ];
 
-    // Fire all requests in parallel
+    // Fire Yahoo Finance + full Stooq batch in parallel
     const [yfResults, stooqResults] = await Promise.all([
       Promise.all(YF.map(c => fetchYahoo(c.yf, c.out, c.name))),
-      fetchStooqBatch(STOOQ_ONLY),
+      fetchStooqBatch(ALL_STOOQ),
     ]);
 
+    // Build a Stooq lookup map for O(1) fallback access
+    const stooqMap = new Map<string, Quote>(stooqResults.map(q => [q.symbol, q]));
+
     const mapped: Quote[] = [
-      ...yfResults.filter((q): q is Quote => q !== null),
-      ...stooqResults,
+      // Prefer Yahoo Finance; fall back to Stooq if null
+      ...YF.map((cfg, i) => yfResults[i] ?? stooqMap.get(cfg.out) ?? null)
+           .filter((q): q is Quote => q !== null),
+      // Stooq-only symbols (Yahoo Finance returns zero for these)
+      ...['UX.F', 'TG.F', 'LU.F', 'LF.F']
+           .flatMap(sym => { const q = stooqMap.get(sym); return q ? [q] : []; }),
     ];
 
     // ── Synthetic Regional Grades ──────────────────────────────────────────
