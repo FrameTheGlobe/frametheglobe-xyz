@@ -3,14 +3,15 @@
 import MarketTicker from './MarketTicker';
 
 interface CompactHeaderProps {
-  hasMounted: boolean;
-  loading: boolean;
-  missionTime: string | null;
-  theme: 'light' | 'dark';
-  storyCount: number;
-  sourceCount: number;
-  onThemeToggle: () => void;
-  onRefresh: () => void;
+  hasMounted:     boolean;
+  loading:        boolean;
+  missionTime:    string | null;
+  theme:          'light' | 'dark';
+  storyCount:     number;
+  sourceCount:    number;
+  onThemeToggle:  () => void;
+  onRefresh:      () => void;
+  onBriefing:     () => void;
 }
 
 export default function CompactHeader({ 
@@ -21,7 +22,8 @@ export default function CompactHeader({
   storyCount,
   sourceCount,
   onThemeToggle, 
-  onRefresh 
+  onRefresh,
+  onBriefing,
 }: CompactHeaderProps) {
   return (
     <div className="ftg-compact-header">
@@ -105,6 +107,28 @@ export default function CompactHeader({
         </div>
 
         <div className="ftg-compact-actions">
+          {/* AI Analyst Briefing trigger */}
+          <button
+            onClick={onBriefing}
+            title="Generate AI Analyst Briefing"
+            style={{
+              fontFamily:    'var(--font-mono)',
+              fontSize:      9,
+              fontWeight:    800,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              padding:       '5px 11px',
+              background:    'linear-gradient(135deg, #6d28d9, #9b59b6)',
+              color:         '#fff',
+              border:        'none',
+              borderRadius:  3,
+              cursor:        'pointer',
+              whiteSpace:    'nowrap',
+            }}
+          >
+            ⚡ AI Briefing
+          </button>
+
           <button 
             className="icon-link-ghost" 
             onClick={onThemeToggle} 

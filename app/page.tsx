@@ -19,7 +19,11 @@ import CompactHeader  from './components/CompactHeader';
 import LiveFeeds      from './components/LiveFeeds';
 import AIIntelPanel   from './components/AIIntelPanel';
 import MissileIntel   from './components/MissileIntel';
-import FlashBrief     from './components/FlashBrief';
+import FlashBrief            from './components/FlashBrief';
+import TickerAnalysisDrawer  from './components/TickerAnalysisDrawer';
+import AnalystBriefingModal  from './components/AnalystBriefingModal';
+import { AIAnalysisContext } from './contexts/AIAnalysisContext';
+import type { TickerDrawerData } from './contexts/AIAnalysisContext';
 
 // MapView uses Leaflet (browser-only) — load with no SSR
 const MapView = dynamic(() => import('./components/MapView'), { ssr: false });
@@ -1121,6 +1125,10 @@ export default function Home() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [sidebarOpen, setSidebarOpen]   = useState(false);
 
+  // ── AI features state ──────────────────────────────────────────────────────
+  const [tickerDrawerData, setTickerDrawerData] = useState<TickerDrawerData | null>(null);
+  const [aiModalOpen,      setAiModalOpen]      = useState(false);
+
   // Lock body scroll when the mobile sidebar drawer is open
   useEffect(() => {
     document.body.style.overflow = sidebarOpen ? 'hidden' : '';
@@ -2015,6 +2023,10 @@ export default function Home() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
+    <AIAnalysisContext.Provider value={{
+      openDrawer:  (data) => setTickerDrawerData(data),
+      closeDrawer: ()     => setTickerDrawerData(null),
+    }}>
     <div style={{ minHeight: '100vh', background: 'var(--bg)', position: 'relative' }}>
       {/* Tactical visual layer */}
       <div className="scanline-overlay" />
@@ -2045,6 +2057,7 @@ export default function Home() {
           sourceCount={SOURCES.length}
           onThemeToggle={() => setTheme(ts => ts === 'light' ? 'dark' : 'light')}
           onRefresh={() => fetchNews()}
+          onBriefing={() => setAiModalOpen(true)}
         />
       </header>
 
@@ -3423,6 +3436,17 @@ export default function Home() {
 
       {/* ── Scroll to top ──────────────────────────────────────────────── */}
       <ScrollToTop />
+
+      {/* ── AI Features: Ticker Drawer + Analyst Briefing Modal ─────────── */}
+      <TickerAnalysisDrawer
+        data={tickerDrawerData}
+        onClose={() => setTickerDrawerData(null)}
+      />
+      <AnalystBriefingModal
+        isOpen={aiModalOpen}
+        onClose={() => setAiModalOpen(false)}
+      />
     </div>
+    </AIAnalysisContext.Provider>
   );
 }

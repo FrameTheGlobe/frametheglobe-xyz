@@ -13,8 +13,9 @@
  *  · Wheat/Corn are 30-40% fertilizer cost — any Hormuz closure cascades into food inflation
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useContext } from 'react';
 import { useVisibilityPolling } from '@/lib/use-visibility-polling';
+import { AIAnalysisContext } from '@/app/contexts/AIAnalysisContext';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -159,17 +160,31 @@ function TVMiniChart({
 // ── Price Card ───────────────────────────────────────────────────────────────
 
 function PriceCard({ quote, flashGen }: { quote: AgriQuote; flashGen: number }) {
-  const pc = priceColor(quote.change);
-
-  const decimals = 2;
+  const pc             = priceColor(quote.change);
+  const { openDrawer } = useContext(AIAnalysisContext);
+  const decimals       = 2;
 
   return (
-    <div style={{
-      flex: '1 1 160px',
-      padding: '16px 18px',
-      borderRight: '1px solid var(--border-light)',
-      display: 'flex', flexDirection: 'column', gap: 5,
-    }}>
+    <div
+      className="ticker-cell-clickable"
+      title="Click for AI analysis"
+      onClick={() => openDrawer({
+        symbol:        quote.symbol,
+        name:          quote.name,
+        price:         quote.price,
+        change:        quote.change,
+        changePercent: quote.changePercent,
+        currency:      '$',
+        unit:          quote.unit,
+        category:      'commodities',
+        accentColor:   '#f39c12',
+      })}
+      style={{
+        flex: '1 1 160px',
+        padding: '16px 18px',
+        borderRight: '1px solid var(--border-light)',
+        display: 'flex', flexDirection: 'column', gap: 5,
+      }}>
       <span style={{ fontFamily: mono, fontSize: 11, fontWeight: 700, color: muted, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
         {quote.name}
       </span>

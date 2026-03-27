@@ -15,7 +15,8 @@
  *  · Gulf central banks (UAE, Saudi) absorb gold as petrodollar diversification
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useContext } from 'react';
+import { AIAnalysisContext } from '@/app/contexts/AIAnalysisContext';
 import { useVisibilityPolling } from '@/lib/use-visibility-polling';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -156,15 +157,30 @@ function TVMiniChart({
 // ── Price Card ───────────────────────────────────────────────────────────────
 
 function PriceCard({ quote, flashGen, accentDot }: { quote: MetalQuote; flashGen: number; accentDot?: string }) {
-  const pc = priceColor(quote.change);
+  const pc               = priceColor(quote.change);
+  const { openDrawer }   = useContext(AIAnalysisContext);
 
   return (
-    <div style={{
-      flex: '1 1 170px',
-      padding: '16px 18px',
-      borderRight: '1px solid var(--border-light)',
-      display: 'flex', flexDirection: 'column', gap: 5,
-    }}>
+    <div
+      className="ticker-cell-clickable"
+      title="Click for AI analysis"
+      onClick={() => openDrawer({
+        symbol:        quote.symbol,
+        name:          quote.name,
+        price:         quote.price,
+        change:        quote.change,
+        changePercent: quote.changePercent,
+        currency:      '$',
+        unit:          quote.unit,
+        category:      'metals',
+        accentColor:   accentDot ?? '#d4af37',
+      })}
+      style={{
+        flex: '1 1 170px',
+        padding: '16px 18px',
+        borderRight: '1px solid var(--border-light)',
+        display: 'flex', flexDirection: 'column', gap: 5,
+      }}>
       {accentDot && (
         <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: accentDot, marginBottom: 1 }} />
       )}

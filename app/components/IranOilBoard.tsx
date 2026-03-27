@@ -16,6 +16,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useVisibilityPolling } from '@/lib/use-visibility-polling';
+import { useTickerAnalysis } from '@/app/contexts/AIAnalysisContext';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -185,6 +186,8 @@ export default function IranOilBoard() {
   const wcs    = prices.find(p => p.symbol === 'WCS');
   const uso    = prices.find(p => p.symbol === 'USO.US');
 
+  const { openDrawer } = useTickerAnalysis();
+
   const mono      = 'var(--font-mono)';
   const muted     = 'var(--text-muted)';
   const upColor   = '#27ae60';
@@ -329,12 +332,27 @@ export default function IranOilBoard() {
                            : { sent: 'STABLE', vol: 'LOW' };
 
                 return (
-                  <div key={p.symbol} style={{
-                    padding: '18px',
-                    borderRight:  '1px solid var(--border-light)',
-                    borderBottom: '1px solid var(--border-light)',
-                    display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-                  }}>
+                  <div
+                    key={p.symbol}
+                    className="ticker-cell-clickable"
+                    title="Click for AI analysis"
+                    onClick={() => openDrawer({
+                      symbol:        p.symbol,
+                      name:          p.name,
+                      price:         p.price,
+                      change:        p.change,
+                      changePercent: p.changePercent,
+                      currency:      '$',
+                      unit:          'USD/BBL',
+                      category:      'oil',
+                      accentColor:   'var(--accent)',
+                    })}
+                    style={{
+                      padding: '18px',
+                      borderRight:  '1px solid var(--border-light)',
+                      borderBottom: '1px solid var(--border-light)',
+                      display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                    }}>
                     <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                         <div style={{ fontFamily: mono, fontSize: 11, fontWeight: 700,
