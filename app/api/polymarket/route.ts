@@ -3,129 +3,157 @@ import { NextResponse } from 'next/server';
 export const runtime   = 'nodejs';
 export const revalidate = 300;
 
-export type PolymarketEntry = {
-  conditionId: string;
-  label:       string;
-  category:    'REGIME' | 'CONFLICT' | 'NUCLEAR' | 'DIPLOMACY';
-  yesPrice:    number;
-  noPrice:     number;
-  volume:      number;
-  url:         string;
-  ok:          boolean;
+// ── Public types ──────────────────────────────────────────────────────────────
+export type PolyOutcome = {
+  label:    string;   // groupItemTitle or short question
+  yesPrice: number;   // 0–1
+  volume:   number;   // USDC
+  slug:     string;   // individual market slug → polymarket.com/event/{slug}
 };
 
-// ── Classify market question into a display category ─────────────────────────
-function classify(q: string): PolymarketEntry['category'] {
-  const t = q.toLowerCase();
-  if (/nuclear|nuke|weapon|warhead|enrich|iaea|uranium|plutonium|detona|radiolog/.test(t)) return 'NUCLEAR';
-  if (/regime|supreme leader|khamenei|collapse|coup|overthrow|revolution|reza pahlavi|fall/.test(t)) return 'REGIME';
-  if (/ceasefire|deal|negotiat|sanction|hostage|treaty|peace|agreement|diplomac/.test(t)) return 'DIPLOMACY';
+export type PolymarketEntry = {
+  eventId:    string;
+  eventTitle: string;
+  category:   'REGIME' | 'CONFLICT' | 'NUCLEAR' | 'DIPLOMACY';
+  isBinary:   boolean;          // single YES/NO vs multi-outcome event
+  volume:     number;           // total event volume
+  outcomes:   PolyOutcome[];    // top open sub-markets, sorted by volume
+  url:        string;           // event page
+  ok:         boolean;
+};
+
+// ── Classifiers ───────────────────────────────────────────────────────────────
+function classify(title: string): PolymarketEntry['category'] {
+  const t = title.toLowerCase();
+  if (/nuclear|nuke|weapon|warhead|enrich|iaea|uranium|plutonium|detona/.test(t)) return 'NUCLEAR';
+  if (/regime|supreme leader|khamenei|fall|collapse|coup|overthrow|reza pahlavi|leadership/.test(t)) return 'REGIME';
+  if (/ceasefire|deal|negotiat|hostage|treaty|peace|agreement|end of.*operat|conflict ends/.test(t)) return 'DIPLOMACY';
   return 'CONFLICT';
 }
 
-// ── Must match to be included ─────────────────────────────────────────────────
-const IRAN_RE = /\b(iran|iranian|irgc|khamenei|hormuz|tehran|fordow|natanz|hezbollah|houthi)\b/i;
+const IRAN_RE    = /\b(iran|iranian|irgc|khamenei|hormuz|tehran|hezbollah|houthi)\b/i;
+const EXCLUDE_RE = /nba|nfl|nhl|mlb|fifa|soccer|basketball|baseball|esports|tennis|golf|formula/i;
 
-// ── Must NOT match (sports/entertainment noise) ───────────────────────────────
-const EXCLUDE_RE = /fifa|world cup|football|soccer|basketball|baseball|nfl|nba|nhl|mlb|esports|chess|formula/i;
-
-interface GammaMarket {
-  conditionId:    string;
-  question:       string;
-  slug?:          string;
-  active?:        boolean;
-  closed?:        boolean;
-  outcomePrices?: string | number[];
-  lastTradePrice?: number | string;
-  volume?:        string | number;
-  volumeNum?:     number;
+// ── Gamma API types ───────────────────────────────────────────────────────────
+interface GammaSubMarket {
+  conditionId?:    string;
+  slug?:           string;
+  question?:       string;
+  groupItemTitle?: string;
+  outcomePrices?:  string | number[];
+  volumeNum?:      number;
+  volume?:         string | number;
+  closed?:         boolean;
+  active?:         boolean;
 }
 
-// ── The Gamma API 'search' param is broken — it ignores keywords entirely.
-// ── Instead we paginate through active markets (sorted by volume) and
-// ── filter server-side. Pages 0–3 × 500 cover all liquid Iran markets.
-async function fetchPage(offset: number): Promise<GammaMarket[]> {
-  try {
-    const url = `https://gamma-api.polymarket.com/markets?limit=500&active=true&offset=${offset}&order=volumeNum&ascending=false`;
-    const res = await fetch(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FrameTheGlobe/1.0)' },
-      next:    { revalidate: 300 },
-    });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return Array.isArray(data) ? data : (data.markets ?? []);
-  } catch {
-    return [];
-  }
+interface GammaEvent {
+  id:       string;
+  title?:   string;
+  slug?:    string;
+  closed?:  boolean;
+  volume?:  number | string;
+  markets?: GammaSubMarket[];
 }
 
-function parseMarket(m: GammaMarket): PolymarketEntry {
-  // Parse outcomePrices – stored as JSON string "[\"0.05\",\"0.95\"]" or array
-  let prices: number[] = [];
+// ── Parse a single sub-market's YES price ────────────────────────────────────
+function parseYes(m: GammaSubMarket): number {
   const raw = m.outcomePrices;
+  let prices: number[] = [];
   if (typeof raw === 'string') {
     try { prices = JSON.parse(raw).map(Number); } catch { prices = []; }
   } else if (Array.isArray(raw)) {
     prices = raw.map(Number);
   }
+  return prices[0] ?? 0;
+}
 
-  // Fall back to lastTradePrice if outcomePrices unavailable
-  const yesPrice = prices[0] ?? Number(m.lastTradePrice ?? 0);
-  const noPrice  = prices[1] ?? (1 - yesPrice);
-  const volume   = parseFloat(String(m.volumeNum ?? m.volume ?? 0));
+function subVol(m: GammaSubMarket): number {
+  return parseFloat(String(m.volumeNum ?? m.volume ?? 0));
+}
 
-  const label = (m.question ?? '')
-    .replace(/^Will\s+/i, '')
-    .replace(/\?$/, '')
-    .trim();
+// ── Fetch one page of events ──────────────────────────────────────────────────
+async function fetchEventsPage(offset: number): Promise<GammaEvent[]> {
+  try {
+    const url = `https://gamma-api.polymarket.com/events?limit=200&active=true&offset=${offset}&order=volume&ascending=false`;
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FrameTheGlobe/1.0)' },
+      next: { revalidate: 300 },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+// ── Build PolymarketEntry from a GammaEvent ───────────────────────────────────
+function buildEntry(ev: GammaEvent): PolymarketEntry {
+  const allMarkets = (ev.markets ?? []).filter(m => !m.closed);
+
+  // Sort open sub-markets by volume descending, take top 4
+  const topMarkets = allMarkets
+    .sort((a, b) => subVol(b) - subVol(a))
+    .slice(0, 4);
+
+  const outcomes: PolyOutcome[] = topMarkets.map(m => ({
+    label:    (m.groupItemTitle || m.question || '').replace(/\?$/, '').trim(),
+    yesPrice: parseYes(m),
+    volume:   subVol(m),
+    slug:     m.slug ?? '',
+  }));
+
+  const totalVol = parseFloat(String(ev.volume ?? 0));
+  const isBinary = (ev.markets ?? []).length <= 1 || outcomes.length === 1;
+
+  // Event URL: use the event slug if available
+  const eventSlug = ev.slug ?? '';
+  const url = eventSlug
+    ? `https://polymarket.com/event/${eventSlug}`
+    : outcomes[0]?.slug
+      ? `https://polymarket.com/event/${outcomes[0].slug}`
+      : 'https://polymarket.com';
 
   return {
-    conditionId: m.conditionId,
-    label:       label.length > 80 ? label.slice(0, 78) + '…' : label,
-    category:    classify(m.question ?? ''),
-    yesPrice,
-    noPrice,
-    volume,
-    url:  m.slug ? `https://polymarket.com/event/${m.slug}` : 'https://polymarket.com',
-    ok:   true,
+    eventId:    String(ev.id),
+    eventTitle: (ev.title ?? '').trim(),
+    category:   classify(ev.title ?? ''),
+    isBinary,
+    volume:     totalVol,
+    outcomes,
+    url,
+    ok: true,
   };
 }
 
 export async function GET() {
   try {
-    // Fetch pages 0, 500, 1000, 1500 in parallel (covers ~2000 most liquid markets)
-    const pages = await Promise.allSettled([
-      fetchPage(0),
-      fetchPage(500),
-      fetchPage(1000),
-      fetchPage(1500),
-    ]);
+    // Scan the top ~2200 events by volume across 11 pages
+    const offsets = [0, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000];
+    const pages = await Promise.allSettled(offsets.map(fetchEventsPage));
 
-    const seen = new Set<string>();
-    const iranMarkets: GammaMarket[] = [];
+    const seen  = new Set<string>();
+    const hits: GammaEvent[] = [];
 
     for (const page of pages) {
       if (page.status !== 'fulfilled') continue;
-      for (const m of page.value) {
-        if (!m.conditionId || seen.has(m.conditionId)) continue;
-        if (m.closed === true)            continue; // skip resolved markets
-        if (!IRAN_RE.test(m.question ?? '')) continue;
-        if (EXCLUDE_RE.test(m.question ?? '')) continue;
-        seen.add(m.conditionId);
-        iranMarkets.push(m);
+      for (const ev of page.value) {
+        if (!ev.id || seen.has(ev.id))    continue;
+        if (ev.closed)                    continue;
+        if (!IRAN_RE.test(ev.title ?? '')) continue;
+        if (EXCLUDE_RE.test(ev.title ?? '')) continue;
+        seen.add(ev.id);
+        hits.push(ev);
       }
     }
 
-    // Sort by volume (most liquid = most signal) and cap at 12
-    const sorted = iranMarkets
-      .sort((a, b) => {
-        const va = parseFloat(String(b.volumeNum ?? b.volume ?? 0));
-        const vb = parseFloat(String(a.volumeNum ?? a.volume ?? 0));
-        return va - vb;
-      })
+    // Sort events by total volume and cap at 12
+    const sorted = hits
+      .sort((a, b) => parseFloat(String(b.volume ?? 0)) - parseFloat(String(a.volume ?? 0)))
       .slice(0, 12);
 
-    return NextResponse.json(sorted.map(parseMarket));
+    return NextResponse.json(sorted.map(buildEntry));
   } catch (err) {
     console.error('[FTG-Polymarket]', err);
     return NextResponse.json([], { status: 200 });
