@@ -124,9 +124,11 @@ export default function CompactHeader({
               borderRadius:  3,
               cursor:        'pointer',
               whiteSpace:    'nowrap',
+              touchAction:   'manipulation',
+              minHeight:     28,
             }}
           >
-            ⚡ AI Briefing
+            ⚡<span className="ftg-ai-btn-label"> AI Briefing</span>
           </button>
 
           <button 

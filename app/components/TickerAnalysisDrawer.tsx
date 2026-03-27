@@ -156,14 +156,20 @@ export default function TickerAnalysisDrawer({ data, onClose }: Props) {
               onClick={onClose}
               aria-label="Close analysis panel"
               style={{
-                fontFamily:  mono,
-                fontSize:    14,
-                background:  'transparent',
-                border:      'none',
-                cursor:      'pointer',
-                color:       'var(--text-muted)',
-                padding:     '2px 6px',
-                lineHeight:  1,
+                fontFamily:    mono,
+                fontSize:      14,
+                background:    'transparent',
+                border:        'none',
+                cursor:        'pointer',
+                color:         'var(--text-muted)',
+                padding:       '6px 10px',
+                lineHeight:    1,
+                minHeight:     44,
+                minWidth:      44,
+                display:       'flex',
+                alignItems:    'center',
+                justifyContent:'center',
+                touchAction:   'manipulation',
               }}
             >
               ✕

@@ -200,15 +200,16 @@ export default function AnalystBriefingModal({ isOpen, onClose }: Props) {
         role="dialog"
         aria-modal="true"
         aria-label="Analyst Briefing"
+        className="ai-briefing-modal-panel"
         style={{
           position:      'fixed',
           top:           '50%',
           left:          '50%',
           transform:     'translate(-50%, -50%)',
           zIndex:        1100,
-          width:         '92vw',
+          width:         '96vw',
           maxWidth:      740,
-          maxHeight:     '88vh',
+          maxHeight:     '92vh',
           display:       'flex',
           flexDirection: 'column',
           background:    'var(--bg)',
@@ -269,13 +270,15 @@ export default function AnalystBriefingModal({ isOpen, onClose }: Props) {
                 fontWeight:    700,
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
-                padding:       '4px 10px',
+                padding:       '6px 10px',
                 border:        '1px solid var(--border)',
                 borderRadius:  3,
                 background:    'transparent',
                 color:         'var(--text-secondary)',
                 cursor:        loading ? 'not-allowed' : 'pointer',
                 opacity:       loading ? 0.5 : 1,
+                minHeight:     36,
+                touchAction:   'manipulation',
               }}
             >
               ↻ Regenerate
@@ -284,9 +287,20 @@ export default function AnalystBriefingModal({ isOpen, onClose }: Props) {
               onClick={onClose}
               aria-label="Close briefing"
               style={{
-                fontFamily: mono, fontSize: 15, background: 'transparent',
-                border: 'none', cursor: 'pointer', color: 'var(--text-muted)',
-                padding: '0 4px', lineHeight: 1,
+                fontFamily:    mono,
+                fontSize:      15,
+                background:    'transparent',
+                border:        'none',
+                cursor:        'pointer',
+                color:         'var(--text-muted)',
+                padding:       '6px 8px',
+                lineHeight:    1,
+                minHeight:     44,
+                minWidth:      44,
+                display:       'flex',
+                alignItems:    'center',
+                justifyContent:'center',
+                touchAction:   'manipulation',
               }}
             >
               ✕
@@ -306,7 +320,7 @@ export default function AnalystBriefingModal({ isOpen, onClose }: Props) {
                   FETCHING LIVE MARKET DATA &amp; GENERATING BRIEFING…
                 </span>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              <div className="ai-briefing-grid">
                 {[1, 2, 3, 4].map(i => (
                   <div key={i} style={{ border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
                     <div className="widget-hd" style={{ padding: '10px 16px', height: 38 }}>
@@ -341,7 +355,7 @@ export default function AnalystBriefingModal({ isOpen, onClose }: Props) {
 
           {/* Brief content */}
           {!loading && brief && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            <div className="ai-briefing-grid">
 
               {/* Market Summary */}
               <SectionCard label="Market Signal Summary" icon="📊" accent="var(--accent)">

@@ -137,22 +137,54 @@ body {
   cursor: pointer;
   transition: background 0.12s ease;
   position: relative;
+  touch-action: manipulation;          /* prevent double-tap zoom on iOS */
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0.06);
 }
 .ticker-cell-clickable:hover {
   background: var(--accent-light) !important;
 }
-.ticker-cell-clickable:hover::after {
-  content: '⚡ AI';
-  position: absolute;
-  top: 6px;
-  right: 8px;
-  font-family: var(--font-mono);
-  font-size: 8px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  color: var(--accent);
-  opacity: 0.75;
-  pointer-events: none;
+/* Hover hint — desktop only (no :hover on touch) */
+@media (hover: hover) {
+  .ticker-cell-clickable:hover::after {
+    content: '⚡ AI';
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    font-family: var(--font-mono);
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    opacity: 0.75;
+    pointer-events: none;
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   AI BRIEFING BUTTON — responsive label
+══════════════════════════════════════════════════════ */
+.ftg-ai-btn-label {
+  /* visible by default */
+}
+
+/* ══════════════════════════════════════════════════════
+   ANALYST BRIEFING MODAL — responsive grid
+   Collapses from 2-col to 1-col below 560px
+══════════════════════════════════════════════════════ */
+.ai-briefing-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+@media (max-width: 560px) {
+  .ai-briefing-grid {
+    grid-template-columns: 1fr;
+  }
+  /* Hide the text label, keep just ⚡ icon */
+  .ftg-ai-btn-label {
+    display: none;
+  }
 }
 
 /* ══════════════════════════════════════════════════════
@@ -617,6 +649,11 @@ body {
     height: 24px !important;
     padding: 0 8px !important;
     font-size: 9px !important;
+  }
+
+  /* AI Briefing button — hide text label at 820px, keep icon */
+  .ftg-ai-btn-label {
+    display: none;
   }
 
   .ftg-footer {
