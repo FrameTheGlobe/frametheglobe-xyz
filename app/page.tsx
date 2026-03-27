@@ -1120,6 +1120,12 @@ export default function Home() {
   const [search, setSearch]             = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [sidebarOpen, setSidebarOpen]   = useState(false);
+
+  // Lock body scroll when the mobile sidebar drawer is open
+  useEffect(() => {
+    document.body.style.overflow = sidebarOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [sidebarOpen]);
   const [theme, setTheme]               = useState<Theme>('light');
   const [liveStatus, setLiveStatus]     = useState<'connecting' | 'live' | 'polling'>('connecting');
   const [focusedIdx, setFocusedIdx]     = useState<number>(-1);
@@ -2050,6 +2056,15 @@ export default function Home() {
 
         {/* Sidebar */}
         <aside className={`sidebar-col${sidebarOpen ? ' open' : ''}`}>
+          {/* Mobile close button — only visible inside the off-canvas drawer */}
+          <button
+            className="sidebar-close-btn"
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Close sidebar"
+            style={{ display: 'none' }}
+          >
+            ✕ Close
+          </button>
           <div style={{ position: 'sticky', top: 80, display: 'flex', flexDirection: 'column', gap: 14 }}>
             {!loading && <LiveVideoWidget />}
             {!loading && <PolymarketBoard />}

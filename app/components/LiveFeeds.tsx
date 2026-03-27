@@ -145,7 +145,7 @@ export default function LiveFeeds() {
         <div>
           {/* 2x2 Grid Layout */}
           {layout === '2x2' && (
-            <div style={{
+            <div className="ftg-livefeed-grid" style={{
               display: 'grid',
               gridTemplateColumns: '1fr 1fr',
               gap: 1,
