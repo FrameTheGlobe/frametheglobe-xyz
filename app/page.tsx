@@ -19,7 +19,7 @@ import CompactHeader  from './components/CompactHeader';
 import LiveFeeds      from './components/LiveFeeds';
 import AIIntelPanel   from './components/AIIntelPanel';
 import MissileIntel   from './components/MissileIntel';
-import PolymarketBoard from './components/PolymarketBoard';
+import FlashBrief     from './components/FlashBrief';
 
 // MapView uses Leaflet (browser-only) — load with no SSR
 const MapView = dynamic(() => import('./components/MapView'), { ssr: false });
@@ -2067,7 +2067,6 @@ export default function Home() {
           </button>
           <div style={{ position: 'sticky', top: 80, display: 'flex', flexDirection: 'column', gap: 14 }}>
             {!loading && <LiveVideoWidget />}
-            {!loading && <PolymarketBoard />}
             <SidebarPanel
               search={search}
               onSearch={setSearch}
@@ -3270,8 +3269,15 @@ export default function Home() {
           height: 'calc(100vh - 48px)',
           overflowY: 'auto',
           paddingRight: '4px',
-          scrollbarWidth: 'thin'
+          scrollbarWidth: 'thin',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 14,
         }}>
+          {/* ── Flash Brief ──────────────────────────────────────────── */}
+          {hasMounted && <FlashBrief items={items} />}
+
+          {/* ── Strategic Brief / Intel Timeline ─────────────────────── */}
           <div style={{
             background: 'var(--surface)',
             border: '1px solid var(--border)',

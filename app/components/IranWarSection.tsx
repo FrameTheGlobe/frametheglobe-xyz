@@ -8,7 +8,7 @@ import PreciousMetalsBoard from './PreciousMetalsBoard';
 import HormuzCommoditiesBoard from './HormuzCommoditiesBoard';
 import LiveFeeds from './LiveFeeds';
 import AIIntelPanel from './AIIntelPanel';
-import FlashBrief from './FlashBrief';
+import PolymarketBoard from './PolymarketBoard';
 
 // Dynamic import prevents SSR — IranWarCostBoard uses new Date() in state
 // which would cause a server/client hydration mismatch.
@@ -414,14 +414,14 @@ export default function IranWarSection({ items, sourceCountMap, brief, pinnedKey
       {!collapsed && (
         <div className="ftg-section-body ftg-iran-section-body" style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-          {/* ── Flash Brief ──────────────────────────────────────────────── */}
-          <FlashBrief items={items} />
-
           {/* ── War Cost Counter ─────────────────────────────────────────── */}
           <IranWarCostBoard />
 
           {/* ── Crude Oil Price Board ────────────────────────────────────── */}
           <IranOilBoard />
+
+          {/* ── Prediction Markets ───────────────────────────────────────── */}
+          <PolymarketBoard />
 
           {/* ── Precious Metals — Safe Haven & Geopolitical Risk Tracker ─── */}
           <PreciousMetalsBoard />
@@ -431,8 +431,6 @@ export default function IranWarSection({ items, sourceCountMap, brief, pinnedKey
 
           {/* ── Live Feeds ─────────────────────────────────────────────── */}
           <LiveFeeds />
-
-          {/* PolymarketBoard moved to left sidebar */}
 
           {/* ── AI Intelligence ─────────────────────────────────────────── */}
           <AIIntelPanel items={items} />
