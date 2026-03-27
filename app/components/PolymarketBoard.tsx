@@ -388,13 +388,12 @@ export default function PolymarketBoard() {
       <style>{KEYFRAMES}</style>
 
       {/* ── Header ────────────────────────────────────────────────── */}
-      <div style={{
+      <div className="widget-hd" style={{
         display:        'flex',
         alignItems:     'center',
         justifyContent: 'space-between',
         padding:        '10px 16px',
-        background:     'linear-gradient(135deg, rgba(168,85,247,0.07) 0%, transparent 60%)',
-        borderBottom:   collapsed ? 'none' : '1px solid var(--border-light)',
+        borderBottom:   collapsed ? 'none' : undefined,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{
@@ -403,11 +402,9 @@ export default function PolymarketBoard() {
             boxShadow:  '0 0 8px #9b59b6',
             flexShrink: 0,
           }} />
-          <span style={{
-            fontSize:      10,
-            fontWeight:    900,
-            letterSpacing: '0.14em',
-            color:         'var(--text-muted)',
+          <span className="widget-hd-title" style={{
+            fontFamily:    'var(--font-mono)',
+            color:         '#9b59b6',
             textTransform: 'uppercase',
           }}>
             Prediction Markets

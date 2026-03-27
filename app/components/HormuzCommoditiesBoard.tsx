@@ -253,10 +253,8 @@ export default function HormuzCommoditiesBoard() {
     }}>
 
       {/* ── Header ─────────────────────────────────────────────────────── */}
-      <div style={{
+      <div className="widget-hd" style={{
         padding:        '10px 16px',
-        borderBottom:   '1px solid var(--border-light)',
-        background:     'rgba(243,156,18,0.06)',
         display:        'flex',
         alignItems:     'center',
         justifyContent: 'space-between',

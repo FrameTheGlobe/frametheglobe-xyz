@@ -77,9 +77,9 @@ export default function IranWarCostBoard() {
       borderRadius: '0 0 6px 6px', marginBottom: 12, overflow: 'hidden',
     }}>
       {/* ── HEADER BLOCK ────────────────────────────────────────────── */}
-      <div className="ftg-iran-board-top" style={{
+      <div className="widget-hd ftg-iran-board-top" style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '10px 14px', borderBottom: `1px solid ${border}`, background: 'var(--accent-light)'
+        padding: '10px 14px',
       }}>
         <div className="ftg-iran-board-top-left" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span className="live-dot" style={{ background: accent }} />

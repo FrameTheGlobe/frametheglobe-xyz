@@ -26,6 +26,13 @@
   --header-border:  #1e40af;
   --header-text:    #0f172a;
 
+  --text-secondary: #334155;  /* improved from #475569 */
+  --text-muted:     #64748b;  /* improved from #94a3b8 */
+
+  /* Widget header surfaces — used by .widget-hd class below */
+  --widget-hd-bg:     #edf2f9;
+  --widget-hd-border: #cfd8e8;
+
   --badge-new-color:   #0369a1;
   --badge-new-bg:      #f0f9ff;
   --badge-new-border:  #bae6fd;
@@ -78,6 +85,13 @@
   --badge-brk-bg:      #1e0d0a;
   --badge-brk-border:  #7a2010;
 
+  --text-secondary: #bcc6d4;  /* improved from #999999 */
+  --text-muted:     #7e8d9c;  /* improved from #555555 */
+
+  /* Widget header surfaces */
+  --widget-hd-bg:     #15171e;
+  --widget-hd-border: #252b35;
+
   --shimmer-a:   #121214;
   --shimmer-b:   #1c1c1f;
   --toggle-bg:   transparent;
@@ -114,6 +128,23 @@ html {
 
 body {
   overflow-x: clip;
+}
+
+/* ══════════════════════════════════════════════════════
+   WIDGET HEADER — shared standout class
+   Applied to the header row of every board/panel widget.
+   Uses !important to win over inline-style backgrounds.
+══════════════════════════════════════════════════════ */
+.widget-hd {
+  background:    var(--widget-hd-bg)     !important;
+  border-bottom: 1px solid var(--widget-hd-border) !important;
+}
+
+/* Title label inside a .widget-hd — enforces minimum legible size */
+.widget-hd-title {
+  font-size:      13px !important;
+  font-weight:    800  !important;
+  letter-spacing: 0.11em !important;
 }
 
 /* ══════════════════════════════════════════════════════

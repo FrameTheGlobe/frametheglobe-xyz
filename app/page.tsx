@@ -3279,12 +3279,11 @@ export default function Home() {
             overflow: 'hidden',
           }}>
             {/* ── Card header ─────────────────────────────────────────── */}
-            <div style={{
+            <div className="widget-hd" style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               padding: '14px 20px 12px',
-              borderBottom: '1px solid var(--border-light)',
             }}>
               <h2 style={{
                 fontFamily: 'var(--font-mono)',

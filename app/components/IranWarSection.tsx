@@ -354,15 +354,15 @@ export default function IranWarSection({ items, sourceCountMap, brief, pinnedKey
         aria-expanded={!collapsed}
         onClick={() => setCollapsed(v => !v)}
         onKeyDown={e => e.key === 'Enter' && setCollapsed(v => !v)}
+        className="widget-hd"
         style={{
           display:       'flex',
           alignItems:    'center',
           justifyContent:'space-between',
-          padding:       '10px 14px',
-          borderBottom:  collapsed ? 'none' : '1px solid var(--border-light)',
+          padding:       '11px 14px',
+          borderBottom:  collapsed ? 'none' : undefined,
           cursor:        'pointer',
           userSelect:    'none',
-          background:    'var(--surface-muted)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>

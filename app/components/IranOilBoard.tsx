@@ -248,22 +248,19 @@ export default function IranOilBoard() {
       }}>
 
         {/* ── Header ──────────────────────────────────────────────────────── */}
-        <div style={{
+        <div className="widget-hd" style={{
           display:        'flex',
           alignItems:     'center',
           justifyContent: 'space-between',
-          padding:        '8px 14px',
-          borderBottom:   '1px solid var(--border-light)',
-          background:     'var(--accent-light)',
+          padding:        '10px 14px',
           flexWrap:       'wrap',
           gap:            8,
         }}>
           {/* Left: title */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
             <span className="live-dot" style={{ background: 'var(--accent)' }} />
-            <span style={{
-              fontFamily:    mono, fontSize: 10, fontWeight: 700,
-              letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--accent)',
+            <span className="widget-hd-title" style={{
+              fontFamily:    mono, textTransform: 'uppercase', color: 'var(--accent)',
             }}>
               Crude Oil · Tactical Market Board
             </span>

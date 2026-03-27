@@ -252,9 +252,8 @@ export default function PreciousMetalsBoard() {
     }}>
 
       {/* ── Header ───────────────────────────────────────────────────────── */}
-      <div style={{
+      <div className="widget-hd" style={{
         padding:        '10px 16px',
-        borderBottom:   '1px solid var(--border-light)',
         display:        'flex',
         alignItems:     'center',
         justifyContent: 'space-between',
