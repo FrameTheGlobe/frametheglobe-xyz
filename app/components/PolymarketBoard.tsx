@@ -3,6 +3,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { PolymarketEntry, PolyOutcome } from '@/app/api/polymarket/route';
 
+// Injected once — keyframes for the shimmer sweep and the dot blink
+const SHIMMER_STYLE = `
+@keyframes pm-sweep {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
+@keyframes pm-dot {
+  0%, 80%, 100% { opacity: 0.2; transform: scale(0.7); }
+  40%            { opacity: 1;   transform: scale(1);   }
+}
+`;
+
 const CAT_META: Record<string, { color: string; bg: string; icon: string }> = {
   NUCLEAR:   { color: '#a855f7', bg: 'rgba(168,85,247,0.10)', icon: '☢' },
   CONFLICT:  { color: '#f97316', bg: 'rgba(249,115,22,0.10)', icon: '⚔' },
@@ -270,6 +282,7 @@ export default function PolymarketBoard() {
       fontFamily:   'var(--font-mono)',
       boxShadow:    '0 0 0 1px rgba(168,85,247,0.06)',
     }}>
+      <style>{SHIMMER_STYLE}</style>
 
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <button
@@ -336,15 +349,96 @@ export default function PolymarketBoard() {
         <div style={{ padding: '9px 8px 9px', background: 'var(--bg)' }}>
 
           {loading && (
-            <div style={{
-              padding:       '18px 0',
-              textAlign:     'center',
-              fontSize:      11,
-              color:         '#a855f7',
-              opacity:       0.7,
-              letterSpacing: '0.1em',
-            }}>
-              ⟳ SCANNING MARKETS…
+            <div>
+              {/* ── Shimmer sweep bar ─────────────────────────────── */}
+              <div style={{
+                position:     'relative',
+                height:       3,
+                background:   'rgba(168,85,247,0.15)',
+                borderRadius: 2,
+                overflow:     'hidden',
+                marginBottom: 12,
+              }}>
+                <div style={{
+                  position:   'absolute',
+                  inset:      0,
+                  width:      '30%',
+                  background: 'linear-gradient(90deg, transparent, #a855f7, #c084fc, transparent)',
+                  animation:  'pm-sweep 1.4s ease-in-out infinite',
+                }} />
+              </div>
+
+              {/* ── Status label with animated dots ───────────────── */}
+              <div style={{
+                display:       'flex',
+                alignItems:    'center',
+                gap:           8,
+                marginBottom:  14,
+                paddingLeft:   2,
+              }}>
+                <span style={{ fontSize: 10, color: '#a855f7', opacity: 0.8, letterSpacing: '0.08em' }}>
+                  SCANNING MARKETS
+                </span>
+                {/* Bouncing dots */}
+                {[0, 0.2, 0.4].map((delay, i) => (
+                  <span key={i} style={{
+                    display:         'inline-block',
+                    width:           4,
+                    height:          4,
+                    borderRadius:    '50%',
+                    background:      '#a855f7',
+                    animation:       `pm-dot 1.2s ease-in-out ${delay}s infinite`,
+                  }} />
+                ))}
+              </div>
+
+              {/* ── Skeleton cards ────────────────────────────────── */}
+              {[72, 55, 88, 60].map((w, i) => (
+                <div key={i} style={{
+                  border:       '1px solid var(--border-light)',
+                  borderLeft:   '3px solid rgba(168,85,247,0.3)',
+                  borderRadius: '0 4px 4px 0',
+                  background:   'var(--surface)',
+                  padding:      '10px 11px',
+                  marginBottom: 6,
+                  overflow:     'hidden',
+                  position:     'relative',
+                }}>
+                  {/* Shimmer sheen over card */}
+                  <div style={{
+                    position:   'absolute',
+                    inset:      0,
+                    background: 'linear-gradient(90deg, transparent 0%, rgba(168,85,247,0.06) 50%, transparent 100%)',
+                    backgroundSize: '200% 100%',
+                    animation:  'pm-sweep 1.8s ease-in-out infinite',
+                    animationDelay: `${i * 0.15}s`,
+                  }} />
+                  {/* Fake title bar */}
+                  <div style={{
+                    height:       11,
+                    width:        `${w}%`,
+                    background:   'var(--border-light)',
+                    borderRadius: 3,
+                    marginBottom: 10,
+                  }} />
+                  {/* Fake outcome rows */}
+                  {[45, 60].map((rw, j) => (
+                    <div key={j} style={{
+                      display:      'flex',
+                      alignItems:   'center',
+                      gap:          8,
+                      padding:      '5px 0',
+                      borderBottom: j === 0 ? '1px solid var(--border-light)' : 'none',
+                    }}>
+                      <div style={{ height: 9, width: `${rw}%`, background: 'var(--border-light)', borderRadius: 2 }} />
+                      <div style={{ height: 9, width: 28, background: 'var(--border-light)', borderRadius: 2, marginLeft: 'auto' }} />
+                      <div style={{ height: 5, width: 44, background: 'var(--border-light)', borderRadius: 3 }} />
+                    </div>
+                  ))}
+                  {/* Fake vol */}
+                  <div style={{ height: 8, width: 48, background: 'var(--border-light)', borderRadius: 2, marginTop: 8 }} />
+                </div>
+              ))}
             </div>
           )}
 
