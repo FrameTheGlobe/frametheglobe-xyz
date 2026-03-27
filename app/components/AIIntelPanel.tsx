@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useVisibilityPolling } from '@/lib/use-visibility-polling';
 import type { AIIntelPayload, Theater, CountryInstability, Forecast, ThreatLevel } from '@/app/api/ai-intel/route';
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -246,7 +247,7 @@ export default function AIIntelPanel({ items }: Props) {
   }, [items]);
 
   useEffect(() => { if (items.length > 0) load(); }, [load, items.length]);
-  useEffect(() => { const id = setInterval(() => load(), 15 * 60 * 1000); return () => clearInterval(id); }, [load]);
+  useVisibilityPolling(load, 15 * 60 * 1000);
 
   const forecasts = data?.forecasts ?? [];
   const filtered  = activeCat === 'All' ? forecasts : forecasts.filter(f => f.category === activeCat);

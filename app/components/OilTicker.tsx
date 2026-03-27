@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useVisibilityPolling } from '@/lib/use-visibility-polling';
 
 type PriceData = {
   symbol: string;
@@ -43,31 +44,23 @@ export default function OilTicker({ items = [] }: Props) {
       .slice(0, 3);
   }, [items]);
 
-  useEffect(() => {
-    const fetchPrices = async () => {
-      try {
-        setLoading(true);
-        // Using our safe server-side API proxy to avoid CORS blocks
-        const res = await fetch('/api/market');
-        if (!res.ok) throw new Error('Fetch failed');
-        
-        const results = await res.json();
-        
-        // Results are already mapped by the server route
-        setPrices(results);
-        setError(false);
-      } catch (err) {
-        console.error('[FTG] Oil price fetch error:', err);
-        setError(true);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPrices();
-    const interval = setInterval(fetchPrices, 60000); // Update every minute
-    return () => clearInterval(interval);
+  const fetchPrices = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/market');
+      if (!res.ok) throw new Error('Fetch failed');
+      setPrices(await res.json());
+      setError(false);
+    } catch (err) {
+      console.error('[FTG] Oil price fetch error:', err);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => { fetchPrices(); }, [fetchPrices]);
+  useVisibilityPolling(fetchPrices, 60_000);
 
   return (
     <div className="article-card" style={{ 

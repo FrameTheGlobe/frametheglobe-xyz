@@ -16,6 +16,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { useVisibilityPolling } from '@/lib/use-visibility-polling';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -230,11 +231,8 @@ export default function PreciousMetalsBoard() {
     return () => obs.disconnect();
   }, []);
 
-  useEffect(() => {
-    fetchData();
-    const t = setInterval(fetchData, POLL_MS);
-    return () => clearInterval(t);
-  }, [fetchData]);
+  useEffect(() => { fetchData(); }, [fetchData]);
+  useVisibilityPolling(fetchData, POLL_MS);
 
   // Partition quotes
   const futures = quotes.filter(q => ['GC.F', 'SI.F', 'PL.F', 'PA.F'].includes(q.symbol));

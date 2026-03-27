@@ -438,17 +438,29 @@ export default function MapView({ items }: MapViewProps) {
     }
   }, []);
 
-  // ── Toggle flights on/off ─────────────────────────────────────────────────
+  // ── Toggle flights on/off (pauses when tab is hidden) ────────────────────
   useEffect(() => {
-    if (flightsOn) {
-      loadFlights();
-      flightTimerRef.current = setInterval(loadFlights, FLIGHT_POLL_MS);
-    } else {
+    if (!flightsOn) {
       if (flightTimerRef.current) clearInterval(flightTimerRef.current);
       setFlights([]);
       setFlightStatus('idle');
+      return;
     }
-    return () => { if (flightTimerRef.current) clearInterval(flightTimerRef.current); };
+
+    const start = () => {
+      flightTimerRef.current = setInterval(loadFlights, FLIGHT_POLL_MS);
+    };
+    const stop = () => {
+      if (flightTimerRef.current) { clearInterval(flightTimerRef.current); flightTimerRef.current = null; }
+    };
+    const onVisibility = () => {
+      if (document.hidden) { stop(); } else { loadFlights(); start(); }
+    };
+
+    loadFlights();
+    start();
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => { stop(); document.removeEventListener('visibilitychange', onVisibility); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flightsOn]);
 

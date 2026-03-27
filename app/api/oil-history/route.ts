@@ -83,7 +83,14 @@ async function fetchSeries(sym: string, range: '1d' | '7d'): Promise<OHLCPoint[]
     url = `https://stooq.com/q/d/l/?s=${sym.toLowerCase()}&d1=${fmtDate(start)}&d2=${fmtDate(end)}&i=d`;
   }
 
-  const res = await fetch(url, { headers, next: { revalidate: 0 } });
+  const controller = new AbortController();
+  const timeout    = setTimeout(() => controller.abort(), 8_000);
+  let res: Response;
+  try {
+    res = await fetch(url, { signal: controller.signal, headers, next: { revalidate: 0 } });
+  } finally {
+    clearTimeout(timeout);
+  }
   if (!res.ok) throw new Error(`Stooq ${res.status} for ${sym}`);
   const text = await res.text();
   if (text.includes('No data')) return [];

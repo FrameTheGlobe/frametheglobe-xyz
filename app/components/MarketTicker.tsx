@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useVisibilityPolling } from '@/lib/use-visibility-polling';
 
 type MarketData = {
   symbol: string;
@@ -15,27 +16,22 @@ export default function MarketTicker() {
   const [markets, setMarkets] = useState<MarketData[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchMarkets = async () => {
-      try {
-        const res = await fetch('/api/market');
-        if (res.ok) {
-          const data = await res.json();
-          // Take only top 4-5 key markets for ticker
-          setMarkets(data.slice(0, 5));
-        }
-      } catch (error) {
-        console.error('Failed to fetch market data:', error);
-      } finally {
-        setLoading(false);
+  const fetchMarkets = useCallback(async () => {
+    try {
+      const res = await fetch('/api/market');
+      if (res.ok) {
+        const data = await res.json();
+        setMarkets(data.slice(0, 5));
       }
-    };
-
-    fetchMarkets();
-    // Refresh every 2 minutes
-    const interval = setInterval(fetchMarkets, 120000);
-    return () => clearInterval(interval);
+    } catch (error) {
+      console.error('Failed to fetch market data:', error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => { fetchMarkets(); }, [fetchMarkets]);
+  useVisibilityPolling(fetchMarkets, 120_000);
 
   if (loading || markets.length === 0) {
     return (

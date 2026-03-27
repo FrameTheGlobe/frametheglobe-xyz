@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { PolymarketEntry, PolyOutcome } from '@/app/api/polymarket/route';
+import { useVisibilityPolling } from '@/lib/use-visibility-polling';
 
 // ── Keyframes injected once ────────────────────────────────────────────────
 const KEYFRAMES = `
@@ -365,11 +366,8 @@ export default function PolymarketBoard() {
     }
   }, []);
 
-  useEffect(() => {
-    load();
-    const id = setInterval(load, 5 * 60 * 1000);
-    return () => clearInterval(id);
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
+  useVisibilityPolling(load, 5 * 60 * 1000);
 
   const ORDER: PolymarketEntry['category'][] = ['CONFLICT', 'REGIME', 'DIPLOMACY', 'NUCLEAR'];
   const byCategory = data.reduce<Record<string, PolymarketEntry[]>>((acc, m) => {

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-export const runtime   = 'nodejs';
+export const runtime   = 'edge';
 export const revalidate = 300;
 
 // ── Public types ──────────────────────────────────────────────────────────────
@@ -74,17 +74,22 @@ function subVol(m: GammaSubMarket): number {
 
 // ── Fetch one page of events ──────────────────────────────────────────────────
 async function fetchEventsPage(offset: number): Promise<GammaEvent[]> {
+  const controller = new AbortController();
+  const timeout    = setTimeout(() => controller.abort(), 8_000);
   try {
     const url = `https://gamma-api.polymarket.com/events?limit=200&active=true&offset=${offset}&order=volume&ascending=false`;
     const res = await fetch(url, {
+      signal:  controller.signal,
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FrameTheGlobe/1.0)' },
-      next: { revalidate: 300 },
+      next:    { revalidate: 300 },
     });
     if (!res.ok) return [];
     const data = await res.json();
     return Array.isArray(data) ? data : [];
   } catch {
     return [];
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -153,7 +158,9 @@ export async function GET() {
       .sort((a, b) => parseFloat(String(b.volume ?? 0)) - parseFloat(String(a.volume ?? 0)))
       .slice(0, 12);
 
-    return NextResponse.json(sorted.map(buildEntry));
+    const res = NextResponse.json(sorted.map(buildEntry));
+    res.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
+    return res;
   } catch (err) {
     console.error('[FTG-Polymarket]', err);
     return NextResponse.json([], { status: 200 });

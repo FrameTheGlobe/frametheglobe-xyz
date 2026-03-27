@@ -22,9 +22,12 @@ function getBrentSymbol(): string {
 type Quote = { symbol: string; name: string; price: number; change: number; changePercent: number; currency: string };
 
 async function fetchYahoo(yfSym: string, outSym: string, name: string): Promise<Quote | null> {
+  const controller = new AbortController();
+  const timeout    = setTimeout(() => controller.abort(), 8_000);
   try {
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yfSym)}?interval=1d&range=1d`;
     const res = await fetch(url, {
+      signal:  controller.signal,
       headers: { 'User-Agent': 'Mozilla/5.0' },
       next:    { revalidate: 60 },
     });
@@ -39,6 +42,8 @@ async function fetchYahoo(yfSym: string, outSym: string, name: string): Promise<
     return { symbol: outSym, name, price, change, changePercent, currency: 'USD' };
   } catch {
     return null;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -48,10 +53,13 @@ interface StooqSymbol { symbol: string; open: number | null; close: number | nul
 async function fetchStooqBatch(
   entries: { stooq: string; name: string }[]
 ): Promise<Quote[]> {
+  const controller = new AbortController();
+  const timeout    = setTimeout(() => controller.abort(), 8_000);
   try {
     const syms = entries.map(e => e.stooq.toLowerCase()).join('+');
     const url  = `https://stooq.com/q/l/?s=${syms}&f=sd2t2ohlcv&h&e=json`;
     const res  = await fetch(url, {
+      signal:  controller.signal,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept':     'application/json',
@@ -78,6 +86,8 @@ async function fetchStooqBatch(
     });
   } catch {
     return [];
+  } finally {
+    clearTimeout(timeout);
   }
 }
 

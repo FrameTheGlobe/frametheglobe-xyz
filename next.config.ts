@@ -25,6 +25,39 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ['rss-parser', 'xml2js', 'sax'],
 
   async headers() {
+    // Content-Security-Policy:
+    // • script-src: 'unsafe-inline' + 'unsafe-eval' required for Next.js
+    //   hydration chunks and TradingView widgets respectively.
+    // • frame-src: YouTube live embeds and TradingView chart iframes.
+    // • connect-src: all external API calls are proxied through /api/* (self);
+    //   the only direct browser connection is the SSE stream, also self.
+    // • img-src https: covers OSM tiles (Leaflet), YouTube thumbnails, favicons.
+    const CSP = [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://s.tradingview.com https://cdn.tradingview.com",
+      "style-src 'self' 'unsafe-inline'",
+      "font-src 'self' data:",
+      "img-src 'self' data: blob: https:",
+      "frame-src https://www.youtube.com https://www.youtube-nocookie.com https://s.tradingview.com https://www.tradingview.com",
+      "connect-src 'self'",
+      "worker-src 'self' blob:",
+      "media-src 'self' https://www.youtube.com",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "upgrade-insecure-requests",
+    ].join('; ');
+
+    const SECURITY_HEADERS = [
+      { key: 'Content-Security-Policy',         value: CSP },
+      { key: 'X-Frame-Options',                  value: 'DENY' },
+      { key: 'X-Content-Type-Options',            value: 'nosniff' },
+      { key: 'Referrer-Policy',                   value: 'strict-origin-when-cross-origin' },
+      { key: 'Permissions-Policy',                value: 'camera=(), microphone=(), geolocation=(), payment=()' },
+      { key: 'Strict-Transport-Security',         value: 'max-age=63072000; includeSubDomains; preload' },
+      { key: 'X-DNS-Prefetch-Control',            value: 'on' },
+    ];
+
     return [
       {
         // Static chunks are content-hashed — safe to cache forever.
@@ -48,8 +81,9 @@ const nextConfig: NextConfig = {
         source: '/((?!_next/static|_next/image|favicon\\.ico).*)',
         headers: [
           { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
-          { key: 'Pragma', value: 'no-cache' },
-          { key: 'Expires', value: '0' },
+          { key: 'Pragma',        value: 'no-cache' },
+          { key: 'Expires',       value: '0' },
+          ...SECURITY_HEADERS,
         ],
       },
     ];

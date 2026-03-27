@@ -13,7 +13,6 @@
  * Caching: 5-minute server-side TTL to respect rate limits.
  */
 
-import axios from 'axios';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export type Aircraft = {
@@ -285,16 +284,20 @@ export async function fetchFlights(): Promise<FlightPayload> {
   if (_cache && now - _lastFetch < CACHE_TTL_MS) return _cache;
 
   // ── Try adsb.lol first (community, no key, permissive limits) ──────────────
+  const controller = new AbortController();
+  const timeout    = setTimeout(() => controller.abort(), 10_000);
   try {
     const { lat, lon, radiusNm } = THEATER_CENTER;
-    const url = `https://api.adsb.lol/v2/point/${lat}/${lon}/${radiusNm}`;
-    const res  = await axios.get(url, {
-      timeout: 10_000,
+    const url  = `https://api.adsb.lol/v2/point/${lat}/${lon}/${radiusNm}`;
+    const resp = await fetch(url, {
+      signal:  controller.signal,
       headers: { 'User-Agent': 'FrameTheGlobe/1.0 (+https://frametheglobe.xyz)' },
     });
 
+    if (!resp.ok) throw new Error(`adsb.lol ${resp.status}`);
+    const data = await resp.json();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rawList: any[] = res.data?.ac ?? res.data?.aircraft ?? [];
+    const rawList: any[] = data?.ac ?? data?.aircraft ?? [];
     const aircraft: Aircraft[] = rawList
       .map(parseAdsbLol)
       .filter((a): a is Aircraft => a !== null);
@@ -313,6 +316,8 @@ export async function fetchFlights(): Promise<FlightPayload> {
 
   } catch (err1) {
     console.warn('[FTG] adsb.lol flight fetch failed:', (err1 as Error).message);
+  } finally {
+    clearTimeout(timeout);
   }
 
   // ── Both failed — return stale cache or empty ─────────────────────────────

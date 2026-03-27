@@ -14,6 +14,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { rateLimit, retryAfterSeconds } from '@/lib/rate-limit';
 
 export const runtime   = 'nodejs';
 export const revalidate = 0;
@@ -164,9 +165,12 @@ Return JSON with exactly this structure (all fields required):
 
 Rules: replace ALL placeholder text with real analysis from the headlines. level must be one of CRIT/ELEV/HIGH/NORM/UNKN. trend for theaters must be escalating/stable/de-escalating. Keep all string values SHORT (max 2 sentences). Do not pad or repeat.`;
 
+  const controller = new AbortController();
+  const timeout    = setTimeout(() => controller.abort(), 15_000);
   try {
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
+      signal: controller.signal,
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'content-type': 'application/json',
@@ -209,6 +213,8 @@ Rules: replace ALL placeholder text with real analysis from the headlines. level
   } catch (err) {
     console.error('[FTG ai-intel] Groq parse error:', err);
     return null;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -346,14 +352,45 @@ function algorithmicSynth(items: MinItem[]): Omit<AIIntelPayload, 'generatedAt' 
 // ── Route handler ──────────────────────────────────────────────────────────
 
 export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    const items: MinItem[] = Array.isArray(body?.items) ? body.items : [];
-    const forceRefresh = body?.forceRefresh === true;
+  // ── Rate limit: 20 req / 60 s per IP ─────────────────────────────────────
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  if (!rateLimit(`ai-intel:${ip}`, 20, 60_000)) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      { status: 429, headers: { 'Retry-After': String(retryAfterSeconds(`ai-intel:${ip}`)) } },
+    );
+  }
 
-    if (!items.length) {
+  try {
+    // ── Input validation ────────────────────────────────────────────────────
+    let body: unknown;
+    try { body = await request.json(); }
+    catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
+
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json({ error: 'Invalid body' }, { status: 400 });
+    }
+
+    const rawItems     = (body as Record<string, unknown>).items;
+    const forceRefresh = (body as Record<string, unknown>).forceRefresh === true;
+
+    if (!Array.isArray(rawItems) || rawItems.length === 0) {
       return NextResponse.json({ error: 'No items provided' }, { status: 400 });
     }
+
+    const items: MinItem[] = rawItems.slice(0, 50).map((raw: unknown) => {
+      const r = (raw ?? {}) as Record<string, unknown>;
+      return {
+        title:          String(r.title      ?? '').slice(0, 500),
+        summary:        String(r.summary    ?? '').slice(0, 1000) || undefined,
+        sourceName:     String(r.sourceName ?? '').slice(0, 100)  || undefined,
+        sourceId:       String(r.sourceId   ?? '').slice(0, 50)   || undefined,
+        region:         String(r.region     ?? '').slice(0, 50)   || undefined,
+        pubDate:        String(r.pubDate    ?? '').slice(0, 50)   || undefined,
+        link:           String(r.link       ?? '').slice(0, 500)  || undefined,
+        relevanceScore: typeof r.relevanceScore === 'number' ? r.relevanceScore : undefined,
+      };
+    }).filter(i => i.title.length > 0);
 
     const fp = fingerprint(items);
 

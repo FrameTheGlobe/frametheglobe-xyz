@@ -15,6 +15,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useVisibilityPolling } from '@/lib/use-visibility-polling';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -160,11 +161,8 @@ export default function IranOilBoard() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchPrices();
-    timerRef.current = setInterval(fetchPrices, POLL_MS);
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [fetchPrices]);
+  useEffect(() => { fetchPrices(); }, [fetchPrices]);
+  useVisibilityPolling(fetchPrices, POLL_MS);
 
   // ── Detect site theme for TradingView ────────────────────────────────────
   useEffect(() => {

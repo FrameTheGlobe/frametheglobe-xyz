@@ -8,6 +8,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { rateLimit, retryAfterSeconds } from '@/lib/rate-limit';
 
 export const runtime   = 'nodejs';
 export const revalidate = 0;
@@ -61,9 +62,12 @@ ${headlines}
 
 Write the brief now:`;
 
+  const controller = new AbortController();
+  const timeout    = setTimeout(() => controller.abort(), 10_000);
   try {
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
+      signal: controller.signal,
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'content-type': 'application/json',
@@ -87,6 +91,8 @@ Write the brief now:`;
     return data?.choices?.[0]?.message?.content?.trim() ?? null;
   } catch {
     return null;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -133,14 +139,44 @@ function algorithmicBrief(items: MinItem[]): FlashBriefPayload {
 // ── Route handler ──────────────────────────────────────────────────────────
 
 export async function POST(request: Request) {
-  try {
-    const body  = await request.json();
-    const items: MinItem[] = Array.isArray(body?.items) ? body.items : [];
-    const forceRefresh = body?.forceRefresh === true;
+  // ── Rate limit: 10 req / 60 s per IP ─────────────────────────────────────
+  const ip  = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  if (!rateLimit(`flash-brief:${ip}`, 10, 60_000)) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      { status: 429, headers: { 'Retry-After': String(retryAfterSeconds(`flash-brief:${ip}`)) } },
+    );
+  }
 
-    if (!items.length) {
+  try {
+    // ── Input validation ────────────────────────────────────────────────────
+    let body: unknown;
+    try { body = await request.json(); }
+    catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
+
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json({ error: 'Invalid body' }, { status: 400 });
+    }
+
+    const rawItems     = (body as Record<string, unknown>).items;
+    const forceRefresh = (body as Record<string, unknown>).forceRefresh === true;
+
+    if (!Array.isArray(rawItems) || rawItems.length === 0) {
       return NextResponse.json({ error: 'No items provided' }, { status: 400 });
     }
+
+    // Sanitise: accept max 50 items, truncate oversized strings
+    const items: MinItem[] = rawItems.slice(0, 50).map((raw: unknown) => {
+      const r = (raw ?? {}) as Record<string, unknown>;
+      return {
+        title:          String(r.title      ?? '').slice(0, 500),
+        summary:        String(r.summary    ?? '').slice(0, 1000) || undefined,
+        sourceName:     String(r.sourceName ?? '').slice(0, 100)  || undefined,
+        region:         String(r.region     ?? '').slice(0, 50)   || undefined,
+        pubDate:        String(r.pubDate    ?? '').slice(0, 50)   || undefined,
+        relevanceScore: typeof r.relevanceScore === 'number' ? r.relevanceScore : undefined,
+      };
+    }).filter(i => i.title.length > 0);
 
     const fp = fingerprint(items);
 

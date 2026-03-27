@@ -14,6 +14,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { useVisibilityPolling } from '@/lib/use-visibility-polling';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -233,11 +234,8 @@ export default function HormuzCommoditiesBoard() {
     return () => obs.disconnect();
   }, []);
 
-  useEffect(() => {
-    fetchData();
-    const t = setInterval(fetchData, POLL_MS);
-    return () => clearInterval(t);
-  }, [fetchData]);
+  useEffect(() => { fetchData(); }, [fetchData]);
+  useVisibilityPolling(fetchData, POLL_MS);
 
   // Partition quotes
   const fertilizers = quotes.filter(q => ['CF.US', 'MOS.US'].includes(q.symbol));

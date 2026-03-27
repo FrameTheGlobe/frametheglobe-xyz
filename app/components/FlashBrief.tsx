@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useVisibilityPolling } from '@/lib/use-visibility-polling';
 import type { FlashBriefPayload } from '@/app/api/flash-brief/route';
 
 type FeedItem = {
@@ -79,10 +80,7 @@ export default function FlashBrief({ items, embedded = false }: Props) {
     }
   }, [items.length, load]);
 
-  useEffect(() => {
-    const id = setInterval(() => load(), 60 * 60 * 1000);
-    return () => clearInterval(id);
-  }, [load]);
+  useVisibilityPolling(load, 60 * 60 * 1000);
 
   const sigColor = data?.generatedBy === 'groq-ai' ? '#22c55e' : '#f59e0b';
 

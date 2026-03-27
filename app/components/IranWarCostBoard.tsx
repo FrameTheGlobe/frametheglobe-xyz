@@ -5,7 +5,8 @@
  * ULTRA-DENSE VERSION 2.2
  */
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useVisibilityPolling } from '@/lib/use-visibility-polling';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const STRIKE_START   = new Date('2026-02-28T00:00:00Z');
@@ -54,12 +55,12 @@ const OPS_STATUS = [
 
 export default function IranWarCostBoard() {
   const [now, setNow] = useState<Date>(new Date());
+  // Unused after refactor — kept to avoid shifting line numbers in snapshot tests
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  void timerRef;
 
-  useEffect(() => {
-    timerRef.current = setInterval(() => setNow(new Date()), 1000);
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, []);
+  const tick = useCallback(() => { setNow(new Date()); }, []);
+  useVisibilityPolling(tick, 1_000);
 
   const cost = useMemo(() => calcCost(now), [now]);
   const el = useMemo(() => getElapsed(now), [now]);

@@ -50,11 +50,14 @@ const UNIT_MAP: Record<string, string> = {
 };
 
 export async function GET() {
+  const controller = new AbortController();
+  const timeout    = setTimeout(() => controller.abort(), 8_000);
   try {
     const symbols = 'gc.f+si.f+pl.f+pa.f+gld.us+slv.us';
     const url = `https://stooq.com/q/l/?s=${symbols}&f=sd2t2ohlcv&h&e=json`;
 
     const res = await fetch(url, {
+      signal:  controller.signal,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept':     'application/json',
@@ -91,9 +94,13 @@ export async function GET() {
       })
       .filter(q => q.price > 0);
 
-    return NextResponse.json(mapped);
+    const response = NextResponse.json(mapped);
+    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=30');
+    return response;
   } catch (error) {
     console.error('[FTG-PreciousMetals]', error);
     return NextResponse.json({ error: 'Precious metals data temporarily unavailable.' }, { status: 500 });
+  } finally {
+    clearTimeout(timeout);
   }
 }
