@@ -3270,28 +3270,21 @@ export default function Home() {
           overflowY: 'auto',
           paddingRight: '4px',
           scrollbarWidth: 'thin',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 14,
         }}>
-          {/* ── Flash Brief ──────────────────────────────────────────── */}
-          {hasMounted && <FlashBrief items={items} />}
-
-          {/* ── Strategic Brief / Intel Timeline ─────────────────────── */}
           <div style={{
             background: 'var(--surface)',
             border: '1px solid var(--border)',
             borderRadius: 4,
-            padding: '16px 20px',
-            boxShadow: 'var(--shadow-sm)'
+            boxShadow: 'var(--shadow-sm)',
+            overflow: 'hidden',
           }}>
+            {/* ── Card header ─────────────────────────────────────────── */}
             <div style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              marginBottom: 16,
-              paddingBottom: 8,
-              borderBottom: '1px solid var(--border-light)'
+              padding: '14px 20px 12px',
+              borderBottom: '1px solid var(--border-light)',
             }}>
               <h2 style={{
                 fontFamily: 'var(--font-mono)',
@@ -3310,22 +3303,32 @@ export default function Home() {
               </div>
             </div>
 
-            {hasMounted && <IntelTimeline events={intelEvents} />}
-
-            {hasMounted && intelEvents.length > 0 && (
-              <div style={{
-                marginTop: 20,
-                padding: '10px',
-                background: 'rgba(255, 255, 255, 0.02)',
-                borderRadius: 4,
-                border: '1px dashed var(--border)',
-                textAlign: 'center'
-              }}>
-                <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                  SCANNING GDELT & GCAPTAIN SENSORS
-                </span>
+            {/* ── Flash Brief — embedded as first sub-section ──────────── */}
+            {hasMounted && (
+              <div style={{ borderBottom: '1px solid var(--border-light)' }}>
+                <FlashBrief items={items} embedded />
               </div>
             )}
+
+            {/* ── Intel Timeline ───────────────────────────────────────── */}
+            <div style={{ padding: '16px 20px' }}>
+              {hasMounted && <IntelTimeline events={intelEvents} />}
+
+              {hasMounted && intelEvents.length > 0 && (
+                <div style={{
+                  marginTop: 20,
+                  padding: '10px',
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  borderRadius: 4,
+                  border: '1px dashed var(--border)',
+                  textAlign: 'center'
+                }}>
+                  <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                    SCANNING GDELT & GCAPTAIN SENSORS
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         </aside>
       </div>

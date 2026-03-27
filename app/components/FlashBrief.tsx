@@ -12,7 +12,11 @@ type FeedItem = {
   relevanceScore?: number;
 };
 
-interface Props { items: FeedItem[]; }
+interface Props {
+  items:    FeedItem[];
+  /** When true: renders flush inside a parent card — no outer border/radius */
+  embedded?: boolean;
+}
 
 function useTypewriter(text: string, speed = 16) {
   const [displayed, setDisplayed] = useState('');
@@ -32,7 +36,7 @@ function useTypewriter(text: string, speed = 16) {
   return displayed;
 }
 
-export default function FlashBrief({ items }: Props) {
+export default function FlashBrief({ items, embedded = false }: Props) {
   const [data,        setData]        = useState<FlashBriefPayload | null>(null);
   const [loading,     setLoading]     = useState(false);
   const [collapsed,   setCollapsed]   = useState(false);
@@ -83,21 +87,25 @@ export default function FlashBrief({ items }: Props) {
   const sigColor = data?.generatedBy === 'groq-ai' ? '#22c55e' : '#f59e0b';
 
   return (
-    <section style={{
-      background: 'var(--bg)',
-      border: '1px solid var(--border-light)',
-      borderLeft: '3px solid #e74c3c',
+    <section style={embedded ? {
+      background: 'transparent',
+      overflow:   'hidden',
+    } : {
+      background:   'var(--bg)',
+      border:       '1px solid var(--border-light)',
+      borderLeft:   '3px solid #e74c3c',
       borderRadius: '0 4px 4px 0',
-      overflow: 'hidden',
+      overflow:     'hidden',
     }}>
       {/* ── Header ─────────────────────────────────────────────── */}
       <div style={{
-        display: 'flex',
-        alignItems: 'center',
+        display:      'flex',
+        alignItems:   'center',
         justifyContent: 'space-between',
-        padding: '9px 14px',
+        padding:      '9px 14px',
         borderBottom: collapsed ? 'none' : '1px solid var(--border-light)',
-        background: 'var(--surface)',
+        background:   embedded ? 'rgba(231,76,60,0.04)' : 'var(--surface)',
+        borderLeft:   embedded ? '3px solid #e74c3c' : 'none',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{
@@ -163,10 +171,11 @@ export default function FlashBrief({ items }: Props) {
       {/* ── Body ─────────────────────────────────────────────────── */}
       {!collapsed && (
         <div style={{
-          padding: '14px 16px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 12,
+          padding:        embedded ? '12px 16px 14px 17px' : '14px 16px',
+          display:        'flex',
+          flexDirection:  'column',
+          gap:            12,
+          background:     embedded ? 'rgba(231,76,60,0.015)' : 'transparent',
         }}>
           {loading && !data && (
             <div style={{
