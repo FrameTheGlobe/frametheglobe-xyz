@@ -23,8 +23,8 @@ function pctColor(pct: number): string {
   return '#22c55e';
 }
 
-// ── Single outcome row (used inside multi-outcome events) ─────────────────────
-function OutcomeRow({ o, accentColor }: { o: PolyOutcome; accentColor: string }) {
+// ── Outcome row ───────────────────────────────────────────────────────────────
+function OutcomeRow({ o }: { o: PolyOutcome }) {
   const pct = Math.round(o.yesPrice * 100);
   const col = pctColor(pct);
 
@@ -36,44 +36,45 @@ function OutcomeRow({ o, accentColor }: { o: PolyOutcome; accentColor: string })
       style={{ textDecoration: 'none', display: 'block' }}
     >
       <div style={{
-        display:        'flex',
-        alignItems:     'center',
-        gap:            6,
-        padding:        '4px 0',
-        borderBottom:   '1px solid var(--border-light)',
+        display:      'flex',
+        alignItems:   'center',
+        gap:          8,
+        padding:      '6px 0',
+        borderBottom: '1px solid var(--border-light)',
       }}>
-        {/* Label */}
+        {/* Date / label */}
         <span style={{
-          flex:       1,
-          fontSize:   9,
-          color:      'var(--text-secondary)',
-          fontFamily: 'var(--font-mono)',
-          letterSpacing: '0.03em',
-          overflow:   'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
+          flex:          1,
+          fontSize:      11,
+          color:         'var(--text-secondary)',
+          fontFamily:    'var(--font-mono)',
+          overflow:      'hidden',
+          textOverflow:  'ellipsis',
+          whiteSpace:    'nowrap',
         }}>
           {o.label}
         </span>
-        {/* Pct */}
+
+        {/* Percentage */}
         <span style={{
           fontFamily:    'var(--font-mono)',
-          fontSize:      12,
+          fontSize:      14,
           fontWeight:    800,
           color:         col,
           letterSpacing: '-0.01em',
           flexShrink:    0,
-          minWidth:      30,
+          minWidth:      36,
           textAlign:     'right',
         }}>
           {pct}%
         </span>
+
         {/* Mini bar */}
         <div style={{
-          width:        36,
-          height:       4,
+          width:        44,
+          height:       5,
           background:   'var(--border-light)',
-          borderRadius: 2,
+          borderRadius: 3,
           overflow:     'hidden',
           flexShrink:   0,
         }}>
@@ -81,7 +82,7 @@ function OutcomeRow({ o, accentColor }: { o: PolyOutcome; accentColor: string })
             width:        `${pct}%`,
             height:       '100%',
             background:   col,
-            borderRadius: 2,
+            borderRadius: 3,
             transition:   'width 0.5s ease',
           }} />
         </div>
@@ -92,10 +93,9 @@ function OutcomeRow({ o, accentColor }: { o: PolyOutcome; accentColor: string })
 
 // ── Event card ────────────────────────────────────────────────────────────────
 function EventCard({ ev }: { ev: PolymarketEntry }) {
-  const meta   = CAT_META[ev.category] ?? CAT_META.CONFLICT;
+  const meta  = CAT_META[ev.category] ?? CAT_META.CONFLICT;
   const [hover, setHover] = useState(false);
 
-  // Binary: one big probability
   const isBig = ev.isBinary || ev.outcomes.length === 1;
   const pct   = isBig ? Math.round((ev.outcomes[0]?.yesPrice ?? 0) * 100) : null;
   const col   = pct !== null ? pctColor(pct) : meta.color;
@@ -109,24 +109,23 @@ function EventCard({ ev }: { ev: PolymarketEntry }) {
         borderLeft:   `3px solid ${meta.color}`,
         borderRadius: '0 4px 4px 0',
         background:   hover ? meta.bg : 'var(--surface)',
-        marginBottom: 5,
+        marginBottom: 6,
         overflow:     'hidden',
         transition:   'all 0.15s ease',
         boxShadow:    hover ? `0 1px 8px ${meta.color}18` : 'none',
       }}
     >
-      {/* Card header */}
+      {/* Title row */}
       <a
         href={ev.url}
         target="_blank"
         rel="noopener noreferrer"
-        style={{ textDecoration: 'none', display: 'block', padding: '7px 9px 0' }}
+        style={{ textDecoration: 'none', display: 'block', padding: '9px 11px 0' }}
       >
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, marginBottom: isBig ? 0 : 5 }}>
-          {/* Event title */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: isBig ? 0 : 6 }}>
           <span style={{
             flex:       1,
-            fontSize:   10,
+            fontSize:   12,
             color:      'var(--text-primary)',
             fontFamily: 'var(--font-body)',
             fontWeight: 600,
@@ -134,12 +133,13 @@ function EventCard({ ev }: { ev: PolymarketEntry }) {
           }}>
             {ev.eventTitle}
           </span>
-          {/* Big probability for binary markets */}
+
+          {/* Big number for binary markets */}
           {isBig && pct !== null && (
             <div style={{ flexShrink: 0, textAlign: 'right', lineHeight: 1 }}>
               <div style={{
                 fontFamily:    'var(--font-mono)',
-                fontSize:      20,
+                fontSize:      24,
                 fontWeight:    900,
                 color:         col,
                 letterSpacing: '-0.02em',
@@ -148,12 +148,12 @@ function EventCard({ ev }: { ev: PolymarketEntry }) {
                 {pct}%
               </div>
               <div style={{
-                fontFamily:  'var(--font-mono)',
-                fontSize:    6,
-                color:       'var(--text-muted)',
-                letterSpacing: '0.06em',
-                textAlign:   'center',
-                marginTop:   2,
+                fontFamily:    'var(--font-mono)',
+                fontSize:      9,
+                color:         'var(--text-muted)',
+                letterSpacing: '0.08em',
+                textAlign:     'center',
+                marginTop:     3,
               }}>
                 YES
               </div>
@@ -161,21 +161,21 @@ function EventCard({ ev }: { ev: PolymarketEntry }) {
           )}
         </div>
 
-        {/* Binary prob bar */}
+        {/* Prob bar for binary */}
         {isBig && pct !== null && (
           <div style={{
-            height:       3,
+            height:       4,
             background:   'var(--border-light)',
             borderRadius: 2,
             overflow:     'hidden',
-            margin:       '6px 0 0',
+            margin:       '8px 0 0',
           }}>
             <div style={{
-              width:      `${pct}%`,
-              height:     '100%',
-              background: `linear-gradient(90deg, ${col}80, ${col})`,
+              width:        `${pct}%`,
+              height:       '100%',
+              background:   `linear-gradient(90deg, ${col}80, ${col})`,
               borderRadius: 2,
-              transition: 'width 0.5s ease',
+              transition:   'width 0.5s ease',
             }} />
           </div>
         )}
@@ -183,9 +183,9 @@ function EventCard({ ev }: { ev: PolymarketEntry }) {
 
       {/* Multi-outcome rows */}
       {!isBig && ev.outcomes.length > 0 && (
-        <div style={{ padding: '0 9px' }}>
+        <div style={{ padding: '0 11px' }}>
           {ev.outcomes.slice(0, 3).map((o, i) => (
-            <OutcomeRow key={i} o={o} accentColor={meta.color} />
+            <OutcomeRow key={i} o={o} />
           ))}
         </div>
       )}
@@ -195,24 +195,25 @@ function EventCard({ ev }: { ev: PolymarketEntry }) {
         display:        'flex',
         alignItems:     'center',
         justifyContent: 'space-between',
-        padding:        '4px 9px 6px',
-        marginTop:      3,
+        padding:        '5px 11px 8px',
+        marginTop:      2,
       }}>
         <span style={{
           fontFamily:    'var(--font-mono)',
-          fontSize:      7,
+          fontSize:      10,
           color:         'var(--text-muted)',
-          opacity:       0.6,
-          letterSpacing: '0.04em',
+          opacity:       0.65,
+          letterSpacing: '0.03em',
         }}>
           {fmtVol(ev.volume)} vol
         </span>
         <span style={{
-          fontSize:   8,
+          fontSize:   10,
           color:      meta.color,
           opacity:    hover ? 1 : 0.45,
           transition: 'opacity 0.15s',
           fontFamily: 'var(--font-mono)',
+          fontWeight: 600,
         }}>
           ↗ PM
         </span>
@@ -263,11 +264,11 @@ export default function PolymarketBoard() {
 
   return (
     <div style={{
-      border:        '1px solid rgba(168,85,247,0.22)',
-      borderRadius:  4,
-      overflow:      'hidden',
-      fontFamily:    'var(--font-mono)',
-      boxShadow:     '0 0 0 1px rgba(168,85,247,0.06)',
+      border:       '1px solid rgba(168,85,247,0.22)',
+      borderRadius: 4,
+      overflow:     'hidden',
+      fontFamily:   'var(--font-mono)',
+      boxShadow:    '0 0 0 1px rgba(168,85,247,0.06)',
     }}>
 
       {/* ── Header ─────────────────────────────────────────────────────── */}
@@ -278,104 +279,136 @@ export default function PolymarketBoard() {
           display:        'flex',
           alignItems:     'center',
           justifyContent: 'space-between',
-          padding:        '8px 10px',
+          padding:        '9px 11px',
           background:     'linear-gradient(135deg, rgba(168,85,247,0.13) 0%, rgba(168,85,247,0.04) 100%)',
           border:         'none',
           borderBottom:   collapsed ? 'none' : '1px solid rgba(168,85,247,0.18)',
           cursor:         'pointer',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
           <span style={{
-            width: 6, height: 6, borderRadius: '50%',
+            width: 7, height: 7, borderRadius: '50%',
             background: '#a855f7',
             boxShadow:  '0 0 7px #a855f7',
             flexShrink: 0,
           }} />
-          <span style={{ fontSize: 9, color: '#c084fc', letterSpacing: '0.12em', fontWeight: 800 }}>
+          <span style={{ fontSize: 11, color: '#c084fc', letterSpacing: '0.1em', fontWeight: 800 }}>
             IRAN WAR ODDS
           </span>
           <span style={{
-            fontSize:     7,
-            color:        '#a855f7',
-            border:       '1px solid rgba(168,85,247,0.35)',
-            borderRadius: 2,
-            padding:      '1px 4px',
-            background:   'rgba(168,85,247,0.1)',
+            fontSize:      9,
+            color:         '#a855f7',
+            border:        '1px solid rgba(168,85,247,0.35)',
+            borderRadius:  2,
+            padding:       '1px 5px',
+            background:    'rgba(168,85,247,0.1)',
             letterSpacing: '0.06em',
           }}>
             POLYMARKET
           </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {!loading && !error && data.length > 0 && (
             <span style={{
-              fontSize: 7, color: '#a855f7',
-              background: 'rgba(168,85,247,0.12)',
-              border: '1px solid rgba(168,85,247,0.2)',
-              borderRadius: 10, padding: '1px 5px',
+              fontSize:     9,
+              color:        '#a855f7',
+              background:   'rgba(168,85,247,0.12)',
+              border:       '1px solid rgba(168,85,247,0.2)',
+              borderRadius: 10,
+              padding:      '1px 6px',
             }}>
               {data.length}
             </span>
           )}
           {updatedAt && (
-            <span style={{ fontSize: 7, color: 'var(--text-muted)', opacity: 0.5 }}>
+            <span style={{ fontSize: 9, color: 'var(--text-muted)', opacity: 0.55 }}>
               {updatedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
           )}
-          <span style={{ fontSize: 9, color: '#a855f7', opacity: 0.7 }}>
+          <span style={{ fontSize: 10, color: '#a855f7', opacity: 0.7 }}>
             {collapsed ? '▼' : '▲'}
           </span>
         </div>
       </button>
 
       {!collapsed && (
-        <div style={{ padding: '8px 7px 8px', background: 'var(--bg)' }}>
+        <div style={{ padding: '9px 8px 9px', background: 'var(--bg)' }}>
 
           {loading && (
-            <div style={{ padding: '16px 0', textAlign: 'center', fontSize: 9, color: '#a855f7', opacity: 0.7, letterSpacing: '0.1em' }}>
+            <div style={{
+              padding:       '18px 0',
+              textAlign:     'center',
+              fontSize:      11,
+              color:         '#a855f7',
+              opacity:       0.7,
+              letterSpacing: '0.1em',
+            }}>
               ⟳ SCANNING MARKETS…
             </div>
           )}
 
           {!loading && error && (
-            <div style={{ padding: '12px 6px', textAlign: 'center' }}>
-              <div style={{ fontSize: 9, color: 'var(--text-muted)', marginBottom: 8, letterSpacing: '0.06em', opacity: 0.7 }}>
+            <div style={{ padding: '14px 6px', textAlign: 'center' }}>
+              <div style={{
+                fontSize:      11,
+                color:         'var(--text-muted)',
+                marginBottom:  10,
+                letterSpacing: '0.06em',
+                opacity:       0.7,
+              }}>
                 NO LIVE IRAN MARKETS
               </div>
               <button
                 onClick={load}
                 style={{
-                  fontSize: 8, color: '#a855f7',
-                  border: '1px solid rgba(168,85,247,0.4)',
-                  borderRadius: 3, padding: '3px 10px',
-                  background: 'rgba(168,85,247,0.08)',
-                  cursor: 'pointer', letterSpacing: '0.07em',
-                  fontFamily: 'var(--font-mono)',
+                  fontSize:      10,
+                  color:         '#a855f7',
+                  border:        '1px solid rgba(168,85,247,0.4)',
+                  borderRadius:  3,
+                  padding:       '4px 12px',
+                  background:    'rgba(168,85,247,0.08)',
+                  cursor:        'pointer',
+                  letterSpacing: '0.07em',
+                  fontFamily:    'var(--font-mono)',
                 }}
-              >↺ RETRY</button>
+              >
+                ↺ RETRY
+              </button>
             </div>
           )}
 
           {!loading && !error && presentCats.map(cat => {
             const meta = CAT_META[cat];
             return (
-              <div key={cat} style={{ marginBottom: 10 }}>
-                {/* Category header */}
+              <div key={cat} style={{ marginBottom: 12 }}>
+                {/* Category label */}
                 <div style={{
-                  display: 'flex', alignItems: 'center', gap: 5,
-                  marginBottom: 5, paddingBottom: 4,
-                  borderBottom: `1px solid ${meta.color}20`,
+                  display:       'flex',
+                  alignItems:    'center',
+                  gap:           6,
+                  marginBottom:  6,
+                  paddingBottom: 5,
+                  borderBottom:  `1px solid ${meta.color}22`,
                 }}>
-                  <span style={{ fontSize: 9 }}>{meta.icon}</span>
-                  <span style={{ fontSize: 7, color: meta.color, fontWeight: 800, letterSpacing: '0.12em' }}>
+                  <span style={{ fontSize: 11 }}>{meta.icon}</span>
+                  <span style={{
+                    fontSize:      10,
+                    color:         meta.color,
+                    fontWeight:    800,
+                    letterSpacing: '0.1em',
+                  }}>
                     {cat}
                   </span>
                   <span style={{
-                    marginLeft: 'auto', fontSize: 7,
-                    color: meta.color, background: meta.bg,
-                    border: `1px solid ${meta.color}25`,
-                    borderRadius: 10, padding: '0 5px', fontWeight: 700,
+                    marginLeft:   'auto',
+                    fontSize:     9,
+                    color:        meta.color,
+                    background:   meta.bg,
+                    border:       `1px solid ${meta.color}25`,
+                    borderRadius: 10,
+                    padding:      '1px 6px',
+                    fontWeight:   700,
                   }}>
                     {byCategory[cat].length}
                   </span>
@@ -388,9 +421,14 @@ export default function PolymarketBoard() {
 
           {!loading && !error && data.length > 0 && (
             <div style={{
-              display: 'flex', justifyContent: 'space-between',
-              paddingTop: 5, borderTop: '1px solid rgba(168,85,247,0.1)',
-              fontSize: 7, color: 'var(--text-muted)', opacity: 0.45, letterSpacing: '0.04em',
+              display:        'flex',
+              justifyContent: 'space-between',
+              paddingTop:     6,
+              borderTop:      '1px solid rgba(168,85,247,0.1)',
+              fontSize:       9,
+              color:          'var(--text-muted)',
+              opacity:        0.5,
+              letterSpacing:  '0.04em',
             }}>
               <span>via Polymarket · ~5 min</span>
               <span>not financial advice</span>
