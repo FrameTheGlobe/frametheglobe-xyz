@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Lora, IBM_Plex_Mono } from 'next/font/google';
+import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
 
 // next/font self-hosts these at build time → no round-trip to Google Fonts CDN,
@@ -102,7 +103,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${lora.variable} ${ibmPlexMono.variable}`}>
-      <body>{children}</body>
+      <body>
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }
