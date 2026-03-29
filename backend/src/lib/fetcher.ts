@@ -630,13 +630,11 @@ export async function fetchFeed(source: {
 /**
  * Fetch all sources with polite staggered dispatch.
  *
- * Sources are processed in batches of BATCH_SIZE with a short pause between
- * each batch. This avoids sending 100+ simultaneous connections from one IP,
- * which can look like abuse to smaller feed providers. Cached sources return
- * instantly from memory so batching adds no meaningful latency for them.
+ * Regular sources fire in parallel (individual 4 s timeouts guard hangs).
+ * Sources marked sequential:true (e.g. GDELT) are fetched one-at-a-time with
+ * a 1.5 s delay between each to respect GDELT's ~1 req/s per-IP rate limit.
  */
-const BATCH_SIZE  = 35;  // all sources in one Promise.allSettled — individual timeouts guard hangs
-const BATCH_DELAY = 0;   // no artificial stagger needed
+const GDELT_DELAY_MS = 1500; // 1.5 s gap between sequential (GDELT) requests
 
 export async function fetchAllFeeds(sources: Parameters<typeof fetchFeed>[0][]): Promise<{
   items: FeedItem[];
@@ -645,22 +643,32 @@ export async function fetchAllFeeds(sources: Parameters<typeof fetchFeed>[0][]):
   const allItems:  FeedItem[]      = [];
   const allHealth: SourceHealth[]  = [];
 
-  for (let i = 0; i < sources.length; i += BATCH_SIZE) {
-    const batch   = sources.slice(i, i + BATCH_SIZE);
-    const results = await Promise.allSettled(batch.map(s => fetchFeed(s)));
+  // Split into parallel and sequential buckets
+  const parallel   = sources.filter(s => !('sequential' in s && s.sequential));
+  const sequential = sources.filter(s => 'sequential' in s && s.sequential);
 
-    results.forEach(r => {
-      if (r.status === 'fulfilled') {
-        allItems.push(...r.value.items);
-        allHealth.push(r.value.health);
-      } else {
-        console.error('[FTG] fetchAllFeeds batch error:', r.reason);
-      }
-    });
+  // Parallel batch — all non-sequential sources at once
+  const parallelResults = await Promise.allSettled(parallel.map(s => fetchFeed(s)));
+  parallelResults.forEach(r => {
+    if (r.status === 'fulfilled') {
+      allItems.push(...r.value.items);
+      allHealth.push(r.value.health);
+    } else {
+      console.error('[FTG] fetchAllFeeds parallel error:', r.reason);
+    }
+  });
 
-    // Brief pause between batches — only if delay is set and there are more batches
-    if (BATCH_DELAY > 0 && i + BATCH_SIZE < sources.length) {
-      await new Promise(resolve => setTimeout(resolve, BATCH_DELAY));
+  // Sequential batch — one at a time with delay (GDELT rate limiting)
+  for (let i = 0; i < sequential.length; i++) {
+    try {
+      const result = await fetchFeed(sequential[i]);
+      allItems.push(...result.items);
+      allHealth.push(result.health);
+    } catch (err) {
+      console.error('[FTG] fetchAllFeeds sequential error:', err);
+    }
+    if (i < sequential.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, GDELT_DELAY_MS));
     }
   }
 
