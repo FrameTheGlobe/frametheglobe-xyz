@@ -394,7 +394,7 @@ interface MapViewProps {
   items: FeedItem[];
 }
 
-const FLIGHT_POLL_MS = 60_000; // re-fetch flights every 60 s (server caches for 5 min)
+const FLIGHT_POLL_MS = 300_000; // re-fetch flights every 5 min (matches server-side cache TTL)
 
 export default function MapView({ items }: MapViewProps) {
   const containerRef  = useRef<HTMLDivElement>(null);
