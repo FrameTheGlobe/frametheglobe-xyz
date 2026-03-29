@@ -29,9 +29,19 @@ const nextConfig: NextConfig = {
     // • script-src: 'unsafe-inline' + 'unsafe-eval' required for Next.js
     //   hydration chunks and TradingView widgets respectively.
     // • frame-src: YouTube live embeds and TradingView chart iframes.
-    // • connect-src: all external API calls are proxied through /api/* (self);
-    //   the only direct browser connection is the SSE stream, also self.
+    // • connect-src: API calls go through /api/* (self) plus the Railway
+    //   backend origin for direct browser SSE connections to /api/stream.
+    //   NEXT_PUBLIC_BACKEND_URL must be set in Vercel env vars in production.
     // • img-src https: covers OSM tiles (Leaflet), YouTube thumbnails, favicons.
+
+    // Derive the Railway origin for CSP (safe even if env var is missing/malformed)
+    let backendOrigin = '';
+    try {
+      if (process.env.NEXT_PUBLIC_BACKEND_URL) {
+        backendOrigin = new URL(process.env.NEXT_PUBLIC_BACKEND_URL).origin;
+      }
+    } catch { /* ignore malformed URL */ }
+
     const CSP = [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://s.tradingview.com https://cdn.tradingview.com",
@@ -39,7 +49,7 @@ const nextConfig: NextConfig = {
       "font-src 'self' data:",
       "img-src 'self' data: blob: https:",
       "frame-src https://www.youtube.com https://www.youtube-nocookie.com https://s.tradingview.com https://www.tradingview.com",
-      "connect-src 'self'",
+      `connect-src 'self'${backendOrigin ? ` ${backendOrigin}` : ''}`,
       "worker-src 'self' blob:",
       "media-src 'self' https://www.youtube.com",
       "object-src 'none'",

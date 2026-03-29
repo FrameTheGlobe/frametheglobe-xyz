@@ -27,6 +27,7 @@ import flashBriefRouter   from './routes/flash-brief.js';
 import analystBriefingRouter from './routes/analyst-briefing.js';
 import analyzeTickerRouter   from './routes/analyze-ticker.js';
 import articleBriefRouter    from './routes/article-brief.js';
+import rssRouter             from './routes/rss.js';
 
 const app  = express();
 const PORT = process.env.PORT ?? 4000;
@@ -77,6 +78,7 @@ app.use('/api/flash-brief',       flashBriefRouter);
 app.use('/api/analyst-briefing',  analystBriefingRouter);
 app.use('/api/analyze-ticker',    analyzeTickerRouter);
 app.use('/api/article-brief',     articleBriefRouter);
+app.use('/api/rss',               rssRouter);
 
 // ── 404 fallback ─────────────────────────────────────────────────────────────
 app.use((_req, res) => {

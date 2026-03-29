@@ -1485,7 +1485,13 @@ export default function Home() {
     const connect = () => {
       if (destroyed) return;
       setLiveStatus('connecting');
-      es = new EventSource('/api/stream');
+      // Connect directly to Railway for SSE — avoids Vercel lambda cost.
+      // Falls back to the Next.js proxy (/api/stream) in local dev when
+      // NEXT_PUBLIC_BACKEND_URL is not set (the proxy redirects to :4000).
+      const sseUrl = process.env.NEXT_PUBLIC_BACKEND_URL
+        ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/stream`
+        : '/api/stream';
+      es = new EventSource(sseUrl);
 
       es.addEventListener('open', () => {
         if (destroyed) { es?.close(); return; }
