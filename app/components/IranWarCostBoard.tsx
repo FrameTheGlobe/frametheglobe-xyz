@@ -56,6 +56,11 @@ function formatCompactUSD(n: number): string {
   return `${n.toFixed(0)}`;
 }
 
+function formatFullUSD(n: number): string {
+  if (!Number.isFinite(n)) return '—';
+  return Math.max(0, Math.round(n)).toLocaleString('en-US');
+}
+
 function inWindow(pubDate: string, nowMs: number, windowMs: number): boolean {
   const t = Date.parse(pubDate);
   if (!Number.isFinite(t)) return false;
@@ -293,6 +298,41 @@ export default function IranWarCostBoard() {
     return Math.max(0, Math.min(100, Math.round(100 - opsTempo)));
   }, [opsTempo]);
 
+  // Long-horizon cost ticker model (running counter, separate from 6H ops estimate).
+  // Model mirrors the public-style ticker format:
+  // - $11.3B for first 6 days
+  // - then $1B/day ongoing
+  const longHorizonCost = useMemo(() => {
+    const nowMs = now.getTime();
+    const startedAtMs = Date.parse('2026-02-28T00:00:00Z');
+    const firstWindowMs = 6 * 24 * 60 * 60 * 1000;
+    const firstWindowCost = 11_300_000_000;
+    const ongoingPerDay = 1_000_000_000;
+    const ongoingPerMs = ongoingPerDay / (24 * 60 * 60 * 1000);
+
+    if (!Number.isFinite(startedAtMs) || nowMs <= startedAtMs) {
+      return {
+        totalUsd: 0,
+        perSecond: ongoingPerMs * 1000,
+        perHour: ongoingPerDay / 24,
+        perDay: ongoingPerDay,
+      };
+    }
+
+    const elapsedMs = nowMs - startedAtMs;
+    const firstLeg = Math.min(elapsedMs, firstWindowMs);
+    const secondLeg = Math.max(0, elapsedMs - firstWindowMs);
+    const firstLegRate = firstWindowCost / firstWindowMs;
+    const totalUsd = (firstLegRate * firstLeg) + (ongoingPerMs * secondLeg);
+
+    return {
+      totalUsd,
+      perSecond: ongoingPerMs * 1000,
+      perHour: ongoingPerDay / 24,
+      perDay: ongoingPerDay,
+    };
+  }, [now]);
+
   return (
     <div className="ftg-iran-board" style={{
       background: surface,
@@ -326,6 +366,26 @@ export default function IranWarCostBoard() {
 
       <div className="ftg-iran-board-grid" style={{ display: 'flex', flexWrap: 'wrap' }}>
         <div className="ftg-iran-board-main" style={{ flex: '2 1 500px', borderRight: `1px solid ${border}` }}>
+          <div style={{ padding: '16px 22px', borderBottom: `1px solid ${border}`, background: 'var(--surface-hover)' }}>
+            <div style={{ fontFamily: mono, fontSize: 11, color: muted, letterSpacing: '0.1em', fontWeight: 800, marginBottom: 8 }}>
+              EST. U.S. COST SINCE STRIKES BEGAN (LIVE TICKER)
+            </div>
+            <div style={{ fontFamily: mono, fontSize: 34, fontWeight: 900, color: '#c93a20', lineHeight: 1.05, fontVariantNumeric: 'tabular-nums' }}>
+              ${formatFullUSD(longHorizonCost.totalUsd)}
+            </div>
+            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 8 }}>
+              <span style={{ fontFamily: mono, fontSize: 11, color: muted, fontWeight: 700 }}>
+                PER SECOND ${formatCompactUSD(longHorizonCost.perSecond)}
+              </span>
+              <span style={{ fontFamily: mono, fontSize: 11, color: muted, fontWeight: 700 }}>
+                PER HOUR ${formatCompactUSD(longHorizonCost.perHour)}
+              </span>
+              <span style={{ fontFamily: mono, fontSize: 11, color: muted, fontWeight: 700 }}>
+                PER DAY ${formatCompactUSD(longHorizonCost.perDay)}
+              </span>
+            </div>
+          </div>
+
           <div style={{ padding: '22px', borderBottom: `1px solid ${border}`, textAlign: 'center' }}>
             <div style={{ fontFamily: mono, fontSize: 12, color: muted, letterSpacing: '0.12em', marginBottom: 14 }}>
               OPS TEMPO INDEX (0–100) · LIVE NEWS + ADS-B + OIL SPREAD
