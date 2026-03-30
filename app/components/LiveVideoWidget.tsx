@@ -79,7 +79,7 @@ export default function LiveVideoWidget() {
         overflow: 'hidden',
       }}>
         <div style={{ padding: '12px 14px', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>
-          Live feeds unavailable. Set `YOUTUBE_LIVE_FEEDS_JSON` on the Railway backend.
+          Live feeds are temporarily unavailable. Retry in a moment.
         </div>
       </div>
     );

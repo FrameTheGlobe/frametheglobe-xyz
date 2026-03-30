@@ -12,6 +12,10 @@
  *   https://www.youtube.com/feeds/videos.xml?channel_id=CHANNEL_ID
  *
  * No paid APIs, no keys, no scraping. RSS is public and stable.
+ *
+ * IMPORTANT:
+ * If YOUTUBE_LIVE_FEEDS_JSON is missing/invalid, we fall back to a curated
+ * built-in list so production never renders an empty live-feed widget.
  */
 
 import { Router, Request, Response } from 'express';
@@ -33,6 +37,16 @@ type ResolvedFeed = {
 };
 
 const parser = new Parser({ timeout: 5000 });
+
+// Built-in fallback feeds. These keep the widget functional even when Railway
+// env vars are missing or misconfigured.
+const DEFAULT_FEEDS: FeedConfig[] = [
+  // Historical stable stream IDs from prior working builds.
+  { id: 'aljazeera', name: 'Al Jazeera English', channelId: 'UCNye-wNBqNL5ZzHSJj3l8Bg', videoId: 'Khfdb7qUvjk' },
+  { id: 'skynews', name: 'Sky News', channelId: 'UCoMdktPbSTixAyNGwb-UYkQ', videoId: 'fIurYTprwzg' },
+  { id: 'worldreport', name: 'World Report', channelId: 'UCknLrEdhRCp1aegoMqRaCZg', videoId: 'gmtlJ_m2r5A' },
+  { id: 'geopolitics', name: 'Geopolitics', channelId: 'UC7fWeaHhqgM4Ry-RMpM2YYw', videoId: '-zGuR1qVKrU' },
+];
 
 function safeJsonParse<T>(raw: string | undefined): T | null {
   if (!raw) return null;
@@ -82,18 +96,9 @@ async function resolveFromRss(channelId: string): Promise<{ videoId: string | nu
 
 router.get('/', async (_req: Request, res: Response) => {
   const cfg = safeJsonParse<FeedConfig[]>(process.env.YOUTUBE_LIVE_FEEDS_JSON);
-  const feeds: FeedConfig[] = Array.isArray(cfg) ? cfg : [];
-
-  if (feeds.length === 0) {
-    return res
-      .set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=60')
-      .json({
-        ok: true,
-        fetchedAt: new Date().toISOString(),
-        feeds: [],
-        warning: 'YOUTUBE_LIVE_FEEDS_JSON not set on backend',
-      });
-  }
+  const envFeeds: FeedConfig[] = Array.isArray(cfg) ? cfg : [];
+  const usingFallback = envFeeds.length === 0;
+  const feeds: FeedConfig[] = usingFallback ? DEFAULT_FEEDS : envFeeds;
 
   const resolved: ResolvedFeed[] = await Promise.all(
     feeds.map(async (f) => {
@@ -128,7 +133,12 @@ router.get('/', async (_req: Request, res: Response) => {
 
   return res
     .set('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=120')
-    .json({ ok: true, fetchedAt: new Date().toISOString(), feeds: resolved });
+    .json({
+      ok: true,
+      fetchedAt: new Date().toISOString(),
+      feeds: resolved,
+      warning: usingFallback ? 'Using built-in fallback live-feed config (set YOUTUBE_LIVE_FEEDS_JSON to override).' : undefined,
+    });
 });
 
 export default router;
