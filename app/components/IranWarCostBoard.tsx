@@ -372,6 +372,22 @@ export default function IranWarCostBoard() {
       }));
   }, [news, now]);
 
+  const criticalZones = useMemo(() => {
+    const targets = ['kharg island', 'tel aviv', 'haifa', 'beirut', 'strait of hormuz', 'red sea', 'natanz', 'fordow', 'tehran', 'damascus', 'sanaa', 'baghdad', 'kurdistan', 'golan heights', 'eilat', 'ashkelon', 'nuclear facility', 'oil refinery', 'military base', 'isfahan', 'tabriz', 'gaza', 'rafah'];
+    const hits: Record<string, number> = {};
+    const nowMs = now.getTime();
+    (news ?? []).forEach(it => {
+       if (!inWindow(it.pubDate, nowMs, 24 * 60 * 60 * 1000)) return;
+       const text = `${it.title} ${it.summary ?? ''}`.toLowerCase();
+       targets.forEach(t => {
+         if (text.includes(t)) {
+           hits[t] = (hits[t] || 0) + 1;
+         }
+       });
+    });
+    return Object.entries(hits).sort((a,b) => b[1] - a[1]).slice(0, 8);
+  }, [news, now]);
+
   // Section label used repeatedly — keeps styling consistent
   const SectionLabel = ({ children }: { children: string }) => (
     <div style={{
@@ -627,7 +643,7 @@ export default function IranWarCostBoard() {
           </div>
 
           {/* LATEST MISSILE SIGNALS */}
-          <div style={{ padding: '16px 20px', flex: 1 }}>
+          <div style={{ padding: '16px 20px' }}>
             <SectionLabel>Latest Missile Signals</SectionLabel>
             {missileIntel.latestMissileSignals.length === 0 ? (
               <div style={{ fontFamily: mono, fontSize: 12, color: muted }}>No signals in current cache.</div>
@@ -646,6 +662,52 @@ export default function IranWarCostBoard() {
                 ))}
               </div>
             )}
+          </div>
+
+          {/* ACTIVE THEATER HOTSPOTS & AVIATION */}
+          <div style={{ padding: '16px 20px', borderTop: `1px solid ${border}`, flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <SectionLabel>Active Theater Hotspots &amp; Aviation</SectionLabel>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '16px 20px', marginTop: 12 }}>
+              
+              {/* Hotspots */}
+              <div>
+                <div style={{ fontFamily: mono, fontSize: 9, color: muted, fontWeight: 800, textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.06em' }}>Mentioned Zones (24H)</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {criticalZones.length === 0 ? (
+                    <span style={{ fontFamily: mono, fontSize: 10, color: muted }}>None detected</span>
+                  ) : (
+                    criticalZones.map(([zone, count]) => (
+                      <span key={zone} style={{
+                        fontFamily: mono, fontSize: 9, fontWeight: 900,
+                        color: count > 2 ? downColor : 'var(--text-primary)',
+                        background: count > 2 ? 'rgba(201,58,32,0.1)' : 'var(--surface-hover)',
+                        border: `1px solid ${count > 2 ? 'rgba(201,58,32,0.2)' : border}`,
+                        padding: '4px 8px', borderRadius: 4, textTransform: 'uppercase',
+                        letterSpacing: '0.04em'
+                      }}>
+                        {zone} <span style={{ opacity: 0.6 }}>({count})</span>
+                      </span>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Aviation */}
+              <div>
+                 <div style={{ fontFamily: mono, fontSize: 9, color: muted, fontWeight: 800, textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.06em' }}>Theater Aviation</div>
+                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                   <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 10px', background: 'var(--surface-hover)', borderRadius: 4 }}>
+                     <span style={{ fontFamily: mono, fontSize: 10, color: muted, fontWeight: 700 }}>Total Flights (ADS-B)</span>
+                     <span style={{ fontFamily: mono, fontSize: 13, color: 'var(--text-primary)', fontWeight: 900 }}>{metrics?.flights?.total ?? '—'}</span>
+                   </div>
+                   <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 10px', background: metrics?.flights?.strategic ? 'rgba(201,58,32,0.1)' : 'var(--surface)', border: metrics?.flights?.strategic ? `1px solid rgba(201,58,32,0.3)` : `1px solid ${border}`, borderRadius: 4 }}>
+                     <span style={{ fontFamily: mono, fontSize: 10, color: metrics?.flights?.strategic ? downColor : muted, fontWeight: 700 }}>Strategic Assets</span>
+                     <span style={{ fontFamily: mono, fontSize: 13, color: metrics?.flights?.strategic ? downColor : 'var(--text-primary)', fontWeight: 900 }}>{metrics?.flights?.strategic ?? '—'}</span>
+                   </div>
+                 </div>
+              </div>
+
+            </div>
           </div>
         </div>
       </div>
