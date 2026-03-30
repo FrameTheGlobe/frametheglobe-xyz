@@ -3,8 +3,11 @@
 /**
  * IranWarCostBoard — Iran Theater Ops & Risk (real feeds only).
  *
- * This widget previously contained simulated “model” numbers (cost, casualties,
- * munitions, readiness). Those have been removed.
+ * This widget shows a live ops/risk view from real feeds.
+ *
+ * The older “war cost / casualties / munitions readiness” ticker used to rely on
+ * simulated model numbers; those are reintroduced here as event-derived estimates
+ * computed from live missile keyword detections inside the existing `/api/news` cache.
  *
  * Everything displayed now is derived from real data feeds already in the app:
  *  - /api/news (RSS ingestion cache)
@@ -43,6 +46,21 @@ type Quote = {
 
 function fmt(n: number, d = 2) { return n.toFixed(d); }
 function sign(n: number) { return n >= 0 ? '+' : ''; }
+
+function formatCompactUSD(n: number): string {
+  if (!Number.isFinite(n)) return '—';
+  const abs = Math.abs(n);
+  if (abs >= 1e9) return `${(n / 1e9).toFixed(2)}B`;
+  if (abs >= 1e6) return `${(n / 1e6).toFixed(2)}M`;
+  if (abs >= 1e3) return `${(n / 1e3).toFixed(1)}K`;
+  return `${n.toFixed(0)}`;
+}
+
+function inWindow(pubDate: string, nowMs: number, windowMs: number): boolean {
+  const t = Date.parse(pubDate);
+  if (!Number.isFinite(t)) return false;
+  return nowMs - t <= windowMs && nowMs - t >= 0;
+}
 
 function timeAgoLabel(nowMs: number, pubDate: string): string {
   const t = Date.parse(pubDate);
@@ -161,6 +179,120 @@ export default function IranWarCostBoard() {
       }));
   }, [news, now]);
 
+  // Live “war cost ticker” + missile intel (event-derived estimates).
+  // Note: this is an estimate based on headline/summary keyword detections.
+  const missileIntel = useMemo(() => {
+    const nowMs = now.getTime();
+
+    const MISSILE_TYPES: { label: string; keywords: string[] }[] = [
+      { label: 'Ballistic', keywords: ['ballistic missile', 'sejjil', 'fateh', 'emad', 'qiam', 'shahab', 'kheibar', 'jericho'] },
+      { label: 'Cruise', keywords: ['cruise missile', 'cruise'] },
+      { label: 'Drone', keywords: ['shahed', 'drone strike', 'drone attack', 'uav', 'kamikaze'] },
+      { label: 'Iron Dome', keywords: ['iron dome'] },
+      { label: 'Intercept', keywords: ['intercept', 'shot down', 'arrow system', "david's sling"] },
+      { label: 'Airstrike', keywords: ['airstrike', 'air strike', 'f-35', 'f-16'] },
+    ];
+
+    const IRAN_KW = [
+      'iran', 'irgc', 'hezbollah', 'hamas', 'houthi', 'islamic republic',
+      'sejjil', 'fateh', 'emad', 'qiam', 'shahab', 'kheibar', 'shahed',
+      'arash', 'iranian missile', 'iranian drone', 'proxy',
+    ];
+
+    const ISRAEL_KW = [
+      'israel', 'idf', 'israeli', 'iron dome', "david's sling", 'arrow system',
+      'iaf', 'mossad', 'f-35', 'f-16', 'tel aviv', 'jerusalem',
+      'israeli airstrike', 'israeli forces',
+    ];
+
+    const COST_USD_BY_TYPE: Record<string, number> = {
+      Ballistic: 20_000_000,
+      Cruise: 5_000_000,
+      Drone: 50_000,
+      'Iron Dome': 150_000,
+      Intercept: 250_000,
+      Airstrike: 2_000_000,
+    };
+
+    // Rough casualty estimator used only to reproduce the old “ticker feel”.
+    // Excluding defensive intercept types by default.
+    const CASUALTIES_BY_TYPE: Record<string, number> = {
+      Ballistic: 18,
+      Cruise: 10,
+      Drone: 2,
+      Airstrike: 12,
+      'Iron Dome': 0,
+      Intercept: 0,
+    };
+
+    const MISSILE_LOG_RE = /\b(missile|ballistic|cruise missile|shahed|fateh|sejjil|iron dome|david's sling|arrow system|jericho|intercept|airstrike|drone strike|uav|kamikaze)\b/i;
+
+    const matchesAny = (text: string, kws: string[]) => kws.some(k => text.includes(k));
+
+    const iranTextMatch = (it: FeedItem) => {
+      const t = `${it.title} ${it.summary ?? ''}`.toLowerCase();
+      return matchesAny(t, IRAN_KW);
+    };
+    const israelTextMatch = (it: FeedItem) => {
+      const t = `${it.title} ${it.summary ?? ''}`.toLowerCase();
+      return matchesAny(t, ISRAEL_KW);
+    };
+
+    const windowMs6h = 6 * 60 * 60 * 1000;
+    const windowed = (items: FeedItem[], predicate: (it: FeedItem) => boolean) =>
+      (items ?? []).filter(it => predicate(it) && inWindow(it.pubDate, nowMs, windowMs6h));
+
+    const iranItems6h = windowed(news ?? [], iranTextMatch);
+    const israelItems6h = windowed(news ?? [], israelTextMatch);
+
+    const countByType = (items: FeedItem[]) => {
+      const out: Record<string, number> = {};
+      for (const { label, keywords } of MISSILE_TYPES) {
+        out[label] = items.filter(it => {
+          const text = `${it.title} ${it.summary ?? ''}`.toLowerCase();
+          return keywords.some(k => text.includes(k));
+        }).length;
+      }
+      return out;
+    };
+
+    const iranByType = countByType(iranItems6h);
+    const israelByType = countByType(israelItems6h);
+
+    const totalByType: Record<string, number> = {};
+    for (const { label } of MISSILE_TYPES) {
+      totalByType[label] = (iranByType[label] ?? 0) + (israelByType[label] ?? 0);
+    }
+
+    const munitions6h = Object.values(totalByType).reduce((a, b) => a + b, 0);
+    const casualties6h = MISSILE_TYPES.reduce((sum, { label }) => sum + (CASUALTIES_BY_TYPE[label] ?? 0) * (totalByType[label] ?? 0), 0);
+    const warCostUsd6h = MISSILE_TYPES.reduce((sum, { label }) => sum + (COST_USD_BY_TYPE[label] ?? 0) * (totalByType[label] ?? 0), 0);
+
+    const latestMissileSignals = (news ?? [])
+      .filter(it => MISSILE_LOG_RE.test(`${it.title}\n${it.summary ?? ''}`))
+      .slice()
+      .sort((a, b) => Date.parse(b.pubDate) - Date.parse(a.pubDate))
+      .slice(0, 3)
+      .map(it => ({
+        t: timeAgoLabel(nowMs, it.pubDate),
+        e: it.title,
+        c: it.sourceName,
+      }));
+
+    return {
+      totalByType,
+      munitions6h,
+      casualties6h: Math.round(casualties6h),
+      warCostUsd6h,
+      latestMissileSignals,
+    };
+  }, [news, now]);
+
+  const readinessIndex = useMemo(() => {
+    // When ops tempo is high, readiness drops.
+    return Math.max(0, Math.min(100, Math.round(100 - opsTempo)));
+  }, [opsTempo]);
+
   return (
     <div className="ftg-iran-board" style={{
       background: surface,
@@ -224,6 +356,27 @@ export default function IranWarCostBoard() {
                 </span>
               </div>
             </div>
+
+              <div style={{ marginTop: 14, display: 'flex', justifyContent: 'center', gap: 18, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
+                  <span style={{ fontFamily: mono, fontSize: 12, color: muted, fontWeight: 700 }}>WAR COST (6H EST.)</span>
+                  <span style={{ fontFamily: mono, fontSize: 15, fontWeight: 900, color: 'var(--text-primary)' }}>
+                    ${formatCompactUSD(missileIntel.warCostUsd6h)}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
+                  <span style={{ fontFamily: mono, fontSize: 12, color: muted, fontWeight: 700 }}>MUNITIONS (6H)</span>
+                  <span style={{ fontFamily: mono, fontSize: 15, fontWeight: 900, color: 'var(--text-primary)' }}>
+                    {missileIntel.munitions6h}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
+                  <span style={{ fontFamily: mono, fontSize: 12, color: muted, fontWeight: 700 }}>READINESS</span>
+                  <span style={{ fontFamily: mono, fontSize: 15, fontWeight: 900, color: 'var(--text-primary)' }}>
+                    {readinessIndex}
+                  </span>
+                </div>
+              </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0 }}>
@@ -285,6 +438,54 @@ export default function IranWarCostBoard() {
                 ))}
               </div>
             )}
+
+            <div style={{ marginTop: 18, borderTop: `1px solid ${border}`, paddingTop: 16 }}>
+              <div style={{ fontFamily: mono, fontSize: 11, fontWeight: 700, color: muted, marginBottom: 12 }}>MISSILE INTEL (6H · EVENT-DERIVED)</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 12 }}>
+                {[
+                  'Ballistic',
+                  'Cruise',
+                  'Drone',
+                  'Iron Dome',
+                  'Intercept',
+                  'Airstrike',
+                ].map((label) => (
+                  <div key={label} style={{
+                    border: `1px solid ${border}`,
+                    background: 'var(--surface-hover)',
+                    borderRadius: 6,
+                    padding: '10px 8px',
+                    textAlign: 'center',
+                  }}>
+                    <div style={{ fontFamily: mono, fontSize: 18, fontWeight: 900, color: 'var(--text-primary)' }}>
+                      {missileIntel.totalByType[label] ?? 0}
+                    </div>
+                    <div style={{ fontFamily: mono, fontSize: 7, color: muted, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: 3 }}>
+                      {label}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ fontFamily: mono, fontSize: 11, fontWeight: 700, color: muted, marginBottom: 10 }}>LATEST MISSILE SIGNALS</div>
+              {missileIntel.latestMissileSignals.length === 0 ? (
+                <div style={{ fontFamily: mono, fontSize: 13, color: muted }}>No missile signals in current cache.</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  {missileIntel.latestMissileSignals.map((h, i) => (
+                    <div key={i} style={{ borderLeft: `2px solid var(--accent-light)`, paddingLeft: 14 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5, gap: 10 }}>
+                        <span style={{ fontFamily: mono, fontSize: 13, color: accent, fontWeight: 800, whiteSpace: 'nowrap' }}>{h.t}</span>
+                        <span style={{ fontFamily: mono, fontSize: 11, color: muted, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h.c}</span>
+                      </div>
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.4, fontWeight: 500 }}>
+                        {h.e}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <div style={{ padding: '20px' }}>
