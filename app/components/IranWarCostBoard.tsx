@@ -141,6 +141,8 @@ export default function IranWarCostBoard() {
   const surface = 'var(--surface)';
   const upColor = '#27ae60';
   const downColor = '#c93a20';
+  const tickerBg = 'linear-gradient(135deg, rgba(26,8,8,0.96), rgba(45,10,10,0.93))';
+  const tickerBorder = 'rgba(201,58,32,0.35)';
 
   const bucket = useCallback((label: string) => metrics?.buckets?.find(b => b.label === label) ?? null, [metrics]);
   const hormuz = bucket('HORMUZ');
@@ -389,23 +391,31 @@ export default function IranWarCostBoard() {
 
       <div className="ftg-iran-board-grid" style={{ display: 'flex', flexWrap: 'wrap' }}>
         <div className="ftg-iran-board-main" style={{ flex: '2 1 500px', borderRight: `1px solid ${border}` }}>
-          <div style={{ padding: '16px 22px', borderBottom: `1px solid ${border}`, background: 'var(--surface-hover)' }}>
-            <div style={{ fontFamily: mono, fontSize: 11, color: muted, letterSpacing: '0.1em', fontWeight: 800, marginBottom: 8 }}>
+          <div style={{ padding: '14px 16px', borderBottom: `1px solid ${border}`, background: 'var(--surface)' }}>
+            <div style={{
+              border: `1px solid ${tickerBorder}`,
+              background: tickerBg,
+              borderRadius: 8,
+              padding: '14px 14px 12px',
+              boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.03)',
+            }}>
+            <div style={{ fontFamily: mono, fontSize: 10, color: '#f2c9c1', letterSpacing: '0.12em', fontWeight: 800, marginBottom: 8 }}>
               EST. U.S. COST SINCE STRIKES BEGAN (LIVE TICKER)
             </div>
-            <div style={{ fontFamily: mono, fontSize: 34, fontWeight: 900, color: '#c93a20', lineHeight: 1.05, fontVariantNumeric: 'tabular-nums' }}>
+            <div style={{ fontFamily: mono, fontSize: 'clamp(30px, 5vw, 42px)', fontWeight: 900, color: '#ff6b57', lineHeight: 1.05, fontVariantNumeric: 'tabular-nums', wordBreak: 'break-word' }}>
               ${formatFullUSD(longHorizonCost.totalUsd)}
             </div>
-            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 8 }}>
-              <span style={{ fontFamily: mono, fontSize: 11, color: muted, fontWeight: 700 }}>
-                PER SECOND ${formatCompactUSD(longHorizonCost.perSecond)}
-              </span>
-              <span style={{ fontFamily: mono, fontSize: 11, color: muted, fontWeight: 700 }}>
-                PER HOUR ${formatCompactUSD(longHorizonCost.perHour)}
-              </span>
-              <span style={{ fontFamily: mono, fontSize: 11, color: muted, fontWeight: 700 }}>
-                PER DAY ${formatCompactUSD(longHorizonCost.perDay)}
-              </span>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8, marginTop: 10 }}>
+              {[
+                { l: 'PER SECOND', v: `$${formatCompactUSD(longHorizonCost.perSecond)}` },
+                { l: 'PER HOUR', v: `$${formatCompactUSD(longHorizonCost.perHour)}` },
+                { l: 'PER DAY', v: `$${formatCompactUSD(longHorizonCost.perDay)}` },
+              ].map((m) => (
+                <div key={m.l} style={{ border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6, background: 'rgba(0,0,0,0.2)', padding: '6px 8px' }}>
+                  <div style={{ fontFamily: mono, fontSize: 9, color: '#c7b4b0', fontWeight: 700, letterSpacing: '0.06em' }}>{m.l}</div>
+                  <div style={{ fontFamily: mono, fontSize: 14, color: '#fff', fontWeight: 900, marginTop: 2 }}>{m.v}</div>
+                </div>
+              ))}
             </div>
             <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
               {[
@@ -414,15 +424,16 @@ export default function IranWarCostBoard() {
                 { l: 'MIN', v: String(elapsedClock.mins).padStart(2, '0') },
                 { l: 'SEC', v: String(elapsedClock.secs).padStart(2, '0') },
               ].map((u) => (
-                <div key={u.l} style={{ border: `1px solid ${border}`, background: 'var(--surface)', borderRadius: 4, padding: '6px 9px', minWidth: 54, textAlign: 'center' }}>
-                  <div style={{ fontFamily: mono, fontSize: 16, fontWeight: 900, color: '#c93a20', lineHeight: 1 }}>{u.v}</div>
-                  <div style={{ fontFamily: mono, fontSize: 9, color: muted, fontWeight: 700, letterSpacing: '0.06em', marginTop: 3 }}>{u.l}</div>
+                <div key={u.l} style={{ border: '1px solid rgba(255,255,255,0.18)', background: 'rgba(0,0,0,0.28)', borderRadius: 6, padding: '7px 10px', minWidth: 56, flex: '1 1 64px', textAlign: 'center' }}>
+                  <div style={{ fontFamily: mono, fontSize: 18, fontWeight: 900, color: '#ff8a7a', lineHeight: 1 }}>{u.v}</div>
+                  <div style={{ fontFamily: mono, fontSize: 9, color: '#d0bfbb', fontWeight: 700, letterSpacing: '0.06em', marginTop: 3 }}>{u.l}</div>
                 </div>
               ))}
             </div>
+            </div>
           </div>
 
-          <div style={{ padding: '22px', borderBottom: `1px solid ${border}`, textAlign: 'center' }}>
+          <div style={{ padding: '16px 18px', borderBottom: `1px solid ${border}`, textAlign: 'center' }}>
             <div style={{ fontFamily: mono, fontSize: 12, color: muted, letterSpacing: '0.12em', marginBottom: 14 }}>
               OPS TEMPO INDEX (0–100) · LIVE NEWS + ADS-B + OIL SPREAD
             </div>
@@ -475,7 +486,7 @@ export default function IranWarCostBoard() {
               </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 0 }}>
             {[
               { l: 'HORMUZ', v: hormuz?.last6h ?? null },
               { l: 'RED SEA', v: redSea?.last6h ?? null },
@@ -483,7 +494,7 @@ export default function IranWarCostBoard() {
               { l: 'IRAN', v: iran?.last6h ?? null },
             ].map((m, idx) => (
               <div key={m.l} style={{
-                padding: '12px 12px',
+                padding: '10px 10px',
                 borderRight: idx < 3 ? `1px solid ${border}` : 'none',
                 borderBottom: `1px solid ${border}`,
                 background: 'rgba(255,255,255,0.01)',
@@ -498,27 +509,27 @@ export default function IranWarCostBoard() {
             ))}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, padding: '12px 16px', borderTop: `1px solid ${border}`, borderBottom: `1px solid ${border}`, background: 'var(--surface)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 8, padding: '10px 12px', borderTop: `1px solid ${border}`, borderBottom: `1px solid ${border}`, background: 'var(--surface)' }}>
             {[
               { l: 'HUMAN-COST SIGNALS (24H)', v: String(humanCostSignals.mentions24h) },
               { l: 'EST. CASUALTY SIGNAL (6H)', v: String(humanCostSignals.casualties6h) },
               { l: 'MUNITIONS SIGNAL (6H)', v: String(humanCostSignals.munitions6h) },
             ].map((m) => (
-              <div key={m.l} style={{ border: `1px solid ${border}`, borderRadius: 6, padding: '10px 12px', background: 'var(--surface-hover)' }}>
+              <div key={m.l} style={{ border: `1px solid ${border}`, borderRadius: 6, padding: '8px 10px', background: 'var(--surface-hover)' }}>
                 <div style={{ fontFamily: mono, fontSize: 10, color: muted, fontWeight: 800, letterSpacing: '0.06em' }}>{m.l}</div>
-                <div style={{ fontFamily: mono, fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', marginTop: 6 }}>{m.v}</div>
+                <div style={{ fontFamily: mono, fontSize: 22, fontWeight: 900, color: 'var(--text-primary)', marginTop: 4 }}>{m.v}</div>
               </div>
             ))}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, padding: '12px 16px', borderBottom: `1px solid ${border}`, background: 'var(--surface-hover)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8, padding: '10px 12px', borderBottom: `1px solid ${border}`, background: 'var(--surface-hover)' }}>
             {[
               { l: 'SOURCES', v: metrics ? String(metrics.news.sourceCount) : '—' },
               { l: 'FAILED', v: metrics ? String(metrics.news.failedSources) : '—' },
               { l: 'FLIGHTS', v: metrics ? String(metrics.flights.total) : '—' },
               { l: 'STRATEGIC', v: metrics ? String(metrics.flights.strategic) : '—' },
             ].map((m) => (
-              <div key={m.l} style={{ border: `1px solid ${border}`, borderRadius: 6, padding: '10px 10px', background: 'var(--surface)' }}>
+              <div key={m.l} style={{ border: `1px solid ${border}`, borderRadius: 6, padding: '8px 9px', background: 'var(--surface)' }}>
                 <div style={{ fontFamily: mono, fontSize: 10, color: muted, fontWeight: 800 }}>{m.l}</div>
                 <div style={{ fontFamily: mono, fontSize: 18, fontWeight: 900, color: 'var(--text-primary)', marginTop: 5 }}>{m.v}</div>
               </div>
@@ -564,7 +575,7 @@ export default function IranWarCostBoard() {
 
             <div style={{ marginTop: 18, borderTop: `1px solid ${border}`, paddingTop: 16 }}>
               <div style={{ fontFamily: mono, fontSize: 11, fontWeight: 700, color: muted, marginBottom: 12 }}>MISSILE INTEL (6H · EVENT-DERIVED)</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(92px, 1fr))', gap: 8, marginBottom: 12 }}>
                 {[
                   'Ballistic',
                   'Cruise',
