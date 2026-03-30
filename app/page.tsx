@@ -1090,8 +1090,7 @@ export default function Home() {
 
   // ── Addict-loop features ──────────────────────────────────────────────
   const [readKeys, setReadKeys]               = useState<Set<string>>(new Set());
-  const [watchlistKeywords, setWatchlistKeywords] = useState<string[]>([]);
-  const [watchlistInput, setWatchlistInput]   = useState('');
+
   const [expandedComparisons, setExpandedComparisons] = useState<Set<string>>(new Set());
   const [briefingOpen, setBriefingOpen]       = useState(true);
   const [briefingDismissed, setBriefingDismissed] = useState(false);
@@ -1287,20 +1286,6 @@ export default function Home() {
       window.localStorage.setItem('ftg_read', JSON.stringify(arr));
     } catch { /* ignore */ }
   }, [readKeys]);
-
-  // ── Watchlist persistence ─────────────────────────────────────────────────
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      const raw = window.localStorage.getItem('ftg_watchlist');
-      if (raw) { const w = JSON.parse(raw); if (Array.isArray(w)) setWatchlistKeywords(w); }
-    } catch { /* ignore */ }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try { window.localStorage.setItem('ftg_watchlist', JSON.stringify(watchlistKeywords)); } catch { /* ignore */ }
-  }, [watchlistKeywords]);
 
   // ── Briefing dismissed-today persistence ──────────────────────────────────
   useEffect(() => {
@@ -1615,18 +1600,6 @@ export default function Home() {
   const markRead = useCallback((key: string) => {
     setReadKeys(prev => { const next = new Set(prev); next.add(key); return next; });
   }, []);
-
-  const addWatchword = useCallback((word: string) => {
-    const trimmed = word.trim().toLowerCase();
-    if (!trimmed) return;
-    setWatchlistKeywords(prev => prev.includes(trimmed) ? prev : [...prev, trimmed]);
-    setWatchlistInput('');
-  }, []);
-
-  const removeWatchword = useCallback((word: string) => {
-    setWatchlistKeywords(prev => prev.filter(k => k !== word));
-  }, []);
-
   const toggleComparison = useCallback((key: string) => {
     setExpandedComparisons(prev => {
       const next = new Set(prev);
@@ -1906,16 +1879,6 @@ export default function Home() {
     });
   }, [visibleItems, clusterLeadMap, expandedClusters]);
 
-  // ── Watchlist matches ─────────────────────────────────────────────────────
-  const watchlistMatches = useMemo(() => {
-    if (!watchlistKeywords.length) return [];
-    const lower = watchlistKeywords.map(k => k.toLowerCase());
-    return visibleItems.filter(item => {
-      const text = `${item.title} ${item.summary}`.toLowerCase();
-      return lower.some(kw => text.includes(kw));
-    });
-  }, [visibleItems, watchlistKeywords]);
-
 
   // ── Comparison map: per item key → sibling items in same cluster ──────────
   const comparisonMap = useMemo(() => {
@@ -2034,58 +1997,6 @@ export default function Home() {
               items={items}
             />
 
-            {/* ── Keyword Watchlist ───────────────────────────────────── */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.12em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                ⚑ Watchlist
-              </div>
-              <div style={{ display: 'flex', gap: 5 }}>
-                <input
-                  value={watchlistInput}
-                  onChange={e => setWatchlistInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') addWatchword(watchlistInput); }}
-                  placeholder="Add keyword…"
-                  style={{
-                    flex: 1, fontFamily: 'var(--font-mono)', fontSize: 14,
-                    background: 'var(--bg)', border: '1px solid var(--border)',
-                    borderRadius: 3, padding: '5px 8px', color: 'var(--text-primary)',
-                    outline: 'none',
-                  }}
-                />
-                <button
-                  onClick={() => addWatchword(watchlistInput)}
-                  style={{
-                    fontFamily: 'var(--font-mono)', fontSize: 14, padding: '5px 10px',
-                    background: 'var(--accent)', color: '#fff', border: 'none',
-                    borderRadius: 3, cursor: 'pointer',
-                  }}
-                >+</button>
-              </div>
-              {watchlistKeywords.length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                  {watchlistKeywords.map(kw => (
-                    <span key={kw} style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 4,
-                      fontFamily: 'var(--font-mono)', fontSize: 11,
-                      background: 'rgba(243,156,18,0.12)', border: '1px solid rgba(243,156,18,0.35)',
-                      color: '#f39c12', padding: '2px 7px', borderRadius: 999,
-                    }}>
-                      {kw}
-                      <button onClick={() => removeWatchword(kw)} style={{
-                        border: 'none', background: 'transparent', cursor: 'pointer',
-                        color: '#f39c12', fontSize: 12, lineHeight: 1, padding: 0,
-                      }}>×</button>
-                    </span>
-                  ))}
-                </div>
-              )}
-              {watchlistKeywords.length === 0 && (
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>
-                  Track any term — &ldquo;ceasefire&rdquo;, &ldquo;Natanz&rdquo;, &ldquo;IAEA&rdquo;…
-                </div>
-              )}
-            </div>
-
             {/* ── Alert Profiles ─────────────────────────────────────────── */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 12, borderTop: '1px solid var(--border-light)' }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.12em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
@@ -2160,50 +2071,6 @@ export default function Home() {
               clusters={briefClusters}
               onDismiss={dismissBriefing}
             />
-          )}
-
-          {/* ── WATCHLIST ALERT STRIP ──────────────────────────────────────── */}
-          {watchlistMatches.length > 0 && watchlistKeywords.length > 0 && (
-            <div style={{
-              background: 'rgba(243,156,18,0.08)',
-              border: '1px solid rgba(243,156,18,0.35)',
-              borderLeft: '3px solid #f39c12',
-              borderRadius: 3,
-              padding: '10px 14px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 6,
-              animation: 'fadeUp 0.3s ease both',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#f39c12', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600 }}>
-                  ⚑ Watchlist — {watchlistMatches.length} match{watchlistMatches.length !== 1 ? 'es' : ''}
-                </span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>
-                  {watchlistKeywords.map(k => `"${k}"`).join(' · ')}
-                </span>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                {watchlistMatches.slice(0, 5).map(item => {
-                  const key = item.link || `${item.sourceId}::${item.title}`;
-                  return (
-                    <a key={key} href={item.link || undefined} target="_blank" rel="noopener noreferrer"
-                      onClick={() => markRead(key)}
-                      style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-primary)', textDecoration: 'none', lineHeight: 1.4 }}
-                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
-                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-primary)')}>
-                      <span style={{ color: item.sourceColor, fontFamily: 'var(--font-mono)', fontSize: 11, marginRight: 6 }}>{item.sourceName}</span>
-                      {item.title}
-                    </a>
-                  );
-                })}
-                {watchlistMatches.length > 5 && (
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>
-                    +{watchlistMatches.length - 5} more — activate the lens to see all
-                  </span>
-                )}
-              </div>
-            </div>
           )}
 
           {/* ── FILTER + VIEW CONTROLS ─────────────────────────────────────── */}
