@@ -41,11 +41,11 @@ const parser = new Parser({ timeout: 5000 });
 // Built-in fallback feeds. These keep the widget functional even when Railway
 // env vars are missing or misconfigured.
 const DEFAULT_FEEDS: FeedConfig[] = [
-  // Historical stable stream IDs from prior working builds.
-  { id: 'aljazeera', name: 'Al Jazeera English', channelId: 'UCNye-wNBqNL5ZzHSJj3l8Bg', videoId: 'Khfdb7qUvjk' },
-  { id: 'skynews', name: 'Sky News', channelId: 'UCoMdktPbSTixAyNGwb-UYkQ', videoId: 'fIurYTprwzg' },
-  { id: 'worldreport', name: 'World Report', channelId: 'UCknLrEdhRCp1aegoMqRaCZg', videoId: 'gmtlJ_m2r5A' },
-  { id: 'geopolitics', name: 'Geopolitics', channelId: 'UC7fWeaHhqgM4Ry-RMpM2YYw', videoId: '-zGuR1qVKrU' },
+  // Use channel-based live stream embeds by default to avoid stale/private IDs.
+  { id: 'aljazeera', name: 'Al Jazeera English', channelId: 'UCNye-wNBqNL5ZzHSJj3l8Bg' },
+  { id: 'skynews', name: 'Sky News', channelId: 'UCoMdktPbSTixAyNGwb-UYkQ' },
+  { id: 'dwnews', name: 'DW News', channelId: 'UCknLrEdhRCp1aegoMqRaCZg' },
+  { id: 'france24', name: 'France 24 English', channelId: 'UCEgdi0XIXXZ-qJOFPf4JSKw' },
 ];
 
 function safeJsonParse<T>(raw: string | undefined): T | null {

@@ -316,6 +316,7 @@ export default function IranWarCostBoard() {
         perSecond: ongoingPerMs * 1000,
         perHour: ongoingPerDay / 24,
         perDay: ongoingPerDay,
+        elapsedMs: 0,
       };
     }
 
@@ -330,8 +331,30 @@ export default function IranWarCostBoard() {
       perSecond: ongoingPerMs * 1000,
       perHour: ongoingPerDay / 24,
       perDay: ongoingPerDay,
+      elapsedMs,
     };
   }, [now]);
+
+  const elapsedClock = useMemo(() => {
+    const ms = Math.max(0, (longHorizonCost as { elapsedMs?: number }).elapsedMs ?? 0);
+    const totalSec = Math.floor(ms / 1000);
+    const days = Math.floor(totalSec / 86_400);
+    const hours = Math.floor((totalSec % 86_400) / 3_600);
+    const mins = Math.floor((totalSec % 3_600) / 60);
+    const secs = totalSec % 60;
+    return { days, hours, mins, secs };
+  }, [longHorizonCost]);
+
+  const humanCostSignals = useMemo(() => {
+    const nowMs = now.getTime();
+    const re = /\b(killed|dead|deaths|wounded|injured|casualt(?:y|ies)|civilian|hospital|refugee|displaced)\b/i;
+    const last24h = (news ?? []).filter(it => re.test(`${it.title}\n${it.summary ?? ''}`) && inWindow(it.pubDate, nowMs, 24 * 60 * 60 * 1000));
+    return {
+      mentions24h: last24h.length,
+      casualties6h: missileIntel.casualties6h,
+      munitions6h: missileIntel.munitions6h,
+    };
+  }, [news, now, missileIntel]);
 
   return (
     <div className="ftg-iran-board" style={{
@@ -383,6 +406,19 @@ export default function IranWarCostBoard() {
               <span style={{ fontFamily: mono, fontSize: 11, color: muted, fontWeight: 700 }}>
                 PER DAY ${formatCompactUSD(longHorizonCost.perDay)}
               </span>
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+              {[
+                { l: 'DAYS', v: String(elapsedClock.days).padStart(2, '0') },
+                { l: 'HRS', v: String(elapsedClock.hours).padStart(2, '0') },
+                { l: 'MIN', v: String(elapsedClock.mins).padStart(2, '0') },
+                { l: 'SEC', v: String(elapsedClock.secs).padStart(2, '0') },
+              ].map((u) => (
+                <div key={u.l} style={{ border: `1px solid ${border}`, background: 'var(--surface)', borderRadius: 4, padding: '6px 9px', minWidth: 54, textAlign: 'center' }}>
+                  <div style={{ fontFamily: mono, fontSize: 16, fontWeight: 900, color: '#c93a20', lineHeight: 1 }}>{u.v}</div>
+                  <div style={{ fontFamily: mono, fontSize: 9, color: muted, fontWeight: 700, letterSpacing: '0.06em', marginTop: 3 }}>{u.l}</div>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -458,6 +494,33 @@ export default function IranWarCostBoard() {
                 <div style={{ fontFamily: mono, fontSize: 18, fontWeight: 900, marginTop: 6, color: 'var(--text-primary)' }}>
                   {m.v === null ? '—' : m.v}
                 </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, padding: '12px 16px', borderTop: `1px solid ${border}`, borderBottom: `1px solid ${border}`, background: 'var(--surface)' }}>
+            {[
+              { l: 'HUMAN-COST SIGNALS (24H)', v: String(humanCostSignals.mentions24h) },
+              { l: 'EST. CASUALTY SIGNAL (6H)', v: String(humanCostSignals.casualties6h) },
+              { l: 'MUNITIONS SIGNAL (6H)', v: String(humanCostSignals.munitions6h) },
+            ].map((m) => (
+              <div key={m.l} style={{ border: `1px solid ${border}`, borderRadius: 6, padding: '10px 12px', background: 'var(--surface-hover)' }}>
+                <div style={{ fontFamily: mono, fontSize: 10, color: muted, fontWeight: 800, letterSpacing: '0.06em' }}>{m.l}</div>
+                <div style={{ fontFamily: mono, fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', marginTop: 6 }}>{m.v}</div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, padding: '12px 16px', borderBottom: `1px solid ${border}`, background: 'var(--surface-hover)' }}>
+            {[
+              { l: 'SOURCES', v: metrics ? String(metrics.news.sourceCount) : '—' },
+              { l: 'FAILED', v: metrics ? String(metrics.news.failedSources) : '—' },
+              { l: 'FLIGHTS', v: metrics ? String(metrics.flights.total) : '—' },
+              { l: 'STRATEGIC', v: metrics ? String(metrics.flights.strategic) : '—' },
+            ].map((m) => (
+              <div key={m.l} style={{ border: `1px solid ${border}`, borderRadius: 6, padding: '10px 10px', background: 'var(--surface)' }}>
+                <div style={{ fontFamily: mono, fontSize: 10, color: muted, fontWeight: 800 }}>{m.l}</div>
+                <div style={{ fontFamily: mono, fontSize: 18, fontWeight: 900, color: 'var(--text-primary)', marginTop: 5 }}>{m.v}</div>
               </div>
             ))}
           </div>
@@ -548,22 +611,6 @@ export default function IranWarCostBoard() {
             </div>
           </div>
 
-          <div style={{ padding: '20px' }}>
-            <div style={{ fontFamily: mono, fontSize: 11, fontWeight: 700, color: muted, marginBottom: 16 }}>FEED HEALTH</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              {[
-                { l: 'SOURCES', v: metrics ? String(metrics.news.sourceCount) : '—' },
-                { l: 'FAILED', v: metrics ? String(metrics.news.failedSources) : '—' },
-                { l: 'FLIGHTS', v: metrics ? String(metrics.flights.total) : '—' },
-                { l: 'STRATEGIC', v: metrics ? String(metrics.flights.strategic) : '—' },
-              ].map((m) => (
-                <div key={m.l} style={{ border: `1px solid ${border}`, borderRadius: 6, padding: '12px', background: 'var(--surface-hover)' }}>
-                  <div style={{ fontFamily: mono, fontSize: 11, color: muted, fontWeight: 800, marginBottom: 6 }}>{m.l}</div>
-                  <div style={{ fontFamily: mono, fontSize: 18, fontWeight: 900, color: 'var(--text-primary)' }}>{m.v}</div>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
 
