@@ -15,69 +15,6 @@ interface IntelEvent {
   color?: string; // Optional custom color for the dot
 }
 
-const SAMPLE_EVENTS: IntelEvent[] = [
-  {
-    id: '1',
-    location: 'ENGLISH CHANNEL',
-    subLocation: 'United Kingdom/France',
-    status: 'ELEVATED',
-    timestamp: '~14m ago',
-    dateHeader: 'Mar 19',
-    description: 'Nearly 150 migrants crossed the English Channel in small boats, taking advantage of favorable weather conditions.',
-    color: '#00d8ff'
-  },
-  {
-    id: '2',
-    location: 'ENGLISH CHANNEL',
-    subLocation: 'United Kingdom/France',
-    status: 'ELEVATED',
-    timestamp: '~14m ago',
-    dateHeader: 'Mar 18, morning',
-    description: 'More than 400 migrants crossed illegally from France to the UK over a period starting the previous morning.',
-    color: '#00d8ff'
-  },
-  {
-    id: '3',
-    location: 'STRAIT OF HORMUZ (IRANIAN COASTLINE)',
-    subLocation: 'Iran',
-    status: 'CRITICAL',
-    timestamp: '~36m ago',
-    dateHeader: 'Mar 19, evening',
-    description: 'Israeli Prime Minister Netanyahu advocates for developing alternative oil and gas pipelines through the Arabian Peninsula to Israeli ports to bypass the Strait of Hormuz.',
-    color: '#a4ff00'
-  },
-  {
-    id: '4',
-    location: 'GREENLAND',
-    subLocation: 'Denmark',
-    status: 'HIGH',
-    timestamp: '~37m ago',
-    dateHeader: 'Mar 19',
-    description: 'Reports emerge that Denmark had contingency plans to destroy Greenland runways in the event of a US invasion.',
-    color: '#00d8ff'
-  },
-  {
-    id: '5',
-    location: 'GREENLAND',
-    subLocation: 'Denmark',
-    status: 'HIGH',
-    timestamp: '~37m ago',
-    dateHeader: 'Jan',
-    description: 'The Danish military sent explosives and blood supplies to Greenland as part of this contingency planning.',
-    color: '#00d8ff'
-  },
-  {
-    id: '6',
-    location: 'IRAN (NATIONWIDE, FOCUSING ON NUCLEAR SITES)',
-    subLocation: 'Iran',
-    status: 'CRITICAL',
-    timestamp: '~40m ago',
-    dateHeader: 'Mar 19, evening',
-    description: "Netanyahu states there are 'many possibilities' regarding a ground-based component to the operation in Iran.",
-    color: '#a4ff00'
-  }
-];
-
 interface Props {
   events: IntelEvent[];
 }

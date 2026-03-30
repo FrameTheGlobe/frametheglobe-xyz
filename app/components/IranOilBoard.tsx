@@ -32,6 +32,14 @@ type PriceData = {
 type RangeKey  = '1D' | '7D' | '1M';
 type ViewKey   = 'BOARD' | 'CHARTS';
 
+type TheaterMetrics = {
+  ok: boolean;
+  fetchedAt: string;
+  news: { cached: boolean; totalItems: number; sourceCount: number; failedSources: number };
+  flights: { cached: boolean; total: number; strategic: number; source: string; fetchedAt: string | null };
+  buckets: { label: string; last6h: number; last24h: number }[];
+};
+
 // ── Constants ───────────────────────────────────────────────────────────────
 
 const POLL_MS = 3 * 60 * 1000;
@@ -138,6 +146,10 @@ export default function IranOilBoard() {
   const [flashGen,  setFlashGen]  = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Real intel metrics (derived from live RSS + ADS-B feeds on backend)
+  const [metrics, setMetrics] = useState<TheaterMetrics | null>(null);
+  const [metricsError, setMetricsError] = useState(false);
+
   // View / chart state
   const [view,     setView]     = useState<ViewKey>('BOARD');
   const [range,    setRange]    = useState<RangeKey>('7D');
@@ -164,6 +176,23 @@ export default function IranOilBoard() {
 
   useEffect(() => { fetchPrices(); }, [fetchPrices]);
   useVisibilityPolling(fetchPrices, POLL_MS);
+
+  const fetchMetrics = useCallback(async () => {
+    try {
+      const res = await fetch('/api/theater-metrics', { cache: 'no-store' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data && typeof data === 'object') {
+        setMetrics(data as TheaterMetrics);
+        setMetricsError(false);
+      }
+    } catch {
+      setMetricsError(true);
+    }
+  }, []);
+
+  useEffect(() => { fetchMetrics(); }, [fetchMetrics]);
+  useVisibilityPolling(fetchMetrics, POLL_MS);
 
   // ── Detect site theme for TradingView ────────────────────────────────────
   useEffect(() => {
@@ -199,6 +228,24 @@ export default function IranOilBoard() {
   const timeLabel  = updatedAt
     ? updatedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     : null;
+
+  const bucket = (label: string) => metrics?.buckets?.find(b => b.label === label) ?? null;
+  const hormuz = bucket('HORMUZ');
+  const redSea = bucket('RED SEA');
+  const tankers = bucket('TANKERS');
+  const iranMentions = bucket('IRAN');
+
+  const brentWtiSpread = (brent && wti) ? (brent.price - wti.price) : null;
+  const riskSignal = (() => {
+    const s = brentWtiSpread ?? 0;
+    const h = hormuz?.last6h ?? 0;
+    const r = redSea?.last6h ?? 0;
+    const t = tankers?.last6h ?? 0;
+    const score = (Math.max(0, s) * 2) + (h * 1.2) + (r * 1.0) + (t * 0.6);
+    if (score >= 40) return { label: 'HIGH', color: downColor };
+    if (score >= 20) return { label: 'ELEVATED', color: '#e67e22' };
+    return { label: 'NORMAL', color: upColor };
+  })();
 
   // ── Segmented control styles ──────────────────────────────────────────────
   const segWrap: React.CSSProperties = {
@@ -327,9 +374,11 @@ export default function IranOilBoard() {
               {[brent, wti, dubai, urals, wcs].filter(Boolean).map((p) => {
                 if (!p) return null;
                 const color = priceColor(p.change);
-                const meta = p.symbol === 'CB.F' ? { sent: 'BULLISH', vol: 'HIGH' }
-                           : p.symbol === 'CL.F' ? { sent: 'NEUTRAL', vol: 'MED' }
-                           : { sent: 'STABLE', vol: 'LOW' };
+                const absPct = Math.abs(p.changePercent);
+                const meta = {
+                  sent: p.changePercent > 0.2 ? 'BULLISH' : p.changePercent < -0.2 ? 'BEARISH' : 'NEUTRAL',
+                  vol:  absPct >= 2.0 ? 'HIGH' : absPct >= 1.0 ? 'MED' : 'LOW',
+                };
 
                 return (
                   <div
@@ -396,71 +445,17 @@ export default function IranOilBoard() {
                 );
               })}
 
-              {/* Hormuz Monitor */}
-              <div style={{
-                padding: '18px',
-                borderRight: '1px solid var(--border-light)',
-                borderBottom: '1px solid var(--border-light)',
-                background: 'rgba(39,174,96,0.03)',
-                display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-              }}>
-                <div>
-                  <div style={{ fontFamily: mono, fontSize: 11, fontWeight: 700,
-                    letterSpacing: '0.10em', textTransform: 'uppercase', color: '#27ae60', marginBottom: 10 }}>
-                    Hormuz Monitor
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 8 }}>
-                    <span style={{ fontFamily: mono, fontSize: 22, fontWeight: 900, color: '#27ae60' }}>OPEN</span>
-                    <span style={{ fontFamily: mono, fontSize: 10, color: muted, textTransform: 'uppercase' }}>/ Normal</span>
-                  </div>
-                  <div style={{ fontFamily: mono, fontSize: 10, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                    Daily throughput: 19.8M bpd.<br />
-                    No active IRGC blockade detected.
-                  </div>
-                </div>
-                <div style={{ marginTop: 10, fontFamily: mono, fontSize: 9, color: '#27ae60', fontWeight: 700 }}>
-                  STATUS: SECURE
-                </div>
-              </div>
-
-              {/* Red Sea Corridor */}
-              <div style={{
-                padding: '18px',
-                borderRight: '1px solid var(--border-light)',
-                borderBottom: '1px solid var(--border-light)',
-                background: 'rgba(230,126,34,0.03)',
-                display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-              }}>
-                <div>
-                  <div style={{ fontFamily: mono, fontSize: 11, fontWeight: 700,
-                    letterSpacing: '0.10em', textTransform: 'uppercase', color: '#e67e22', marginBottom: 10 }}>
-                    Red Sea Corridor
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 8 }}>
-                    <span style={{ fontFamily: mono, fontSize: 22, fontWeight: 900, color: '#e67e22' }}>CAUTION</span>
-                    <span style={{ fontFamily: mono, fontSize: 10, color: muted, textTransform: 'uppercase' }}>/ Elevated</span>
-                  </div>
-                  <div style={{ fontFamily: mono, fontSize: 10, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                    Active drone alerts in Bab-el-Mandeb.<br />
-                    Escort required for LH class tankers.
-                  </div>
-                </div>
-                <div style={{ marginTop: 10, fontFamily: mono, fontSize: 9, color: '#e67e22', fontWeight: 700 }}>
-                  STATUS: RISK LEVEL 3
-                </div>
-              </div>
-
-              {/* Market Stats 2×2 */}
+              {/* Theater intel (real feed-derived metrics) */}
               <div style={{
                 borderBottom: '1px solid var(--border-light)',
                 background: 'rgba(255,255,255,0.01)',
                 display: 'grid', gridTemplateColumns: '1fr 1fr',
               }}>
                 {[
-                  { l: 'OPEC+ QUOTA',    v: '98.2%', s: 'STABLE'  },
-                  { l: 'U.S. SPR',       v: '362M',  s: 'LOW'     },
-                  { l: 'TANKER FREIGHT', v: '+12%',  s: 'RISING'  },
-                  { l: 'REFINERY CAP',   v: '91.4%', s: 'TIGHT'   },
+                  { l: 'HORMUZ MENTIONS', v: hormuz ? String(hormuz.last6h) : '—', s: 'LAST 6H' },
+                  { l: 'RED SEA MENTIONS', v: redSea ? String(redSea.last6h) : '—', s: 'LAST 6H' },
+                  { l: 'TANKER/SHIPPING', v: tankers ? String(tankers.last6h) : '—', s: 'LAST 6H' },
+                  { l: 'STRATEGIC FLIGHTS', v: metrics ? String(metrics.flights.strategic) : '—', s: metrics?.flights.source?.toUpperCase?.() ?? 'ADS-B' },
                 ].map((s, i) => (
                   <div key={s.l} style={{
                     padding: '12px 14px',
@@ -469,16 +464,13 @@ export default function IranOilBoard() {
                   }}>
                     <div style={{ fontFamily: mono, fontSize: 9, color: muted, marginBottom: 4 }}>{s.l}</div>
                     <div style={{ fontFamily: mono, fontSize: 14, fontWeight: 800 }}>{s.v}</div>
-                    <div style={{ fontFamily: mono, fontSize: 8,
-                      color: s.s === 'LOW' || s.s === 'RISING' ? downColor : upColor }}>
-                      {s.s}
-                    </div>
+                    <div style={{ fontFamily: mono, fontSize: 8, color: muted }}>{s.s}</div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Footer: Nat Gas + USO + War Risk Premium */}
+            {/* Footer: Nat Gas + USO + risk signal derived from real inputs */}
             <div style={{
               display: 'flex', flexWrap: 'wrap', alignItems: 'center',
               borderTop: '1px solid var(--border-light)',
@@ -523,14 +515,15 @@ export default function IranOilBoard() {
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span style={{ fontFamily: mono, fontSize: 11, fontWeight: 700, color: muted }}>
-                    WAR RISK PREMIUM:
+                    RISK SIGNAL:
                   </span>
-                  <span style={{ fontFamily: mono, fontSize: 16, fontWeight: 900, color: 'var(--text-primary)' }}>
-                    +$4.20 / bbl
+                  <span style={{ fontFamily: mono, fontSize: 16, fontWeight: 900, color: riskSignal.color }}>
+                    {riskSignal.label}
                   </span>
                 </div>
-                <div style={{ fontFamily: mono, fontSize: 9, color: downColor, fontWeight: 700, letterSpacing: '0.05em' }}>
-                  MARKET SENTIMENT: VOLATILITY SKEW ↗
+                <div style={{ fontFamily: mono, fontSize: 9, color: muted, fontWeight: 700, letterSpacing: '0.05em' }}>
+                  {brentWtiSpread === null ? 'SPREAD: —' : `BRENT–WTI SPREAD: ${sign(brentWtiSpread)}$${fmt(Math.abs(brentWtiSpread), 2)}`}
+                  {metricsError ? ' · ⚠ METRICS' : metrics ? ` · NEWS ITEMS: ${metrics.news.totalItems}` : ''}
                 </div>
               </div>
             </div>

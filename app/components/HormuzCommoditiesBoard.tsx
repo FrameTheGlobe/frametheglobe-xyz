@@ -7,10 +7,9 @@
  * the commodity chain most exposed to Strait of Hormuz disruption.
  *
  * Why these matter:
- *  · Iran = world's 3rd-largest urea exporter; ~14 Mt/yr transits Hormuz
- *  · ~40% of global LPG (ammonia feedstock) passes through the strait
- *  · Urea production is 70-80% natural gas by cost — NG spikes directly inflate food prices
- *  · Wheat/Corn are 30-40% fertilizer cost — any Hormuz closure cascades into food inflation
+ *  · Hormuz disruption can propagate into fertilizer and food price shocks
+ *  · LPG/ammonia and nitrogen inputs are highly sensitive to shipping constraints
+ *  · Gas price volatility often transmits into fertiliser costs and then grains
  */
 
 import { useState, useEffect, useCallback, useContext } from 'react';
@@ -51,35 +50,35 @@ const HORMUZ_IMPACTS = [
   {
     commodity: 'Urea / Nitrogen',
     icon: '🌱',
-    mechanic: 'Iran = #3 global exporter. Closure adds $40-80/t premium overnight.',
+    mechanic: 'Highly sensitive to shipping constraints and regional supply shocks.',
     sensitivity: 'CRITICAL',
     color: '#e74c3c',
   },
   {
     commodity: 'LPG / Ammonia',
     icon: '⚗️',
-    mechanic: '40% of global LPG transits Hormuz. Ammonia is the key nitrogen feedstock.',
+    mechanic: 'Feedstock chokepoints can quickly spill into nitrogen input pricing.',
     sensitivity: 'HIGH',
     color: '#e67e22',
   },
   {
     commodity: 'Natural Gas',
     icon: '🔥',
-    mechanic: '70-80% of urea production cost. Gulf gas disruption propagates directly to food.',
+    mechanic: 'Gas volatility can cascade into fertilizer costs and downstream food inflation.',
     sensitivity: 'HIGH',
     color: '#f39c12',
   },
   {
     commodity: 'Wheat / Grain',
     icon: '🌾',
-    mechanic: 'Fertilizer is 30-40% of wheat production cost. NG spike → grain inflation in 4-6 months.',
+    mechanic: 'Input-cost pressure can transmit into grain markets with a lag.',
     sensitivity: 'ELEVATED',
     color: '#2ecc71',
   },
   {
     commodity: 'Sulfur',
     icon: '⚡',
-    mechanic: 'Iran = #4 global sulfur exporter. Phosphate fertilizer production depends on sulfuric acid.',
+    mechanic: 'A critical industrial input for fertiliser production chains.',
     sensitivity: 'ELEVATED',
     color: '#9b59b6',
   },
@@ -367,7 +366,7 @@ export default function HormuzCommoditiesBoard() {
                     ({sign(natgas.changePercent)}{fmt(Math.abs(natgas.changePercent), 2)}%)
                   </span>
                 </div>
-                <span style={{ fontFamily: mono, fontSize: 10, color: muted, marginTop: 1 }}>USD/MMBtu · ~75% of urea cost</span>
+                <span style={{ fontFamily: mono, fontSize: 10, color: muted, marginTop: 1 }}>USD/MMBtu · key fertiliser input</span>
               </div>
             )}
             {/* Urea context note */}
@@ -379,8 +378,8 @@ export default function HormuzCommoditiesBoard() {
                 IRAN UREA EXPOSURE
               </span>
               <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: muted, lineHeight: 1.6 }}>
-                Iran produces ~7.5 Mt/yr urea — ~8% of global supply.
-                A 30-day Hormuz closure historically adds <strong>$40–80/t</strong> to spot urea prices.
+                Urea pricing is highly sensitive to shipping constraints and regional supply shocks.
+                Disruption signals can translate into rapid spot price repricing.
               </span>
             </div>
           </div>
@@ -407,8 +406,8 @@ export default function HormuzCommoditiesBoard() {
                 FERTILIZER → FOOD CHAIN
               </span>
               <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: muted, lineHeight: 1.6 }}>
-                Nitrogen fertilizer is ~30-40% of wheat/corn production cost.
-                Hormuz closure creates a <strong>4–6 month lag</strong> before grain prices fully reflect the disruption.
+                Fertiliser cost pressure can transmit into grain markets with a lag.
+                The impact depends on planting cycles, inventories, and freight constraints.
               </span>
             </div>
           </div>

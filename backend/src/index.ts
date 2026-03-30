@@ -28,6 +28,7 @@ import analystBriefingRouter from './routes/analyst-briefing.js';
 import analyzeTickerRouter   from './routes/analyze-ticker.js';
 import articleBriefRouter    from './routes/article-brief.js';
 import rssRouter             from './routes/rss.js';
+import theaterMetricsRouter  from './routes/theater-metrics.js';
 
 const app  = express();
 const PORT = process.env.PORT ?? 4000;
@@ -79,6 +80,7 @@ app.use('/api/analyst-briefing',  analystBriefingRouter);
 app.use('/api/analyze-ticker',    analyzeTickerRouter);
 app.use('/api/article-brief',     articleBriefRouter);
 app.use('/api/rss',               rssRouter);
+app.use('/api/theater-metrics',   theaterMetricsRouter);
 
 // ── 404 fallback ─────────────────────────────────────────────────────────────
 app.use((_req, res) => {

@@ -11,8 +11,7 @@
  *  · Gold is the primary crisis hedge — surges on Iran/Gulf escalation signals
  *  · Silver amplifies gold moves with higher volatility (industrial + monetary)
  *  · Platinum & palladium are autocatalyst metals — oil shock → auto-output cuts
- *  · Iran holds ~3% of global gold reserves; sanctions accelerate de-dollarisation
- *  · Gulf central banks (UAE, Saudi) absorb gold as petrodollar diversification
+ *  · Central bank demand and sanctions regimes can influence physical flows
  */
 
 import { useState, useEffect, useCallback, useContext } from 'react';
@@ -54,7 +53,7 @@ const HORMUZ_IMPACTS = [
   {
     metal:       'Gold',
     icon:        '🥇',
-    mechanic:    'Primary crisis hedge. Spikes immediately on Hormuz closure signals. Iran holds ~3% of global reserves.',
+    mechanic:    'Primary crisis hedge. Often reprices quickly on escalation signals and risk-off flows.',
     sensitivity: 'CRITICAL',
     color:       '#e74c3c',
   },
@@ -75,7 +74,7 @@ const HORMUZ_IMPACTS = [
   {
     metal:       'Palladium',
     icon:        '🔩',
-    mechanic:    '~85% used in gasoline catalytic converters. Russia supply concentration adds geopolitical premium.',
+    mechanic:    'Autocatalyst exposure. Geopolitics and supply concentration can add premium volatility.',
     sensitivity: 'ELEVATED',
     color:       '#2ecc71',
   },
@@ -397,9 +396,8 @@ export default function PreciousMetalsBoard() {
                     Safe Haven Context
                   </span>
                   <span style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: muted, lineHeight: 1.6 }}>
-                    Gulf central banks (UAE, Saudi Arabia) hold <strong style={{ color: 'var(--text-primary)' }}>gold as petrodollar hedge</strong>.
-                    A 30-day Hormuz closure historically adds <strong style={{ color: ACCENT }}>+$80–$150/oz</strong> to gold spot.
-                    Iran has accelerated gold purchases to circumvent SWIFT/sanctions since 2018.
+                    Safe-haven metals can reprice quickly during escalation cycles and risk-off phases.
+                    The magnitude and persistence of moves depend on flows, liquidity, and policy expectations.
                   </span>
                 </div>
               </div>
