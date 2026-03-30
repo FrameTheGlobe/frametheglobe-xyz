@@ -141,8 +141,6 @@ export default function IranWarCostBoard() {
   const surface = 'var(--surface)';
   const upColor = '#27ae60';
   const downColor = '#c93a20';
-  const tickerBg = 'linear-gradient(135deg, rgba(26,8,8,0.96), rgba(45,10,10,0.93))';
-  const tickerBorder = 'rgba(201,58,32,0.35)';
 
   const bucket = useCallback((label: string) => metrics?.buckets?.find(b => b.label === label) ?? null, [metrics]);
   const hormuz = bucket('HORMUZ');
@@ -358,291 +356,308 @@ export default function IranWarCostBoard() {
     };
   }, [news, now, missileIntel]);
 
+  // Section label used repeatedly — keeps styling consistent
+  const SectionLabel = ({ children }: { children: string }) => (
+    <div style={{
+      fontFamily: mono, fontSize: 9, fontWeight: 900, letterSpacing: '0.1em',
+      textTransform: 'uppercase', color: muted, marginBottom: 8,
+    }}>{children}</div>
+  );
+
   return (
     <div className="ftg-iran-board" style={{
       background: surface,
       border: `1px solid ${border}`,
-      borderTop: `2px solid ${accent}`,
+      borderTop: `3px solid ${accent}`,
       borderRadius: '0 0 6px 6px',
       marginBottom: 12,
       overflow: 'hidden',
     }}>
+
+      {/* ── Widget header ──────────────────────────────────────────── */}
       <div className="widget-hd ftg-iran-board-top" style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '10px 14px',
-        flexWrap: 'wrap',
-        gap: 10,
+        padding: '9px 14px', flexWrap: 'wrap', gap: 8,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span className="live-dot" style={{ background: accent }} />
-          <span style={{ fontFamily: mono, fontSize: 13, fontWeight: 800, color: accent, letterSpacing: '0.1em' }}>
-            IRAN THEATER OPS & RISK (LIVE FEEDS)
+          <span style={{ fontFamily: mono, fontSize: 12, fontWeight: 800, color: accent, letterSpacing: '0.1em' }}>
+            IRAN THEATER OPS &amp; RISK (LIVE FEEDS)
           </span>
         </div>
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-          <div style={{ fontFamily: mono, fontSize: 11, padding: '4px 10px', background: riskBand.color, color: '#fff', borderRadius: 2, fontWeight: 700, letterSpacing: '0.08em' }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <span style={{ fontFamily: mono, fontSize: 10, padding: '3px 8px', background: riskBand.color, color: '#fff', borderRadius: 2, fontWeight: 800, letterSpacing: '0.08em' }}>
             {riskBand.label}
-          </div>
-          <div style={{ fontFamily: mono, fontSize: 11, padding: '4px 10px', background: 'var(--border-light)', borderRadius: 2, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.08em' }}>
-            UPDATED
-          </div>
+          </span>
+          {(metricsErr || priceErr || newsErr) && (
+            <span style={{ fontFamily: mono, fontSize: 10, color: downColor, fontWeight: 800 }}>⚠ DEGRADED</span>
+          )}
+          <span style={{ fontFamily: mono, fontSize: 10, color: muted }}>
+            {metrics ? `UPDATED ${new Date(metrics.fetchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'UPDATED'}
+          </span>
         </div>
       </div>
 
+      {/* ── Body grid ─────────────────────────────────────────────── */}
       <div className="ftg-iran-board-grid" style={{ display: 'flex', flexWrap: 'wrap' }}>
-        <div className="ftg-iran-board-main" style={{ flex: '2 1 500px', borderRight: `1px solid ${border}` }}>
-          <div style={{ padding: '14px 16px', borderBottom: `1px solid ${border}`, background: 'var(--surface)' }}>
+
+        {/* ── LEFT: main panel ────────────────────────────────────── */}
+        <div className="ftg-iran-board-main" style={{ flex: '2 1 480px', borderRight: `1px solid ${border}` }}>
+
+          {/* COST TICKER */}
+          <div style={{ padding: '12px 14px', borderBottom: `1px solid ${border}`, background: 'var(--surface-hover)' }}>
+            <SectionLabel>Est. U.S. Cost Since Strikes Began · Operation Epic Fury · Feb 28 2026</SectionLabel>
             <div style={{
-              border: `1px solid ${tickerBorder}`,
-              background: tickerBg,
-              borderRadius: 8,
-              padding: '14px 14px 12px',
-              boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.03)',
+              fontFamily: mono,
+              fontSize: 'clamp(28px, 4.5vw, 40px)',
+              fontWeight: 900,
+              color: downColor,
+              lineHeight: 1,
+              fontVariantNumeric: 'tabular-nums',
+              letterSpacing: '-0.01em',
+              wordBreak: 'break-word',
+              marginBottom: 10,
             }}>
-            <div style={{ fontFamily: mono, fontSize: 10, color: '#f2c9c1', letterSpacing: '0.12em', fontWeight: 800, marginBottom: 8 }}>
-              EST. U.S. COST SINCE STRIKES BEGAN (LIVE TICKER)
-            </div>
-            <div style={{ fontFamily: mono, fontSize: 'clamp(30px, 5vw, 42px)', fontWeight: 900, color: '#ff6b57', lineHeight: 1.05, fontVariantNumeric: 'tabular-nums', wordBreak: 'break-word' }}>
               ${formatFullUSD(longHorizonCost.totalUsd)}
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8, marginTop: 10 }}>
+
+            {/* Clock + rate row */}
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+              {/* Elapsed clock */}
+              <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                {[
+                  { l: 'DAYS', v: String(elapsedClock.days).padStart(2, '0') },
+                  { l: 'HRS',  v: String(elapsedClock.hours).padStart(2, '0') },
+                  { l: 'MIN',  v: String(elapsedClock.mins).padStart(2, '0') },
+                  { l: 'SEC',  v: String(elapsedClock.secs).padStart(2, '0') },
+                ].map((u, i) => (
+                  <div key={u.l} style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+                    {i > 0 && <span style={{ fontFamily: mono, fontSize: 14, fontWeight: 900, color: muted, paddingBottom: 12, marginRight: 4 }}>:</span>}
+                    <div style={{
+                      border: `1px solid ${border}`,
+                      background: surface,
+                      borderRadius: 4,
+                      padding: '5px 8px',
+                      textAlign: 'center',
+                      minWidth: 46,
+                    }}>
+                      <div style={{ fontFamily: mono, fontSize: 16, fontWeight: 900, color: accent, lineHeight: 1 }}>{u.v}</div>
+                      <div style={{ fontFamily: mono, fontSize: 8, color: muted, fontWeight: 700, letterSpacing: '0.06em', marginTop: 2 }}>{u.l}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Rate cards */}
+              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', flex: 1 }}>
+                {[
+                  { l: 'PER SEC',  v: `$${formatCompactUSD(longHorizonCost.perSecond)}` },
+                  { l: 'PER HOUR', v: `$${formatCompactUSD(longHorizonCost.perHour)}` },
+                  { l: 'PER DAY',  v: `$${formatCompactUSD(longHorizonCost.perDay)}` },
+                ].map((m) => (
+                  <div key={m.l} style={{
+                    border: `1px solid ${border}`,
+                    background: surface,
+                    borderRadius: 4,
+                    padding: '5px 10px',
+                    flex: '1 1 80px',
+                  }}>
+                    <div style={{ fontFamily: mono, fontSize: 8, color: muted, fontWeight: 700, letterSpacing: '0.06em' }}>{m.l}</div>
+                    <div style={{ fontFamily: mono, fontSize: 13, fontWeight: 900, color: 'var(--text-primary)', marginTop: 2 }}>{m.v}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ fontFamily: mono, fontSize: 9, color: muted, marginTop: 8, lineHeight: 1.5 }}>
+              $11.3B first 6 days (Pentagon → Congress) + $1B/day ongoing
+            </div>
+          </div>
+
+          {/* OPS TEMPO + MARKET */}
+          <div style={{ padding: '10px 14px', borderBottom: `1px solid ${border}`, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+            {/* Big ops number */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 64, paddingRight: 12, borderRight: `1px solid ${border}` }}>
+              <div style={{ fontFamily: mono, fontSize: 9, color: muted, fontWeight: 800, letterSpacing: '0.1em', marginBottom: 2 }}>OPS TEMPO</div>
+              <div style={{ fontFamily: mono, fontSize: 36, fontWeight: 900, color: riskBand.color, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+                {String(opsTempo).padStart(2, '0')}
+              </div>
+              <div style={{ fontFamily: mono, fontSize: 8, color: muted, marginTop: 2 }}>/ 100</div>
+            </div>
+
+            {/* Market stats */}
+            <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '6px 14px' }}>
               {[
-                { l: 'PER SECOND', v: `$${formatCompactUSD(longHorizonCost.perSecond)}` },
-                { l: 'PER HOUR', v: `$${formatCompactUSD(longHorizonCost.perHour)}` },
-                { l: 'PER DAY', v: `$${formatCompactUSD(longHorizonCost.perDay)}` },
+                { l: 'BRENT–WTI SPREAD', v: spread === null ? '—' : `${sign(spread)}$${fmt(Math.abs(spread), 2)}` },
+                { l: 'STRATEGIC FLIGHTS', v: metrics ? String(metrics.flights.strategic) : '—' },
+                { l: 'NEWS ITEMS', v: metrics ? String(metrics.news.totalItems) : '—' },
+                { l: 'WAR COST 6H EST.', v: `$${formatCompactUSD(missileIntel.warCostUsd6h)}` },
+                { l: 'MUNITIONS 6H', v: String(missileIntel.munitions6h) },
+                { l: 'READINESS', v: String(readinessIndex) },
               ].map((m) => (
-                <div key={m.l} style={{ border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6, background: 'rgba(0,0,0,0.2)', padding: '6px 8px' }}>
-                  <div style={{ fontFamily: mono, fontSize: 9, color: '#c7b4b0', fontWeight: 700, letterSpacing: '0.06em' }}>{m.l}</div>
-                  <div style={{ fontFamily: mono, fontSize: 14, color: '#fff', fontWeight: 900, marginTop: 2 }}>{m.v}</div>
+                <div key={m.l}>
+                  <div style={{ fontFamily: mono, fontSize: 9, color: muted, fontWeight: 700 }}>{m.l}</div>
+                  <div style={{ fontFamily: mono, fontSize: 14, fontWeight: 900, color: 'var(--text-primary)' }}>{m.v}</div>
                 </div>
               ))}
             </div>
-            <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-              {[
-                { l: 'DAYS', v: String(elapsedClock.days).padStart(2, '0') },
-                { l: 'HRS', v: String(elapsedClock.hours).padStart(2, '0') },
-                { l: 'MIN', v: String(elapsedClock.mins).padStart(2, '0') },
-                { l: 'SEC', v: String(elapsedClock.secs).padStart(2, '0') },
-              ].map((u) => (
-                <div key={u.l} style={{ border: '1px solid rgba(255,255,255,0.18)', background: 'rgba(0,0,0,0.28)', borderRadius: 6, padding: '7px 10px', minWidth: 56, flex: '1 1 64px', textAlign: 'center' }}>
-                  <div style={{ fontFamily: mono, fontSize: 18, fontWeight: 900, color: '#ff8a7a', lineHeight: 1 }}>{u.v}</div>
-                  <div style={{ fontFamily: mono, fontSize: 9, color: '#d0bfbb', fontWeight: 700, letterSpacing: '0.06em', marginTop: 3 }}>{u.l}</div>
-                </div>
-              ))}
-            </div>
-            </div>
           </div>
 
-          <div style={{ padding: '16px 18px', borderBottom: `1px solid ${border}`, textAlign: 'center' }}>
-            <div style={{ fontFamily: mono, fontSize: 12, color: muted, letterSpacing: '0.12em', marginBottom: 14 }}>
-              OPS TEMPO INDEX (0–100) · LIVE NEWS + ADS-B + OIL SPREAD
-            </div>
-            <div style={{
-              fontFamily: mono, fontSize: 46, fontWeight: 900, color: riskBand.color,
-              lineHeight: 1, letterSpacing: '-0.02em', marginBottom: 10, fontVariantNumeric: 'tabular-nums',
-            }}>
-              {String(opsTempo).padStart(2, '0')}
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 18, flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
-                <span style={{ fontFamily: mono, fontSize: 12, color: muted, fontWeight: 700 }}>BRENT–WTI</span>
-                <span style={{ fontFamily: mono, fontSize: 15, fontWeight: 900, color: 'var(--text-primary)' }}>
-                  {spread === null ? '—' : `${sign(spread)}$${fmt(Math.abs(spread), 2)}`}
-                </span>
-              </div>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
-                <span style={{ fontFamily: mono, fontSize: 12, color: muted, fontWeight: 700 }}>STRATEGIC FLIGHTS</span>
-                <span style={{ fontFamily: mono, fontSize: 15, fontWeight: 900, color: 'var(--text-primary)' }}>
-                  {metrics ? metrics.flights.strategic : '—'}
-                </span>
-              </div>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
-                <span style={{ fontFamily: mono, fontSize: 12, color: muted, fontWeight: 700 }}>NEWS ITEMS</span>
-                <span style={{ fontFamily: mono, fontSize: 15, fontWeight: 900, color: 'var(--text-primary)' }}>
-                  {metrics ? metrics.news.totalItems : '—'}
-                </span>
-              </div>
-            </div>
-
-              <div style={{ marginTop: 14, display: 'flex', justifyContent: 'center', gap: 18, flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
-                  <span style={{ fontFamily: mono, fontSize: 12, color: muted, fontWeight: 700 }}>WAR COST (6H EST.)</span>
-                  <span style={{ fontFamily: mono, fontSize: 15, fontWeight: 900, color: 'var(--text-primary)' }}>
-                    ${formatCompactUSD(missileIntel.warCostUsd6h)}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
-                  <span style={{ fontFamily: mono, fontSize: 12, color: muted, fontWeight: 700 }}>MUNITIONS (6H)</span>
-                  <span style={{ fontFamily: mono, fontSize: 15, fontWeight: 900, color: 'var(--text-primary)' }}>
-                    {missileIntel.munitions6h}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
-                  <span style={{ fontFamily: mono, fontSize: 12, color: muted, fontWeight: 700 }}>READINESS</span>
-                  <span style={{ fontFamily: mono, fontSize: 15, fontWeight: 900, color: 'var(--text-primary)' }}>
-                    {readinessIndex}
-                  </span>
-                </div>
-              </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 0 }}>
+          {/* THREAT BUCKETS — 6H mention counts */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderBottom: `1px solid ${border}` }}>
             {[
-              { l: 'HORMUZ', v: hormuz?.last6h ?? null },
-              { l: 'RED SEA', v: redSea?.last6h ?? null },
-              { l: 'TANKERS', v: tankers?.last6h ?? null },
-              { l: 'IRAN', v: iran?.last6h ?? null },
+              { l: 'HORMUZ',   v: hormuz?.last6h ?? null,  accent: '#e67e22' },
+              { l: 'RED SEA',  v: redSea?.last6h ?? null,  accent: '#e67e22' },
+              { l: 'TANKERS',  v: tankers?.last6h ?? null, accent: accent },
+              { l: 'IRAN',     v: iran?.last6h ?? null,    accent: downColor },
             ].map((m, idx) => (
               <div key={m.l} style={{
-                padding: '10px 10px',
+                padding: '8px 10px',
                 borderRight: idx < 3 ? `1px solid ${border}` : 'none',
-                borderBottom: `1px solid ${border}`,
-                background: 'rgba(255,255,255,0.01)',
+                borderTop: `2px solid ${m.accent}`,
+                background: 'var(--surface-hover)',
               }}>
-                <div style={{ fontFamily: mono, fontSize: 10, color: muted, fontWeight: 800, letterSpacing: '0.08em' }}>
-                  {m.l} (6H)
-                </div>
-                <div style={{ fontFamily: mono, fontSize: 18, fontWeight: 900, marginTop: 6, color: 'var(--text-primary)' }}>
+                <div style={{ fontFamily: mono, fontSize: 9, color: muted, fontWeight: 800, letterSpacing: '0.08em' }}>{m.l} · 6H</div>
+                <div style={{ fontFamily: mono, fontSize: 22, fontWeight: 900, marginTop: 4, color: 'var(--text-primary)' }}>
                   {m.v === null ? '—' : m.v}
                 </div>
               </div>
             ))}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 8, padding: '10px 12px', borderTop: `1px solid ${border}`, borderBottom: `1px solid ${border}`, background: 'var(--surface)' }}>
+          {/* HUMAN COST + SIGNAL CARDS */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', borderBottom: `1px solid ${border}` }}>
             {[
-              { l: 'HUMAN-COST SIGNALS (24H)', v: String(humanCostSignals.mentions24h) },
-              { l: 'EST. CASUALTY SIGNAL (6H)', v: String(humanCostSignals.casualties6h) },
-              { l: 'MUNITIONS SIGNAL (6H)', v: String(humanCostSignals.munitions6h) },
-            ].map((m) => (
-              <div key={m.l} style={{ border: `1px solid ${border}`, borderRadius: 6, padding: '8px 10px', background: 'var(--surface-hover)' }}>
-                <div style={{ fontFamily: mono, fontSize: 10, color: muted, fontWeight: 800, letterSpacing: '0.06em' }}>{m.l}</div>
-                <div style={{ fontFamily: mono, fontSize: 22, fontWeight: 900, color: 'var(--text-primary)', marginTop: 4 }}>{m.v}</div>
+              { l: 'HUMAN-COST SIGNALS 24H', v: String(humanCostSignals.mentions24h), hi: false },
+              { l: 'CASUALTY SIGNAL 6H',     v: String(humanCostSignals.casualties6h), hi: true },
+              { l: 'MUNITIONS SIGNAL 6H',    v: String(humanCostSignals.munitions6h), hi: false },
+              { l: 'SOURCES ONLINE',         v: metrics ? String(metrics.news.sourceCount) : '—', hi: false },
+            ].map((m, idx, arr) => (
+              <div key={m.l} style={{
+                padding: '8px 10px',
+                borderRight: idx < arr.length - 1 ? `1px solid ${border}` : 'none',
+                background: surface,
+              }}>
+                <div style={{ fontFamily: mono, fontSize: 9, color: muted, fontWeight: 700, letterSpacing: '0.06em' }}>{m.l}</div>
+                <div style={{ fontFamily: mono, fontSize: 22, fontWeight: 900, color: m.hi ? downColor : 'var(--text-primary)', marginTop: 4 }}>{m.v}</div>
               </div>
             ))}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8, padding: '10px 12px', borderBottom: `1px solid ${border}`, background: 'var(--surface-hover)' }}>
-            {[
-              { l: 'SOURCES', v: metrics ? String(metrics.news.sourceCount) : '—' },
-              { l: 'FAILED', v: metrics ? String(metrics.news.failedSources) : '—' },
-              { l: 'FLIGHTS', v: metrics ? String(metrics.flights.total) : '—' },
-              { l: 'STRATEGIC', v: metrics ? String(metrics.flights.strategic) : '—' },
-            ].map((m) => (
-              <div key={m.l} style={{ border: `1px solid ${border}`, borderRadius: 6, padding: '8px 9px', background: 'var(--surface)' }}>
-                <div style={{ fontFamily: mono, fontSize: 10, color: muted, fontWeight: 800 }}>{m.l}</div>
-                <div style={{ fontFamily: mono, fontSize: 18, fontWeight: 900, color: 'var(--text-primary)', marginTop: 5 }}>{m.v}</div>
-              </div>
-            ))}
-          </div>
-
-          <div style={{ padding: '12px 16px', borderTop: `1px solid ${border}`, background: 'var(--surface-hover)', display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ fontFamily: mono, fontSize: 11, fontWeight: 900, color: accent }}>FEEDS:</span>
-            <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--text-secondary)', fontWeight: 700 }}>
-              RSS · ADS-B · YAHOO/STOOQ
-            </span>
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: 10, alignItems: 'center' }}>
-              {(metricsErr || priceErr || newsErr) && (
-                <span style={{ fontFamily: mono, fontSize: 11, color: downColor, fontWeight: 800 }}>⚠ DEGRADED</span>
-              )}
-              <span style={{ fontFamily: mono, fontSize: 11, color: muted, fontWeight: 700 }}>
-                {metrics?.flights?.fetchedAt ? `FLIGHTS ${new Date(metrics.flights.fetchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}
-              </span>
+          {/* FEED STATUS bar */}
+          <div style={{ padding: '8px 14px', background: 'var(--surface-hover)', display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ fontFamily: mono, fontSize: 9, fontWeight: 900, color: accent, letterSpacing: '0.08em' }}>FEEDS</span>
+            <span style={{ fontFamily: mono, fontSize: 9, color: muted, fontWeight: 700 }}>RSS · ADS-B · YAHOO/STOOQ</span>
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+              {[
+                { l: 'SOURCES', v: metrics ? String(metrics.news.sourceCount) : '—' },
+                { l: 'FAILED',  v: metrics ? String(metrics.news.failedSources) : '—' },
+                { l: 'FLIGHTS', v: metrics ? String(metrics.flights.total) : '—' },
+              ].map((m) => (
+                <span key={m.l} style={{ fontFamily: mono, fontSize: 9, color: muted }}>
+                  <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{m.v}</span> {m.l}
+                </span>
+              ))}
             </div>
           </div>
         </div>
 
-        <div className="ftg-iran-board-side" style={{ flex: '1 1 300px', background: 'var(--bg)' }}>
-          <div style={{ padding: '20px', borderBottom: `1px solid ${border}` }}>
-            <div style={{ fontFamily: mono, fontSize: 11, fontWeight: 700, color: muted, marginBottom: 16 }}>RECENT FEED LOG (FILTERED)</div>
+        {/* ── RIGHT: side panel ───────────────────────────────────── */}
+        <div className="ftg-iran-board-side" style={{ flex: '1 1 280px', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
+
+          {/* RECENT FEED LOG */}
+          <div style={{ padding: '12px 14px', borderBottom: `1px solid ${border}`, flex: 1 }}>
+            <SectionLabel>Recent Feed Log (Filtered)</SectionLabel>
             {logItems.length === 0 ? (
-              <div style={{ fontFamily: mono, fontSize: 13, color: muted }}>No matching items in cache.</div>
+              <div style={{ fontFamily: mono, fontSize: 12, color: muted }}>No matching items in cache.</div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {logItems.map((h, i) => (
-                  <div key={i} style={{ borderLeft: `2px solid var(--accent-light)`, paddingLeft: 14 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5, gap: 10 }}>
-                      <span style={{ fontFamily: mono, fontSize: 13, color: accent, fontWeight: 800, whiteSpace: 'nowrap' }}>{h.t}</span>
-                      <span style={{ fontFamily: mono, fontSize: 11, color: muted, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h.c}</span>
+                  <div key={i} style={{ borderLeft: `2px solid ${accent}`, paddingLeft: 10 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3, gap: 8 }}>
+                      <span style={{ fontFamily: mono, fontSize: 11, color: accent, fontWeight: 800, whiteSpace: 'nowrap' }}>{h.t}</span>
+                      <span style={{ fontFamily: mono, fontSize: 10, color: muted, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h.c}</span>
                     </div>
-                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.4, fontWeight: 500 }}>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.35, fontWeight: 500 }}>
                       {h.e}
                     </div>
                   </div>
                 ))}
               </div>
             )}
+          </div>
 
-            <div style={{ marginTop: 18, borderTop: `1px solid ${border}`, paddingTop: 16 }}>
-              <div style={{ fontFamily: mono, fontSize: 11, fontWeight: 700, color: muted, marginBottom: 12 }}>MISSILE INTEL (6H · EVENT-DERIVED)</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(92px, 1fr))', gap: 8, marginBottom: 12 }}>
-                {[
-                  'Ballistic',
-                  'Cruise',
-                  'Drone',
-                  'Iron Dome',
-                  'Intercept',
-                  'Airstrike',
-                ].map((label) => (
+          {/* MISSILE INTEL GRID */}
+          <div style={{ padding: '12px 14px', borderBottom: `1px solid ${border}` }}>
+            <SectionLabel>Missile Intel · 6H · Event-Derived</SectionLabel>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 5 }}>
+              {(['Ballistic','Cruise','Drone','Iron Dome','Intercept','Airstrike'] as const).map((label) => {
+                const count = missileIntel.totalByType[label] ?? 0;
+                const isHot = count > 0;
+                return (
                   <div key={label} style={{
-                    border: `1px solid ${border}`,
-                    background: 'var(--surface-hover)',
-                    borderRadius: 6,
-                    padding: '10px 8px',
+                    border: `1px solid ${isHot ? downColor : border}`,
+                    borderTop: `2px solid ${isHot ? downColor : border}`,
+                    background: isHot ? 'rgba(201,58,32,0.06)' : 'var(--surface-hover)',
+                    borderRadius: 4,
+                    padding: '7px 6px',
                     textAlign: 'center',
                   }}>
-                    <div style={{ fontFamily: mono, fontSize: 18, fontWeight: 900, color: 'var(--text-primary)' }}>
-                      {missileIntel.totalByType[label] ?? 0}
+                    <div style={{ fontFamily: mono, fontSize: 20, fontWeight: 900, color: isHot ? downColor : 'var(--text-primary)', lineHeight: 1 }}>
+                      {count}
                     </div>
-                    <div style={{ fontFamily: mono, fontSize: 7, color: muted, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: 3 }}>
+                    <div style={{ fontFamily: mono, fontSize: 8, color: muted, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: 3 }}>
                       {label}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* LATEST MISSILE SIGNALS */}
+          <div style={{ padding: '12px 14px', flex: 1 }}>
+            <SectionLabel>Latest Missile Signals</SectionLabel>
+            {missileIntel.latestMissileSignals.length === 0 ? (
+              <div style={{ fontFamily: mono, fontSize: 12, color: muted }}>No signals in current cache.</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {missileIntel.latestMissileSignals.map((h, i) => (
+                  <div key={i} style={{ borderLeft: `2px solid ${downColor}`, paddingLeft: 10 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3, gap: 8 }}>
+                      <span style={{ fontFamily: mono, fontSize: 11, color: downColor, fontWeight: 800, whiteSpace: 'nowrap' }}>{h.t}</span>
+                      <span style={{ fontFamily: mono, fontSize: 10, color: muted, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h.c}</span>
+                    </div>
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.35, fontWeight: 500 }}>
+                      {h.e}
                     </div>
                   </div>
                 ))}
               </div>
-
-              <div style={{ fontFamily: mono, fontSize: 11, fontWeight: 700, color: muted, marginBottom: 10 }}>LATEST MISSILE SIGNALS</div>
-              {missileIntel.latestMissileSignals.length === 0 ? (
-                <div style={{ fontFamily: mono, fontSize: 13, color: muted }}>No missile signals in current cache.</div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  {missileIntel.latestMissileSignals.map((h, i) => (
-                    <div key={i} style={{ borderLeft: `2px solid var(--accent-light)`, paddingLeft: 14 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5, gap: 10 }}>
-                        <span style={{ fontFamily: mono, fontSize: 13, color: accent, fontWeight: 800, whiteSpace: 'nowrap' }}>{h.t}</span>
-                        <span style={{ fontFamily: mono, fontSize: 11, color: muted, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h.c}</span>
-                      </div>
-                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.4, fontWeight: 500 }}>
-                        {h.e}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            )}
           </div>
-
         </div>
       </div>
 
+      {/* ── Footer ────────────────────────────────────────────────── */}
       <div className="ftg-iran-board-footer" style={{
-        padding: '10px 14px',
+        padding: '7px 14px',
         borderTop: `1px solid ${border}`,
         background: 'var(--accent-light)',
         display: 'flex',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
-        gap: 8,
+        gap: 6,
       }}>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          <span style={{ fontFamily: mono, fontSize: 11, fontWeight: 900, color: accent }}>LATEST:</span>
-          <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--text-primary)' }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', minWidth: 0, flex: 1 }}>
+          <span style={{ fontFamily: mono, fontSize: 10, fontWeight: 900, color: accent, flexShrink: 0 }}>LATEST:</span>
+          <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {logItems[0]?.e ?? '—'}
           </span>
         </div>
-        <div style={{ fontFamily: mono, fontSize: 10, color: muted }}>
+        <span style={{ fontFamily: mono, fontSize: 9, color: muted, flexShrink: 0 }}>
           {metrics ? `METRICS ${new Date(metrics.fetchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}
-        </div>
+        </span>
       </div>
     </div>
   );
