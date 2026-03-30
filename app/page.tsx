@@ -490,62 +490,7 @@ function matchesAlertProfile(item: FeedItem, profile: AlertProfile): boolean {
   return keywordMatch && lensMatch && regionMatch && thresholdMatch;
 }
 
-// ── Entity extraction and heatmap ───────────────────────────────────────────────
-function extractEntities(items: FeedItem[]): Record<string, number> {
-  const entityCounts: Record<string, number> = {};
-  const entities = [
-    // Core actors & locations
-    'iran', 'israel', 'gaza', 'lebanon', 'hezbollah', 'hamas', 'idf',
-    'tehran', 'beirut', 'rafah', 'khan younis', 'west bank',
-    // Nuclear
-    'nuclear', 'uranium', 'natanz', 'fordow', 'arak', 'bushehr', 'iaea', 'jcpoa',
-    // Energy & shipping
-    'oil', 'brent', 'wti', 'opec', 'hormuz', 'tanker', 'gas', 'lng', 'pipeline',
-    'red sea', 'bab el-mandeb', 'suez', 'strait of hormuz',
-    // Military & security
-    'missile', 'airstrike', 'drone', 'attack', 'explosion', 'casualties',
-    'pentagon', 'centcom', 'nato', 'irgc', 'quds force',
-    // Regional actors
-    'russia', 'china', 'us', 'uk', 'eu', 'un',
-    'afghanistan', 'taliban', 'pakistan', 'ttp',
-    'syria', 'assad', 'turkey', 'erdogan',
-    'yemen', 'houthi', 'houthis',
-    'iraq', 'baghdad',
-    // Economic
-    'sanctions', 'currency', 'inflation', 'dollar', 'euro',
-    'world bank', 'imf', 'gold', 'commodities',
-    // Cyber & tech
-    'cyber', 'hack', 'cyberattack', 'ransomware', 'satellite',
-    // Diplomacy
-    'ceasefire', 'negotiations', 'talks', 'agreement', 'diplomacy', 'summit',
-  ];
-  items.forEach(item => {
-    const text = `${item.title} ${item.summary}`.toLowerCase();
-    entities.forEach(entity => {
-      if (text.includes(entity)) {
-        entityCounts[entity] = (entityCounts[entity] || 0) + 1;
-      }
-    });
-  });
-  return entityCounts;
-}
 
-// ── Timeline cues (activity density over time) ─────────────────────────────────────
-function computeTimelineCues(items: FeedItem[]): Array<{ hour: number; count: number; label: string }> {
-  const now = Date.now();
-  const hourlyBuckets = new Array(24).fill(0).map((_, i) => ({
-    hour: i,
-    count: 0,
-    label: i === 0 ? 'now' : i < 24 ? `-${i}h` : `-${Math.floor(i/24)}d`,
-  }));
-  items.forEach(item => {
-    const ageHours = Math.floor((now - new Date(item.pubDate).getTime()) / (1000 * 60 * 60));
-    if (ageHours < 24) {
-      hourlyBuckets[ageHours].count += 1;
-    }
-  });
-  return hourlyBuckets.slice(0, 12); // Show last 12 hours
-}
 function RegionStatsStrip({ items }: { items: FeedItem[] }) {
   if (!items.length) return null;
   const counts: Record<string, number> = {};
@@ -1112,7 +1057,7 @@ export default function Home() {
   const [marketData, setMarketData]     = useState<Array<{ symbol: string; name: string; changePercent: number }>>([]);
   const [alertProfiles, setAlertProfiles] = useState<AlertProfile[]>([]);
   const [activeAlertProfile, setActiveAlertProfile] = useState<string | null>(null);
-  const [analystMode, setAnalystMode]   = useState<'reader' | 'ops'>('reader');
+
   const [activeSources, setActiveSources] = useState<Set<string>>(
     new Set(SOURCES.map(s => s.id))
   );
@@ -1324,18 +1269,6 @@ export default function Home() {
     try { window.localStorage.setItem('ftg_alert_profiles', JSON.stringify(alertProfiles)); } catch { /* ignore */ }
   }, [alertProfiles]);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      const raw = window.localStorage.getItem('ftg_analyst_mode');
-      setAnalystMode((raw === 'ops') ? 'ops' : 'reader');
-    } catch { /* ignore */ }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try { window.localStorage.setItem('ftg_analyst_mode', analystMode); } catch { /* ignore */ }
-  }, [analystMode]);
 
   // ── Read/unread persistence ───────────────────────────────────────────────
   useEffect(() => {
@@ -1983,9 +1916,6 @@ export default function Home() {
     });
   }, [visibleItems, watchlistKeywords]);
 
-  // ── Entity heatmap and timeline cues ───────────────────────────────────────
-  const entityHeatmap = useMemo(() => extractEntities(visibleItems), [visibleItems]);
-  const timelineCues = useMemo(() => computeTimelineCues(visibleItems), [visibleItems]);
 
   // ── Comparison map: per item key → sibling items in same cluster ──────────
   const comparisonMap = useMemo(() => {
@@ -2186,96 +2116,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* ── Analyst Mode ───────────────────────────────────────────── */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 12, borderTop: '1px solid var(--border-light)' }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.12em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                🎯 Analyst Mode
-              </div>
-              <div style={{ display: 'flex', gap: 4 }}>
-                <button
-                  onClick={() => setAnalystMode('reader')}
-                  style={{
-                    flex: 1, fontFamily: 'var(--font-mono)', fontSize: 11,
-                    padding: '4px 8px', border: '1px solid var(--border-light)',
-                    background: analystMode === 'reader' ? 'var(--accent)' : 'var(--surface)',
-                    color: analystMode === 'reader' ? '#fff' : 'var(--text-primary)',
-                    cursor: 'pointer', borderRadius: 3,
-                  }}
-                >
-                  Reader
-                </button>
-                <button
-                  onClick={() => setAnalystMode('ops')}
-                  style={{
-                    flex: 1, fontFamily: 'var(--font-mono)', fontSize: 11,
-                    padding: '4px 8px', border: '1px solid var(--border-light)',
-                    background: analystMode === 'ops' ? 'var(--accent)' : 'var(--surface)',
-                    color: analystMode === 'ops' ? '#fff' : 'var(--text-primary)',
-                    cursor: 'pointer', borderRadius: 3,
-                  }}
-                >
-                  Ops
-                </button>
-              </div>
-            </div>
-
-            {/* ── Entity Heatmap (Ops mode only) ─────────────────────────────── */}
-            {analystMode === 'ops' && Object.entries(entityHeatmap).length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 12, borderTop: '1px solid var(--border-light)' }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.12em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                  🔥 Entity Heatmap
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-                  {Object.entries(entityHeatmap)
-                    .sort(([, a], [, b]) => b - a)
-                    .slice(0, 12)
-                    .map(([entity, count]) => (
-                      <span key={entity} style={{
-                        fontFamily: 'var(--font-mono)', fontSize: 10,
-                        background: `rgba(231, 76, 60, ${Math.min(1, count / 10)})`,
-                        color: count > 5 ? '#fff' : 'var(--text-primary)',
-                        padding: '2px 5px', borderRadius: 2,
-                      }}>
-                        {entity} ({count})
-                      </span>
-                    ))}
-                </div>
-              </div>
-            )}
-
-            {/* ── Timeline Activity (Ops mode only) ───────────────────────────── */}
-            {analystMode === 'ops' && timelineCues.some(c => c.count > 0) && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 12, borderTop: '1px solid var(--border-light)' }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.12em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                  📈 Activity (12h)
-                </div>
-                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 40 }}>
-                  {timelineCues.map(cue => (
-                    <div key={cue.hour} style={{
-                      flex: 1,
-                      background: cue.count > 0 ? 'var(--accent)' : 'var(--border-light)',
-                      height: `${Math.max(2, (cue.count / Math.max(...timelineCues.map(c => c.count))) * 100)}%`,
-                      borderRadius: 2,
-                      position: 'relative',
-                    }}>
-                      {cue.count > 0 && (
-                        <div style={{
-                          position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
-                          fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)',
-                          marginBottom: 2,
-                        }}>
-                          {cue.count}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)' }}>
-                  <span>now</span>
-                  <span>-12h</span>
-                </div>
-              </div>
-            )}
           </div>
         </aside>
 
@@ -2759,7 +2599,7 @@ export default function Home() {
                               </span>
                             )}
                             {/* Confidence/Trust badge */}
-                            {analystMode === 'ops' && (item.relevanceScore ?? 0) > 2.5 && (
+                            {(item.relevanceScore ?? 0) > 2.5 && (
                               <span style={{
                                 fontFamily: 'var(--font-mono)', fontSize: 11,
                                 color: '#fff', background: 'rgba(46, 204, 113, 0.9)',
@@ -2769,7 +2609,7 @@ export default function Home() {
                               </span>
                             )}
                             {/* Corroboration badge */}
-                            {analystMode === 'ops' && coverageCount > 2 && (
+                            {coverageCount > 2 && (
                               <span style={{
                                 fontFamily: 'var(--font-mono)', fontSize: 11,
                                 color: '#fff', background: 'rgba(52, 152, 219, 0.9)',
@@ -2779,7 +2619,7 @@ export default function Home() {
                               </span>
                             )}
                             {/* Market impact badge */}
-                            {analystMode === 'ops' && (() => {
+                            {(() => {
                               const cluster = clusters.find(c => c.items.some(i => keyForItem(i) === itemKey));
                               return cluster?.hasMarketSignal && cluster?.marketImpactHint;
                             })() && (
@@ -2795,7 +2635,7 @@ export default function Home() {
                               </span>
                             )}
                             {/* Contradiction badge */}
-                            {analystMode === 'ops' && (() => {
+                            {(() => {
                               const cluster = clusters.find(c => c.items.some(i => keyForItem(i) === itemKey));
                               return cluster && cluster.contradiction && cluster.contradiction > 0.6;
                             })() && (
@@ -2877,7 +2717,7 @@ export default function Home() {
                           )}
 
                           {/* Why this matters (Ops mode only) */}
-                          {analystMode === 'ops' && (() => {
+                          {(() => {
                             const cluster = clusters.find(c => c.items.some(i => keyForItem(i) === itemKey));
                             const whyMatters = generateWhyMatters(item, cluster);
                             return whyMatters ? (
