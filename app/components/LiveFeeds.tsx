@@ -1,43 +1,48 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-const LIVE_STREAMS = [
-  {
-    id: 'feed-1',
-    videoId: 'Khfdb7qUvjk',
-    label: 'Live Feed 1',
-    description: 'Breaking News',
-  },
-  {
-    id: 'feed-2',
-    videoId: 'fIurYTprwzg',
-    label: 'Live Feed 2',
-    description: 'World Report',
-  },
-  {
-    id: 'feed-3',
-    videoId: 'gmtlJ_m2r5A',
-    label: 'Live Feed 3',
-    description: 'Global Affairs',
-  },
-  {
-    id: 'feed-4',
-    videoId: '-zGuR1qVKrU',
-    label: 'Live Feed 4',
-    description: 'Geopolitics',
-  },
-];
+type LiveFeed = {
+  id: string;
+  name: string;
+  channelId: string;
+  videoId: string | null;
+  thumbnailUrl: string | null;
+  embedUrl: string;
+  source: 'override' | 'rss' | 'fallback';
+};
 
 type LayoutMode = '2x2' | 'single' | 'pip';
 
 export default function LiveFeeds() {
   const [collapsed, setCollapsed] = useState(false);
   const [layout, setLayout] = useState<LayoutMode>('2x2');
-  const [focused, setFocused] = useState<string>(LIVE_STREAMS[0].id);
+  const [feeds, setFeeds] = useState<LiveFeed[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [focused, setFocused] = useState<string>('');
   const [muted, setMuted] = useState(true);
 
-  const focusedStream = LIVE_STREAMS.find(s => s.id === focused) ?? LIVE_STREAMS[0];
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/live-feeds', { cache: 'no-store' });
+        const data = await res.json();
+        const list = Array.isArray(data?.feeds) ? (data.feeds as LiveFeed[]) : [];
+        if (cancelled) return;
+        setFeeds(list);
+        setFocused(list[0]?.id ?? '');
+      } catch {
+        if (cancelled) return;
+        setFeeds([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const focusedStream = useMemo(() => feeds.find(s => s.id === focused) ?? feeds[0] ?? null, [feeds, focused]);
 
   return (
     <section style={{
@@ -75,7 +80,7 @@ export default function LiveFeeds() {
             color: 'var(--text-muted)',
             letterSpacing: '0.06em',
           }}>
-            // {LIVE_STREAMS.length} streams
+            // {loading ? '…' : feeds.length} streams
           </span>
         </div>
 
@@ -143,6 +148,12 @@ export default function LiveFeeds() {
       {/* ── Feed Grid ───────────────────────────────────────────── */}
       {!collapsed && (
         <div>
+          {!loading && !focusedStream && (
+            <div style={{ padding: 14, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>
+              Live feeds unavailable. Set `YOUTUBE_LIVE_FEEDS_JSON` on the Railway backend.
+            </div>
+          )}
+
           {/* 2x2 Grid Layout */}
           {layout === '2x2' && (
             <div className="ftg-livefeed-grid" style={{
@@ -151,19 +162,24 @@ export default function LiveFeeds() {
               gap: 1,
               background: 'var(--border)',
             }}>
-              {LIVE_STREAMS.map(stream => (
-                <FeedCell
-                  key={stream.id}
-                  stream={stream}
-                  muted={muted}
-                  onClick={() => { setFocused(stream.id); setLayout('single'); }}
-                />
-              ))}
+              {loading
+                ? Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} style={{ background: '#000', paddingTop: '56.25%' }} />
+                  ))
+                : feeds.map(stream => (
+                    <FeedCell
+                      key={stream.id}
+                      stream={stream}
+                      muted={muted}
+                      onClick={() => { setFocused(stream.id); setLayout('single'); }}
+                    />
+                  ))
+              }
             </div>
           )}
 
           {/* Single focused layout */}
-          {layout === 'single' && (
+          {layout === 'single' && focusedStream && (
             <div>
               <FeedCell stream={focusedStream} muted={muted} large />
               {/* Stream selector row */}
@@ -172,7 +188,7 @@ export default function LiveFeeds() {
                 borderTop: '1px solid var(--border-light)',
                 background: 'var(--bg)',
               }}>
-                {LIVE_STREAMS.map(stream => (
+                {feeds.map(stream => (
                   <button
                     key={stream.id}
                     onClick={() => setFocused(stream.id)}
@@ -190,7 +206,7 @@ export default function LiveFeeds() {
                       textTransform: 'uppercase',
                     }}
                   >
-                    {stream.label}
+                    {stream.name}
                   </button>
                 ))}
               </div>
@@ -198,13 +214,13 @@ export default function LiveFeeds() {
           )}
 
           {/* PiP layout: one large + three small */}
-          {layout === 'pip' && (
+          {layout === 'pip' && focusedStream && (
             <div style={{ display: 'flex', gap: 1, background: 'var(--border)' }}>
               <div style={{ flex: 3 }}>
                 <FeedCell stream={focusedStream} muted={muted} />
               </div>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
-                {LIVE_STREAMS.filter(s => s.id !== focusedStream.id).map(stream => (
+                {feeds.filter(s => s.id !== focusedStream.id).map(stream => (
                   <div
                     key={stream.id}
                     onClick={() => setFocused(stream.id)}
@@ -230,14 +246,14 @@ function FeedCell({
   compact,
   onClick,
 }: {
-  stream: typeof LIVE_STREAMS[0];
+  stream: LiveFeed;
   muted: boolean;
   large?: boolean;
   compact?: boolean;
   onClick?: () => void;
 }) {
   const muteParam = muted ? '1' : '0';
-  const src = `https://www.youtube.com/embed/${stream.videoId}?mute=${muteParam}&autoplay=1&playsinline=1&rel=0&modestbranding=1`;
+  const src = `${stream.embedUrl}${stream.embedUrl.includes('?') ? '&' : '?'}mute=${muteParam}`;
 
   return (
     <div
@@ -259,7 +275,7 @@ function FeedCell({
           display: 'block',
         }}
         src={src}
-        title={stream.label}
+        title={stream.name}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen
       />
@@ -288,7 +304,7 @@ function FeedCell({
             display: 'inline-block',
             flexShrink: 0,
           }} />
-          {compact ? stream.label : `${stream.label} — ${stream.description}`}
+          {compact ? stream.name : stream.name}
         </div>
       </div>
       {/* Click overlay hint */}

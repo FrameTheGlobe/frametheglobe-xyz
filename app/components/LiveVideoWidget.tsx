@@ -1,34 +1,48 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
-const LIVE_FEEDS = [
-  { id: 'aljazeera', name: 'Al Jazeera English', channelId: 'UCNye-wNBqNL5ZzHSJj3l8Bg' },
-  { id: 'sky',       name: 'Sky News Live',       channelId: 'UCoMdktPbSTixAyNGwb-UYkQ', videoId: 'YDvsBbKfLPA' },
-  { id: 'dw',        name: 'DW News',             channelId: 'UCknLrEdhRCp1aegoMqRaCZg' },
-  { id: 'france24',  name: 'France 24',           channelId: 'UCQfwfsi5VrQ8yKZ-UWmAEFg' },
-];
-
-function thumbnailUrl(feed: typeof LIVE_FEEDS[0]): string {
-  // Prefer the direct videoId thumbnail; fall back to a placeholder for channels
-  if (feed.videoId) return `https://img.youtube.com/vi/${feed.videoId}/hqdefault.jpg`;
-  return `https://img.youtube.com/vi/0/hqdefault.jpg`; // generic fallback
-}
-
-function embedSrc(feed: typeof LIVE_FEEDS[0]): string {
-  if (feed.videoId) {
-    return `https://www.youtube.com/embed/${feed.videoId}?autoplay=1&mute=1&playsinline=1`;
-  }
-  return `https://www.youtube.com/embed/live_stream?channel=${feed.channelId}&autoplay=1&mute=1&playsinline=1`;
-}
+type LiveFeed = {
+  id: string;
+  name: string;
+  channelId: string;
+  videoId: string | null;
+  link: string | null;
+  publishedAt: string | null;
+  thumbnailUrl: string | null;
+  embedUrl: string;
+  source: 'override' | 'rss' | 'fallback';
+};
 
 export default function LiveVideoWidget() {
-  const [activeFeedId, setActiveFeedId] = useState(LIVE_FEEDS[0].id);
+  const [feeds, setFeeds] = useState<LiveFeed[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeFeedId, setActiveFeedId] = useState<string>('');
   // Tracks which feeds the user has explicitly clicked to load — avoids
   // mounting any iframe until the user opts in, saving ~500KB of YouTube JS.
   const [loaded, setLoaded] = useState<Set<string>>(new Set());
 
-  const activeFeed   = LIVE_FEEDS.find(f => f.id === activeFeedId) ?? LIVE_FEEDS[0];
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/live-feeds', { cache: 'no-store' });
+        const data = await res.json();
+        const list = Array.isArray(data?.feeds) ? (data.feeds as LiveFeed[]) : [];
+        if (cancelled) return;
+        setFeeds(list);
+        setActiveFeedId(list[0]?.id ?? '');
+      } catch {
+        if (cancelled) return;
+        setFeeds([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const activeFeed = feeds.find(f => f.id === activeFeedId) ?? feeds[0] ?? null;
   const isLoaded     = loaded.has(activeFeedId);
 
   const handlePlay = () => {
@@ -39,6 +53,37 @@ export default function LiveVideoWidget() {
     setActiveFeedId(id);
     // Don't auto-load the new feed — let the user click play
   };
+
+  if (loading) {
+    return (
+      <div className="article-card" style={{
+        background: 'var(--surface)',
+        border: '1px solid var(--border-light)',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+      }}>
+        <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--border-light)' }}>
+          <div className="skeleton" style={{ height: 10, width: 120 }} />
+        </div>
+        <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%', background: '#000' }} />
+      </div>
+    );
+  }
+
+  if (!activeFeed) {
+    return (
+      <div className="article-card" style={{
+        background: 'var(--surface)',
+        border: '1px solid var(--border-light)',
+        overflow: 'hidden',
+      }}>
+        <div style={{ padding: '12px 14px', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>
+          Live feeds unavailable. Set `YOUTUBE_LIVE_FEEDS_JSON` on the Railway backend.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="article-card" style={{
@@ -89,7 +134,7 @@ export default function LiveVideoWidget() {
             cursor:      'pointer',
           }}
         >
-          {LIVE_FEEDS.map(feed => (
+          {feeds.map(feed => (
             <option key={feed.id} value={feed.id}>{feed.name}</option>
           ))}
         </select>
@@ -100,7 +145,7 @@ export default function LiveVideoWidget() {
         {isLoaded ? (
           <iframe
             style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
-            src={embedSrc(activeFeed)}
+            src={activeFeed.embedUrl}
             title={`${activeFeed.name} Live Stream`}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
@@ -125,10 +170,10 @@ export default function LiveVideoWidget() {
             }}
           >
             {/* Thumbnail */}
-            {activeFeed.videoId && (
+            {activeFeed.thumbnailUrl && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={thumbnailUrl(activeFeed)}
+                src={activeFeed.thumbnailUrl}
                 alt={activeFeed.name}
                 style={{
                   position:   'absolute',
