@@ -356,6 +356,22 @@ export default function IranWarCostBoard() {
     };
   }, [news, now, missileIntel]);
 
+  // Broader theater news stream for left panel (uses looser keyword set)
+  const streamItems = useMemo(() => {
+    const nowMs = now.getTime();
+    const re = /\b(iran|irgc|tehran|natanz|hormuz|strait|red sea|houthi|hezbollah|hamas|israel|idf|missile|airstrike|nuclear|ceasefire|oil|tanker|drone|strike|attack|military|war|conflict|sanction|zarif|khamenei|netanyahu|biden|trump)\b/i;
+    return (news ?? [])
+      .filter(it => re.test(`${it.title}\n${it.summary ?? ''}`))
+      .slice()
+      .sort((a, b) => Date.parse(b.pubDate) - Date.parse(a.pubDate))
+      .slice(0, 6)
+      .map(it => ({
+        t: timeAgoLabel(nowMs, it.pubDate),
+        e: it.title,
+        c: it.sourceName,
+      }));
+  }, [news, now]);
+
   // Section label used repeatedly — keeps styling consistent
   const SectionLabel = ({ children }: { children: string }) => (
     <div style={{
@@ -459,8 +475,8 @@ export default function IranWarCostBoard() {
             </div>
           </div>
 
-          {/* OPS TEMPO + MARKET — grows to fill remaining height */}
-          <div style={{ padding: '10px 14px', borderBottom: `1px solid ${border}`, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-start', flex: 1 }}>
+          {/* OPS TEMPO + MARKET */}
+          <div style={{ padding: '10px 14px', borderBottom: `1px solid ${border}`, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-start' }}>
             {/* Big ops number */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 64, paddingRight: 12, borderRight: `1px solid ${border}` }}>
               <div style={{ fontFamily: mono, fontSize: 9, color: muted, fontWeight: 800, letterSpacing: '0.1em', marginBottom: 2 }}>OPS TEMPO</div>
@@ -488,6 +504,28 @@ export default function IranWarCostBoard() {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* THEATER INTEL STREAM — fills remaining height */}
+          <div style={{ padding: '10px 14px', borderBottom: `1px solid ${border}`, flex: 1, background: surface }}>
+            <SectionLabel>Theater Intel Stream · Latest Headlines</SectionLabel>
+            {streamItems.length === 0 ? (
+              <div style={{ fontFamily: mono, fontSize: 12, color: muted }}>No items in cache.</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {streamItems.map((h, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', paddingBottom: 8, borderBottom: i < streamItems.length - 1 ? `1px solid ${border}` : 'none' }}>
+                    <div style={{ flexShrink: 0, minWidth: 36 }}>
+                      <span style={{ fontFamily: mono, fontSize: 10, color: accent, fontWeight: 800 }}>{h.t}</span>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.35, fontWeight: 500 }}>{h.e}</div>
+                      <div style={{ fontFamily: mono, fontSize: 9, color: muted, marginTop: 2 }}>{h.c}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* THREAT BUCKETS — 6H + 24H side by side */}
@@ -542,8 +580,8 @@ export default function IranWarCostBoard() {
             ))}
           </div>
 
-          {/* FEED STATUS bar — pinned to bottom */}
-          <div style={{ padding: '7px 14px', background: 'var(--surface-hover)', display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginTop: 'auto' }}>
+          {/* FEED STATUS bar */}
+          <div style={{ padding: '7px 14px', background: 'var(--surface-hover)', display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
             <span style={{ fontFamily: mono, fontSize: 9, fontWeight: 900, color: accent, letterSpacing: '0.08em' }}>FEEDS</span>
             <span style={{ fontFamily: mono, fontSize: 9, color: muted, fontWeight: 700 }}>RSS · ADS-B · YAHOO/STOOQ</span>
             <div style={{ marginLeft: 'auto', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
