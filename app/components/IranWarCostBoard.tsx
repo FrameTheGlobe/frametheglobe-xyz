@@ -91,6 +91,43 @@ function timeAgoLabel(nowMs: number, pubDate: string): string {
   return `-${Math.floor(hrs / 24)}d`;
 }
 
+/** Align with backend `theater-metrics` so UI matches the RSS rows the user sees. */
+function itemTimeMs(pubDate: string, ingestFallbackMs: number): number {
+  const a = Date.parse(pubDate);
+  if (Number.isFinite(a)) return a;
+  const b = new Date(pubDate).getTime();
+  if (Number.isFinite(b)) return b;
+  return ingestFallbackMs;
+}
+
+function countMentionsTheater(
+  items: FeedItem[],
+  re: RegExp,
+  nowMs: number,
+  ingestFallbackMs: number,
+): { last6h: number; last24h: number } {
+  const MS_6H = 6 * 60 * 60 * 1000;
+  const MS_24H = 24 * 60 * 60 * 1000;
+  let last6h = 0;
+  let last24h = 0;
+  for (const it of items) {
+    const hay = `${it.title}\n${it.summary ?? ''}`;
+    if (!re.test(hay)) continue;
+    const t = itemTimeMs(it.pubDate, ingestFallbackMs);
+    const age = nowMs - t;
+    if (age < 0) continue;
+    if (age <= MS_6H) last6h++;
+    if (age <= MS_24H) last24h++;
+  }
+  return { last6h, last24h };
+}
+
+const RE_HORMUZ = /\b(hormuz|strait of hormuz|bandar abbas|qeshm|orfuj|jask|chabahar|arabian gulf|persian gulf)\b/i;
+const RE_REDSEA = /\b(red sea|bab el[- ]mandeb|bāb el[- ]mandeb|houthi|yemen|aden|suez|gulf of aden)\b/i;
+const RE_TANKER = /\b(tanker|vlcc|aframax|suezmax|shipping|vessel|maritime|freight|insurer|piracy|escort|oil shipment|dirty tanker|clean product|lng carrier|floating storage)\b/i;
+const RE_IRAN   = /\b(iran|irgc|tehran|isfahan|natanz|fordow|qom|khamenei)\b/i;
+const RE_OSINT_AIR = /\b(usaf|us air force|pentagon|carrier|strike group|strategic bomber|airstrike|b-52|b-2|f-35|f-16|f-15|f-22|idf air|iaf|israeli jet|sortie|air base|rq-4|global hawk|mq-9|reaper|tomahawk|missile strike)\b/i;
+
 export default function IranWarCostBoard() {
   const [now, setNow] = useState<Date>(new Date());
   const tick = useCallback(() => setNow(new Date()), []);
@@ -104,6 +141,8 @@ export default function IranWarCostBoard() {
 
   const [news, setNews] = useState<FeedItem[]>([]);
   const [newsErr, setNewsErr] = useState(false);
+  const [newsMeta, setNewsMeta] = useState({ sourceCount: 0, failedSources: 0 });
+  const [localFlights, setLocalFlights] = useState<{ total: number; strategic: number } | null>(null);
 
   const fetchMetrics = useCallback(async () => {
     try {
@@ -136,16 +175,38 @@ export default function IranWarCostBoard() {
       const data = await res.json();
       const items = Array.isArray(data?.items) ? data.items : [];
       setNews(items as FeedItem[]);
+      setNewsMeta({
+        sourceCount:   typeof data?.sourceCount === 'number' ? data.sourceCount : 0,
+        failedSources: typeof data?.failedSources === 'number' ? data.failedSources : 0,
+      });
       setNewsErr(false);
     } catch {
       setNewsErr(true);
     }
   }, []);
 
-  useEffect(() => { fetchMetrics(); fetchPrices(); fetchNews(); }, [fetchMetrics, fetchPrices, fetchNews]);
+  const fetchFlightsLocal = useCallback(async () => {
+    try {
+      const res = await fetch('/api/flights', { cache: 'no-store' });
+      if (!res.ok) return;
+      const d = await res.json();
+      setLocalFlights({
+        total:     Number(d.total) || 0,
+        strategic: Number(d.strategic) || 0,
+      });
+    } catch { /* keep last */ }
+  }, []);
+
+  useEffect(() => {
+    fetchMetrics();
+    fetchPrices();
+    fetchNews();
+    fetchFlightsLocal();
+  }, [fetchMetrics, fetchPrices, fetchNews, fetchFlightsLocal]);
   useVisibilityPolling(fetchMetrics, 60_000);
   useVisibilityPolling(fetchPrices, 60_000);
   useVisibilityPolling(fetchNews, 120_000);
+  useVisibilityPolling(fetchFlightsLocal, 60_000);
 
   const mono = 'var(--font-mono)';
   const accent = 'var(--accent)';
@@ -165,16 +226,64 @@ export default function IranWarCostBoard() {
   const wti = prices.find(p => p.symbol === 'CL.F');
   const spread = (brent && wti) ? brent.price - wti.price : null;
 
+  /** Client-side bucket counts from the same `news[]` as the headline stream (fixes 0 vs visible stories). */
+  const clientBuckets = useMemo(() => {
+    const nowMs = now.getTime();
+    const fallback = nowMs;
+    return {
+      HORMUZ:  countMentionsTheater(news, RE_HORMUZ, nowMs, fallback),
+      REDSEA:  countMentionsTheater(news, RE_REDSEA, nowMs, fallback),
+      TANKERS: countMentionsTheater(news, RE_TANKER, nowMs, fallback),
+      IRAN:    countMentionsTheater(news, RE_IRAN, nowMs, fallback),
+    };
+  }, [news, now]);
+
+  const mergedThreat = useMemo(() => ({
+    hormuz6:  Math.max(hormuz?.last6h  ?? 0, clientBuckets.HORMUZ.last6h),
+    hormuz24: Math.max(hormuz?.last24h ?? 0, clientBuckets.HORMUZ.last24h),
+    red6:     Math.max(redSea?.last6h  ?? 0, clientBuckets.REDSEA.last6h),
+    red24:    Math.max(redSea?.last24h ?? 0, clientBuckets.REDSEA.last24h),
+    tank6:    Math.max(tankers?.last6h  ?? 0, clientBuckets.TANKERS.last6h),
+    tank24:   Math.max(tankers?.last24h ?? 0, clientBuckets.TANKERS.last24h),
+    iran6:    Math.max(iran?.last6h     ?? 0, clientBuckets.IRAN.last6h),
+    iran24:   Math.max(iran?.last24h    ?? 0, clientBuckets.IRAN.last24h),
+  }), [hormuz, redSea, tankers, iran, clientBuckets]);
+
+  const osintAir6h = useMemo(() => {
+    const nowMs = now.getTime();
+    const MS_6H = 6 * 60 * 60 * 1000;
+    const fallback = nowMs;
+    let n = 0;
+    for (const it of news) {
+      const hay = `${it.title}\n${it.summary ?? ''}`;
+      if (!RE_OSINT_AIR.test(hay)) continue;
+      const age = nowMs - itemTimeMs(it.pubDate, fallback);
+      if (age >= 0 && age <= MS_6H) n++;
+    }
+    return n;
+  }, [news, now]);
+
+  const adsbStrategic = Math.max(metrics?.flights?.strategic ?? 0, localFlights?.strategic ?? 0);
+  const adsbTotal     = Math.max(metrics?.flights?.total ?? 0, localFlights?.total ?? 0);
+  const displayStrategicBlend = adsbStrategic + osintAir6h;
+  const newsTotalDisplay = Math.max(news.length, metrics?.news?.totalItems ?? 0);
+  const uniqueSrc = useMemo(
+    () => new Set((news ?? []).map(n => n.sourceName).filter(Boolean)).size,
+    [news],
+  );
+  const sourcesDisplay = Math.max(newsMeta.sourceCount, uniqueSrc, news.length ? 1 : 0);
+  const failedDisplay    = metrics && !metricsErr ? metrics.news.failedSources : newsMeta.failedSources;
+
   const opsTempo = useMemo(() => {
     const s = Math.max(0, spread ?? 0);
-    const h = hormuz?.last6h ?? 0;
-    const r = redSea?.last6h ?? 0;
-    const t = tankers?.last6h ?? 0;
-    const i = iran?.last6h ?? 0;
-    const f = metrics?.flights?.strategic ?? 0;
-    const raw = (s * 4) + (h * 2.2) + (r * 1.8) + (t * 1.1) + (i * 1.6) + (f * 0.6);
+    const h = mergedThreat.hormuz6;
+    const r = mergedThreat.red6;
+    const t = mergedThreat.tank6;
+    const i = mergedThreat.iran6;
+    const f = displayStrategicBlend;
+    const raw = (s * 4) + (h * 2.2) + (r * 1.8) + (t * 1.1) + (i * 1.6) + (f * 0.35);
     return Math.max(0, Math.min(100, Math.round(raw)));
-  }, [spread, hormuz, redSea, tankers, iran, metrics]);
+  }, [spread, mergedThreat, displayStrategicBlend]);
 
   const riskBand = useMemo(() => {
     if (opsTempo >= 70) return { label: 'CRITICAL', color: downColor };
@@ -204,9 +313,9 @@ export default function IranWarCostBoard() {
 
     const MISSILE_TYPES: { label: string; keywords: string[] }[] = [
       { label: 'Ballistic', keywords: ['ballistic missile', 'sejjil', 'fateh', 'emad', 'qiam', 'shahab', 'kheibar', 'jericho'] },
-      { label: 'Cruise', keywords: ['cruise missile', 'cruise'] },
+      { label: 'Cruise', keywords: ['cruise missile', 'cruise', 'tomahawk', 'kalibr', 'land-attack missile'] },
       { label: 'Drone', keywords: ['shahed', 'drone strike', 'drone attack', 'uav', 'kamikaze'] },
-      { label: 'Iron Dome', keywords: ['iron dome'] },
+      { label: 'Iron Dome', keywords: ['iron dome', 'rocket intercept', 'gaza rocket', 'air defence', 'air defense'] },
       { label: 'Intercept', keywords: ['intercept', 'shot down', 'arrow system', "david's sling"] },
       { label: 'Airstrike', keywords: ['airstrike', 'air strike', 'f-35', 'f-16'] },
     ];
@@ -260,8 +369,11 @@ export default function IranWarCostBoard() {
     const windowed = (items: FeedItem[], predicate: (it: FeedItem) => boolean) =>
       (items ?? []).filter(it => predicate(it) && inWindow(it.pubDate, nowMs, windowMs6h));
 
-    const iranItems6h = windowed(news ?? [], iranTextMatch);
-    const israelItems6h = windowed(news ?? [], israelTextMatch);
+    /** Any 6h story tied to Iran/Israel theater OR explicit missile/defense language (fixes cruise/Iron Dome stuck at 0). */
+    const missileRelevant6h = windowed(
+      news ?? [],
+      it => iranTextMatch(it) || israelTextMatch(it) || MISSILE_LOG_RE.test(`${it.title}\n${it.summary ?? ''}`),
+    );
 
     const countByType = (items: FeedItem[]) => {
       const out: Record<string, number> = {};
@@ -274,13 +386,7 @@ export default function IranWarCostBoard() {
       return out;
     };
 
-    const iranByType = countByType(iranItems6h);
-    const israelByType = countByType(israelItems6h);
-
-    const totalByType: Record<string, number> = {};
-    for (const { label } of MISSILE_TYPES) {
-      totalByType[label] = (iranByType[label] ?? 0) + (israelByType[label] ?? 0);
-    }
+    const totalByType = countByType(missileRelevant6h);
 
     const munitions6h = Object.values(totalByType).reduce((a, b) => a + b, 0);
     const casualties6h = MISSILE_TYPES.reduce((sum, { label }) => sum + (CASUALTIES_BY_TYPE[label] ?? 0) * (totalByType[label] ?? 0), 0);
@@ -519,9 +625,9 @@ export default function IranWarCostBoard() {
                 { l: 'BRENT CRUDE',       v: brent ? `$${fmt(brent.price, 2)}` : priceErr ? 'FEED ERR' : `${prices.length} syms` },
                 { l: 'WTI CRUDE',         v: wti   ? `$${fmt(wti.price, 2)}`   : priceErr ? 'FEED ERR' : `${prices.length} syms` },
                 { l: 'BRENT–WTI SPREAD',  v: spread === null ? (priceErr ? 'FEED ERR' : `${prices.length} syms`) : `${sign(spread)}$${fmt(Math.abs(spread), 2)}` },
-                { l: 'STRATEGIC FLIGHTS', v: metrics && !metricsErr ? String(metrics.flights.strategic) : 'offline' },
-                { l: 'TOTAL FLIGHTS',     v: metrics && !metricsErr ? String(metrics.flights.total)     : 'offline' },
-                { l: 'NEWS ITEMS',        v: metrics && !metricsErr ? String(metrics.news.totalItems) : String(news.length) },
+                { l: 'MIL SIGNAL 6H',     v: `${displayStrategicBlend} (${adsbStrategic} ADS-B+${osintAir6h} OSINT)` },
+                { l: 'TOTAL FLIGHTS',     v: String(adsbTotal) },
+                { l: 'NEWS ITEMS',        v: String(newsTotalDisplay) },
                 { l: 'WAR COST 6H EST.',  v: `$${formatCompactUSD(missileIntel.warCostUsd6h)}` },
                 { l: 'MUNITIONS 6H',      v: String(missileIntel.munitions6h) },
                 { l: 'READINESS INDEX',   v: String(readinessIndex) },
@@ -568,10 +674,10 @@ export default function IranWarCostBoard() {
           {/* THREAT BUCKETS — 6H + 24H side by side */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderBottom: `1px solid ${border}` }}>
             {[
-              { l: 'HORMUZ',  b6: hormuz?.last6h  ?? null, b24: hormuz?.last24h  ?? null, ac: '#e67e22' },
-              { l: 'RED SEA', b6: redSea?.last6h   ?? null, b24: redSea?.last24h  ?? null, ac: '#e67e22' },
-              { l: 'TANKERS', b6: tankers?.last6h  ?? null, b24: tankers?.last24h ?? null, ac: accent },
-              { l: 'IRAN',    b6: iran?.last6h     ?? null, b24: iran?.last24h    ?? null, ac: downColor },
+              { l: 'HORMUZ',  b6: mergedThreat.hormuz6, b24: mergedThreat.hormuz24, ac: '#e67e22' },
+              { l: 'RED SEA', b6: mergedThreat.red6,     b24: mergedThreat.red24,    ac: '#e67e22' },
+              { l: 'TANKERS', b6: mergedThreat.tank6,    b24: mergedThreat.tank24,   ac: accent },
+              { l: 'IRAN',    b6: mergedThreat.iran6,    b24: mergedThreat.iran24,   ac: downColor },
             ].map((m, idx) => (
               <div key={m.l} style={{
                 padding: '8px 10px',
@@ -579,17 +685,19 @@ export default function IranWarCostBoard() {
                 borderTop: `2px solid ${m.ac}`,
                 background: 'var(--surface-hover)',
               }}>
-                <div style={{ fontFamily: mono, fontSize: 9, color: muted, fontWeight: 800, letterSpacing: '0.08em', marginBottom: 4 }}>{m.l}</div>
+                <div style={{ fontFamily: mono, fontSize: 9, color: muted, fontWeight: 800, letterSpacing: '0.08em', marginBottom: 4 }}>
+                  {m.l} <span style={{ opacity: 0.55, fontWeight: 600 }}>· RSS</span>
+                </div>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'baseline' }}>
                   <div>
                     <div style={{ fontFamily: mono, fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', lineHeight: 1 }}>
-                      {metrics && !metricsErr ? (m.b6 ?? 0) : 'offline'}
+                      {m.b6}
                     </div>
                     <div style={{ fontFamily: mono, fontSize: 8, color: muted, marginTop: 2 }}>6H</div>
                   </div>
                   <div style={{ borderLeft: `1px solid ${border}`, paddingLeft: 10 }}>
                     <div style={{ fontFamily: mono, fontSize: 14, fontWeight: 700, color: muted, lineHeight: 1 }}>
-                      {metrics && !metricsErr ? (m.b24 ?? 0) : 'offline'}
+                      {m.b24}
                     </div>
                     <div style={{ fontFamily: mono, fontSize: 8, color: muted, marginTop: 2 }}>24H</div>
                   </div>
@@ -604,7 +712,7 @@ export default function IranWarCostBoard() {
               { l: 'HUMAN-COST 24H',   v: String(humanCostSignals.mentions24h), hi: false },
               { l: 'CASUALTY SIG 6H',  v: String(humanCostSignals.casualties6h), hi: true },
               { l: 'MUNITIONS SIG 6H', v: String(humanCostSignals.munitions6h), hi: false },
-              { l: 'SOURCES ONLINE',   v: metrics && !metricsErr ? String(metrics.news.sourceCount) : String(news.length || prices.length), hi: false },
+              { l: 'SOURCES ONLINE',   v: String(sourcesDisplay), hi: false },
             ].map((m, idx, arr) => (
               <div key={m.l} style={{
                 padding: '8px 10px',
@@ -623,9 +731,9 @@ export default function IranWarCostBoard() {
             <span style={{ fontFamily: mono, fontSize: 9, color: muted, fontWeight: 700 }}>RSS · ADS-B · YAHOO/STOOQ</span>
             <div style={{ marginLeft: 'auto', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
               {[
-                { l: 'SOURCES', v: metrics && !metricsErr ? String(metrics.news.sourceCount) : String(Math.max(news.length, prices.length)) },
-                { l: 'FAILED',  v: metrics && !metricsErr ? String(metrics.news.failedSources) : '0' },
-                { l: 'FLIGHTS', v: metrics && !metricsErr ? String(metrics.flights.total) : 'offline' },
+                { l: 'SOURCES', v: String(sourcesDisplay) },
+                { l: 'FAILED',  v: String(failedDisplay) },
+                { l: 'FLIGHTS', v: String(adsbTotal) },
               ].map((m) => (
                 <span key={m.l} style={{ fontFamily: mono, fontSize: 9, color: muted }}>
                   <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{m.v}</span> {m.l}
@@ -722,11 +830,11 @@ export default function IranWarCostBoard() {
                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 10px', background: 'var(--surface-hover)', borderRadius: 4 }}>
                      <span style={{ fontFamily: mono, fontSize: 10, color: muted, fontWeight: 700 }}>Total Flights (ADS-B)</span>
-                     <span style={{ fontFamily: mono, fontSize: 13, color: 'var(--text-primary)', fontWeight: 900 }}>{metrics?.flights?.total ?? '—'}</span>
+                     <span style={{ fontFamily: mono, fontSize: 13, color: 'var(--text-primary)', fontWeight: 900 }}>{adsbTotal}</span>
                    </div>
-                   <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 10px', background: metrics?.flights?.strategic ? 'rgba(201,58,32,0.1)' : 'var(--surface)', border: metrics?.flights?.strategic ? `1px solid rgba(201,58,32,0.3)` : `1px solid ${border}`, borderRadius: 4 }}>
-                     <span style={{ fontFamily: mono, fontSize: 10, color: metrics?.flights?.strategic ? downColor : muted, fontWeight: 700 }}>Strategic Assets</span>
-                     <span style={{ fontFamily: mono, fontSize: 13, color: metrics?.flights?.strategic ? downColor : 'var(--text-primary)', fontWeight: 900 }}>{metrics?.flights?.strategic ?? '—'}</span>
+                   <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 10px', background: displayStrategicBlend ? 'rgba(201,58,32,0.1)' : 'var(--surface)', border: displayStrategicBlend ? `1px solid rgba(201,58,32,0.3)` : `1px solid ${border}`, borderRadius: 4 }}>
+                     <span style={{ fontFamily: mono, fontSize: 10, color: displayStrategicBlend ? downColor : muted, fontWeight: 700 }}>Mil · OSINT 6H</span>
+                     <span style={{ fontFamily: mono, fontSize: 13, color: displayStrategicBlend ? downColor : 'var(--text-primary)', fontWeight: 900 }}>{displayStrategicBlend}</span>
                    </div>
                  </div>
               </div>
