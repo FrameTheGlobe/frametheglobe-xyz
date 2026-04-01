@@ -36,12 +36,12 @@ const nextConfig: NextConfig = {
 
     const CSP = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://s.tradingview.com https://cdn.tradingview.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://s.tradingview.com https://cdn.tradingview.com https://va.vercel-scripts.com",
       "style-src 'self' 'unsafe-inline'",
       "font-src 'self' data:",
       "img-src 'self' data: blob: https:",
       "frame-src https://www.youtube.com https://www.youtube-nocookie.com https://s.tradingview.com https://www.tradingview.com",
-      `connect-src 'self'${backendOrigin ? ` ${backendOrigin}` : ''}`,
+      `connect-src 'self' https://vitals.vercel-insights.com${backendOrigin ? ` ${backendOrigin}` : ''}`,
       "worker-src 'self' blob:",
       "media-src 'self' https://www.youtube.com",
       "object-src 'none'",
