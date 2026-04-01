@@ -7,7 +7,6 @@ import type { SourceHealth } from '@/lib/fetcher';
 import { SOURCE_TRUST } from '@/lib/fetcher';
 import TopStorylines   from './components/TopStorylines';
 import BreakingTicker  from './components/BreakingTicker';
-import LiveVideoWidget from './components/LiveVideoWidget';
 import RapidResponse   from './components/RapidResponse';
 import MacroWatch     from './components/MacroWatch';
 import OilTicker      from './components/OilTicker';
@@ -550,6 +549,83 @@ type SidebarPanelProps = {
   clusters: Cluster[];
   items: FeedItem[];
 };
+
+function SidebarOpsSnapshot({
+  items,
+  sourceHealth,
+}: {
+  items: FeedItem[];
+  sourceHealth: SourceHealth[];
+}) {
+  const sixHourCutoff = Date.now() - 6 * 60 * 60 * 1000;
+  const freshCount = items.filter(i => new Date(i.pubDate).getTime() >= sixHourCutoff).length;
+  const newest = items[0];
+  const healthySources = sourceHealth.filter(s => s.ok).length;
+  const totalSources = sourceHealth.length || SOURCES.length;
+
+  const topRegion = Object.entries(
+    items.slice(0, 80).reduce((acc, item) => {
+      acc[item.region] = (acc[item.region] ?? 0) + 1;
+      return acc;
+    }, {} as Record<string, number>)
+  ).sort((a, b) => b[1] - a[1])[0];
+
+  return (
+    <div style={{
+      border: '1px solid var(--border-light)',
+      borderRadius: 6,
+      background: 'var(--surface)',
+      overflow: 'hidden',
+    }}>
+      <div style={{
+        padding: '9px 10px',
+        borderBottom: '1px solid var(--border-light)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 7,
+      }}>
+        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#27ae60', display: 'inline-block' }} />
+        <span style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: 9,
+          fontWeight: 900,
+          letterSpacing: '0.11em',
+          textTransform: 'uppercase',
+          color: 'var(--accent)',
+        }}>
+          Quick Ops Snapshot
+        </span>
+      </div>
+
+      <div style={{ padding: 10, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        <div style={{ border: '1px solid var(--border-light)', borderRadius: 4, padding: '7px 8px', background: 'var(--surface-muted)' }}>
+          <div style={{ fontSize: 8, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>STORIES 6H</div>
+          <div style={{ fontSize: 17, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--text-primary)' }}>{freshCount}</div>
+        </div>
+        <div style={{ border: '1px solid var(--border-light)', borderRadius: 4, padding: '7px 8px', background: 'var(--surface-muted)' }}>
+          <div style={{ fontSize: 8, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>SOURCE HEALTH</div>
+          <div style={{ fontSize: 17, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--text-primary)' }}>
+            {healthySources}/{totalSources}
+          </div>
+        </div>
+      </div>
+
+      <div style={{
+        padding: '8px 10px',
+        borderTop: '1px solid var(--border-light)',
+        fontFamily: 'var(--font-mono)',
+        fontSize: 9,
+        color: 'var(--text-muted)',
+        lineHeight: 1.45,
+      }}>
+        <span style={{ color: 'var(--text-primary)', fontWeight: 800 }}>Latest:</span>{' '}
+        {newest ? timeAgo(newest.pubDate) : 'n/a'} ·{' '}
+        <span style={{ color: 'var(--text-primary)', fontWeight: 800 }}>Top region:</span>{' '}
+        {topRegion ? `${REGION_LABELS[topRegion[0] as Source['region']] || topRegion[0]} (${topRegion[1]})` : 'n/a'}
+      </div>
+    </div>
+  );
+}
 
 function SidebarPanel({
   search, onSearch, searchRef,
@@ -1978,7 +2054,7 @@ export default function Home() {
             ✕ Close
           </button>
           <div style={{ position: 'sticky', top: 80, display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {!loading && <LiveVideoWidget />}
+            {!loading && <SidebarOpsSnapshot items={items} sourceHealth={sourceHealth} />}
             <SidebarPanel
               search={search}
               onSearch={setSearch}
