@@ -8,8 +8,7 @@
  * Always use this component via next/dynamic with ssr: false.
  */
 
-// leaflet/dist/leaflet.css is imported in globals.css (NOT here) to keep it
-// in the main CSS bundle rather than a lazy chunk that can 404 in production.
+import 'leaflet/dist/leaflet.css';
 import { useEffect, useRef, useMemo, useState, useCallback } from 'react';
 import type { Aircraft } from '@/lib/flights';
 import { headingToCompass, altToFL, SQUAWK_LABELS } from '@/lib/flights';

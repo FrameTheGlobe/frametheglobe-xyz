@@ -142,8 +142,11 @@ function startBackgroundRefresh(): void {
   }, BACKGROUND_REFRESH_MS);
 }
 
-// Start only on the server (never in browser/edge builds)
-if (typeof window === 'undefined') {
+// Start only on the server AND only when explicitly enabled.
+// Set ENABLE_BACKGROUND_REFRESH=true on Railway (persistent Node).
+// Leave unset on Vercel — each serverless instance starting its own interval
+// would duplicate 70+ outbound feed fetches × N instances every 8 minutes.
+if (typeof window === 'undefined' && process.env.ENABLE_BACKGROUND_REFRESH === 'true') {
   startBackgroundRefresh();
 }
 

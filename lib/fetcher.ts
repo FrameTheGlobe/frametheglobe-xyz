@@ -635,8 +635,8 @@ export async function fetchFeed(source: {
  * which can look like abuse to smaller feed providers. Cached sources return
  * instantly from memory so batching adds no meaningful latency for them.
  */
-const BATCH_SIZE  = 35;  // all sources in one Promise.allSettled — individual timeouts guard hangs
-const BATCH_DELAY = 0;   // no artificial stagger needed
+const BATCH_SIZE  = 10;   // polite concurrent limit — avoids abuse flags from smaller feed providers
+const BATCH_DELAY = 150;  // ms between batches — cached sources return instantly so latency impact is minimal
 
 export async function fetchAllFeeds(sources: Parameters<typeof fetchFeed>[0][]): Promise<{
   items: FeedItem[];

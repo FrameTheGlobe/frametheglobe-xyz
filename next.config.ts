@@ -1,27 +1,19 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // NOTE: output:'standalone' is intentionally NOT set here.
-  // Hostinger's Apache intercepts /_next/static/ requests before they reach
-  // the Node.js process and serves them from the filesystem (public/ webroot).
-  // Standalone mode copies static files to .next/standalone/.next/static/ —
-  // the wrong location. The build script copies .next/static → public/_next/static
-  // so Apache finds them. Node.js handles only SSR pages and API routes.
+  // output: 'standalone' is not set — Vercel handles its own bundling.
 
   trailingSlash: false,
   reactStrictMode: true,
   compress: true,
   poweredByHeader: false,
 
-  // Safety for Hostinger: images are often served better unoptimized
-  // if native libraries like sharp are missing in the server environment.
-  images: { unoptimized: true },
+  // Vercel has sharp built-in — image optimization is free and improves Core Web Vitals.
+  images: { unoptimized: false },
 
   // rss-parser → xml2js → sax tries to modify global intrinsics at load time.
-  // Hostinger's Node.js sandbox (SES) strips those modifications and logs
-  // "Removing unpermitted intrinsics", which breaks /api/rss and /api/news.
-  // Marking them external lets them run through Node's native require() instead
-  // of webpack's sandboxed module wrapper, which is what triggers the restriction.
+  // Marking them external lets them run through Node's native require() to avoid
+  // any sandbox-related issues in the module wrapper.
   serverExternalPackages: ['rss-parser', 'xml2js', 'sax'],
 
   async headers() {
