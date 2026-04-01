@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import dynamic from 'next/dynamic';
+import { useVisibilityPolling } from '@/lib/use-visibility-polling';
 import { SOURCES, REGION_LABELS, Source } from '@/lib/sources';
 import type { SourceHealth } from '@/lib/fetcher';
 import { SOURCE_TRUST } from '@/lib/fetcher';
@@ -556,6 +557,11 @@ const THEATER_PULSE_KW = [
   'rocket', 'bomb', 'intercept', 'barrage', 'killed', 'casualties', 'invasion',
 ];
 
+const NUCLEAR_PULSE_KW = [
+  'nuclear', 'iaea', 'uranium', 'enrichment', 'centrifuge', 'natanz', 'fordow',
+  'jcpoa', 'bushehr', 'warhead', 'breakout', 'snapback', 'plutonium',
+];
+
 function itemInWindow(item: FeedItem, ms: number): boolean {
   return Date.now() - new Date(item.pubDate).getTime() <= ms;
 }
@@ -565,14 +571,75 @@ function textHasKineticSignal(text: string): boolean {
   return THEATER_PULSE_KW.some(k => t.includes(k));
 }
 
+function textHasNuclearPulse(text: string): boolean {
+  const t = text.toLowerCase();
+  return NUCLEAR_PULSE_KW.some(k => t.includes(k));
+}
+
+type OilPulseSnap = { spread: number; brentPct: number; wtiPct: number };
+type PolyPulseSnap = { maxYes: number; label: string; eventTitle: string };
+
+const PULSE_MARKET_POLY_MS = 5 * 60 * 1000;
+
 /**
- * Theater escalation pulse — breaking + kinetic density + lead storyline cluster.
- * Replaces generic volume/health stats; health remains under NET tab.
+ * Theater escalation pulse — feed signals plus Brent−WTI and Polymarket (pooled, visibility-aware).
  */
 function SidebarTheaterPulse({ items, clusters }: { items: FeedItem[]; clusters: Cluster[] }) {
+  const [oil, setOil]   = useState<OilPulseSnap | null>(null);
+  const [poly, setPoly] = useState<PolyPulseSnap | null>(null);
+
+  const loadMarketPoly = useCallback(async () => {
+    try {
+      const [mRes, pRes] = await Promise.all([
+        fetch('/api/market'),
+        fetch('/api/polymarket'),
+      ]);
+      if (mRes.ok) {
+        const data = await mRes.json() as { symbol: string; price: number; changePercent: number }[];
+        if (Array.isArray(data)) {
+          const brent = data.find(q => q.symbol === 'CB.F');
+          const wti   = data.find(q => q.symbol === 'CL.F');
+          if (brent && wti && typeof brent.price === 'number' && typeof wti.price === 'number') {
+            setOil({
+              spread: brent.price - wti.price,
+              brentPct: typeof brent.changePercent === 'number' ? brent.changePercent : 0,
+              wtiPct:   typeof wti.changePercent === 'number' ? wti.changePercent : 0,
+            });
+          }
+        }
+      }
+      if (pRes.ok) {
+        const arr = await pRes.json() as { eventTitle?: string; outcomes?: { yesPrice: number; label: string }[] }[];
+        if (!Array.isArray(arr) || arr.length === 0) {
+          setPoly(null);
+        } else {
+          let maxY = 0;
+          let label = '';
+          let eventTitle = '';
+          for (const ev of arr) {
+            for (const o of ev.outcomes ?? []) {
+              const y = typeof o.yesPrice === 'number' ? o.yesPrice : 0;
+              if (y > maxY) {
+                maxY = y;
+                label = o.label || '';
+                eventTitle = ev.eventTitle || '';
+              }
+            }
+          }
+          if (maxY > 0) setPoly({ maxYes: maxY, label, eventTitle });
+          else setPoly(null);
+        }
+      }
+    } catch { /* keep last snapshot */ }
+  }, []);
+
+  useEffect(() => { void loadMarketPoly(); }, [loadMarketPoly]);
+  useVisibilityPolling(loadMarketPoly, PULSE_MARKET_POLY_MS);
+
   const breakingCount = items.filter(i => getAgeBadge(i.pubDate) === 'breaking').length;
   const sixH = 6 * 60 * 60 * 1000;
   const kinetic6h = items.filter(i => itemInWindow(i, sixH) && textHasKineticSignal(`${i.title} ${i.summary}`)).length;
+  const nuclear6h = items.filter(i => itemInWindow(i, sixH) && textHasNuclearPulse(`${i.title} ${i.summary}`)).length;
   const hormuz6h = items.filter(i => {
     if (!itemInWindow(i, sixH)) return false;
     const t = `${i.title} ${i.summary}`.toLowerCase();
@@ -584,10 +651,20 @@ function SidebarTheaterPulse({ items, clusters }: { items: FeedItem[]; clusters:
   const missileLead = Boolean(lead?.hasMissileSignal);
   const corroboration = lead?.corroborationCount ?? 0;
 
-  const elevated = breakingCount > 0 || kinetic6h >= 4 || missileLead || hormuz6h >= 2;
+  const elevated = breakingCount > 0 || kinetic6h >= 4 || missileLead || hormuz6h >= 2 || nuclear6h >= 3;
   const critical = missileLead && kinetic6h >= 2;
   const pulseColor = critical ? '#c0392b' : elevated ? '#e67e22' : '#27ae60';
   const pulseLabel = critical ? 'ELEVATED' : elevated ? 'WATCH' : 'STABLE';
+
+  const spreadStr = oil == null
+    ? '—'
+    : `${oil.spread >= 0 ? '+' : '−'}$${Math.abs(oil.spread).toFixed(2)}`;
+  const polyStr = poly == null
+    ? '—'
+    : `${Math.round(poly.maxYes * 100)}%`;
+  const polySub = poly == null
+    ? 'Polymarket'
+    : truncate((poly.label || poly.eventTitle || 'Iran book').replace(/\s+/g, ' '), 44);
 
   return (
     <div style={{
@@ -608,9 +685,9 @@ function SidebarTheaterPulse({ items, clusters }: { items: FeedItem[]; clusters:
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: pulseColor, display: 'inline-block', flexShrink: 0 }} />
           <span style={{
             fontFamily: 'var(--font-mono)',
-            fontSize: 9,
+            fontSize: 11,
             fontWeight: 900,
-            letterSpacing: '0.11em',
+            letterSpacing: '0.08em',
             textTransform: 'uppercase',
             color: 'var(--accent)',
           }}>
@@ -619,9 +696,9 @@ function SidebarTheaterPulse({ items, clusters }: { items: FeedItem[]; clusters:
         </div>
         <span style={{
           fontFamily: 'var(--font-mono)',
-          fontSize: 8,
+          fontSize: 10,
           fontWeight: 800,
-          letterSpacing: '0.08em',
+          letterSpacing: '0.06em',
           color: pulseColor,
           flexShrink: 0,
         }}>
@@ -631,19 +708,41 @@ function SidebarTheaterPulse({ items, clusters }: { items: FeedItem[]; clusters:
 
       <div style={{ padding: 10, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
         <div style={{ border: '1px solid var(--border-light)', borderRadius: 4, padding: '6px 7px', background: 'var(--surface-muted)' }}>
-          <div style={{ fontSize: 7, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>BREAKING</div>
-          <div style={{ fontSize: 15, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--text-primary)' }}>{breakingCount}</div>
-          <div style={{ fontSize: 7, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>&lt;15m</div>
+          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>BREAKING</div>
+          <div style={{ fontSize: 16, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--text-primary)' }}>{breakingCount}</div>
+          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>&lt;15m</div>
         </div>
         <div style={{ border: '1px solid var(--border-light)', borderRadius: 4, padding: '6px 7px', background: 'var(--surface-muted)' }}>
-          <div style={{ fontSize: 7, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>KINETIC</div>
-          <div style={{ fontSize: 15, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--text-primary)' }}>{kinetic6h}</div>
-          <div style={{ fontSize: 7, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>6h</div>
+          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>KINETIC</div>
+          <div style={{ fontSize: 16, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--text-primary)' }}>{kinetic6h}</div>
+          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>6h</div>
         </div>
         <div style={{ border: '1px solid var(--border-light)', borderRadius: 4, padding: '6px 7px', background: 'var(--surface-muted)' }}>
-          <div style={{ fontSize: 7, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>HORMUZ</div>
-          <div style={{ fontSize: 15, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--text-primary)' }}>{hormuz6h}</div>
-          <div style={{ fontSize: 7, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>6h</div>
+          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>HORMUZ</div>
+          <div style={{ fontSize: 16, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--text-primary)' }}>{hormuz6h}</div>
+          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>6h</div>
+        </div>
+      </div>
+
+      <div style={{ padding: '0 10px 10px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
+        <div style={{ border: '1px solid var(--border-light)', borderRadius: 4, padding: '6px 7px', background: 'var(--surface-muted)' }}>
+          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>NUCLEAR</div>
+          <div style={{ fontSize: 16, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--text-primary)' }}>{nuclear6h}</div>
+          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>6h wires</div>
+        </div>
+        <div style={{ border: '1px solid var(--border-light)', borderRadius: 4, padding: '6px 7px', background: 'var(--surface-muted)' }}>
+          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>BRENT − WTI</div>
+          <div style={{ fontSize: 14, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>{spreadStr}</div>
+          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', lineHeight: 1.35 }}>
+            {oil == null ? 'Loading…' : `Δ Br ${oil.brentPct >= 0 ? '+' : ''}${oil.brentPct.toFixed(1)}% · WTI ${oil.wtiPct >= 0 ? '+' : ''}${oil.wtiPct.toFixed(1)}%`}
+          </div>
+        </div>
+        <div style={{ border: '1px solid var(--border-light)', borderRadius: 4, padding: '6px 7px', background: 'var(--surface-muted)' }}>
+          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>POLY MAX</div>
+          <div style={{ fontSize: 14, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--text-primary)' }}>{polyStr}</div>
+          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', lineHeight: 1.35, wordBreak: 'break-word' }} title={polySub}>
+            {polySub}
+          </div>
         </div>
       </div>
 
@@ -653,20 +752,20 @@ function SidebarTheaterPulse({ items, clusters }: { items: FeedItem[]; clusters:
           borderTop: '1px solid var(--border-light)',
           background: 'rgba(0,112,243,0.04)',
         }}>
-          <div style={{ fontSize: 7, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', fontWeight: 800, marginBottom: 4, letterSpacing: '0.06em' }}>
+          <div style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', fontWeight: 800, marginBottom: 4, letterSpacing: '0.05em', lineHeight: 1.4 }}>
             LEAD STORYLINE · V{Math.round(lead.score * 10)}{missileLead ? ' · ⚡MISSILE' : ''}{corroboration > 0 ? ` · ${corroboration}×CORR` : ''} · {leadSources} SRC
           </div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.35 }}>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.45 }}>
             {truncate(lead.title, 110)}
           </div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)', marginTop: 4 }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', marginTop: 6, lineHeight: 1.4 }}>
             Open <strong style={{ color: 'var(--accent)' }}>INTEL</strong> for full clusters
           </div>
         </div>
       )}
 
       {!lead && (
-        <div style={{ padding: '10px', borderTop: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)' }}>
+        <div style={{ padding: '10px', borderTop: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', lineHeight: 1.45 }}>
           Storylines building…
         </div>
       )}
@@ -703,11 +802,11 @@ function SidebarPanel({
             key={tab}
             onClick={() => setSidebarTab(tab)}
             style={{
-              flex: 1, padding: '8px 0', border: 'none', borderRadius: 4,
-              cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 9, 
-              fontWeight: 900, letterSpacing: '0.06em',
+              flex: 1, padding: '9px 0', border: 'none', borderRadius: 4,
+              cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 11,
+              fontWeight: 800, letterSpacing: '0.05em',
               background: active ? 'var(--accent)' : 'transparent',
-              color: active ? '#fff' : 'var(--text-muted)',
+              color: active ? '#fff' : 'var(--text-secondary)',
               transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
             }}
             onMouseEnter={e => !active && (e.currentTarget.style.background = 'var(--surface-hover)')}
@@ -739,15 +838,15 @@ function SidebarPanel({
               }}
             >
               <span style={{ width: 6, height: 6, borderRadius: '50%', background: isAllHealthy ? '#27ae60' : 'var(--accent)' }} />
-              <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', color: isAllHealthy ? '#27ae60' : 'var(--accent)', flex: 1 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: isAllHealthy ? '#27ae60' : 'var(--accent)', flex: 1 }}>
                 {isAllHealthy ? 'NETWORK_ONLINE' : `${failedHealth.length} NODES_OFFLINE`}
               </span>
-              {failedHealth.length > 0 && <span style={{ fontSize: 8 }}>{healthOpen ? '▲' : '▼'}</span>}
+              {failedHealth.length > 0 && <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{healthOpen ? '▲' : '▼'}</span>}
             </button>
             {healthOpen && failedHealth.length > 0 && (
               <div style={{ padding: '8px', borderTop: '1px solid var(--border-light)', background: 'var(--surface)' }}>
                  {failedHealth.map(h => (
-                   <div key={h.id} style={{ fontSize: 10, color: 'var(--text-secondary)', marginBottom: 2 }}>
+                   <div key={h.id} style={{ fontSize: 11, lineHeight: 1.4, color: 'var(--text-secondary)', marginBottom: 2 }}>
                      <span style={{ color: 'var(--accent)', fontWeight: 800 }}>[!]</span> {h.name}
                    </div>
                  ))}
@@ -768,16 +867,16 @@ function SidebarPanel({
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-            <span style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 800 }}>CHANNELS ({SOURCES.length})</span>
+            <span style={{ fontSize: 10, letterSpacing: '0.04em', color: 'var(--text-muted)', fontWeight: 800 }}>CHANNELS ({SOURCES.length})</span>
             <div style={{ display: 'flex', gap: 4 }}>
-              <button onClick={onAllSources} style={{ fontSize: 8, color: 'var(--text-muted)', background: 'none', border: '1px solid var(--border-light)', borderRadius: 2, padding: '1px 6px', cursor: 'pointer' }}>ALL</button>
-              <button onClick={onNoSources} style={{ fontSize: 8, color: 'var(--text-muted)', background: 'none', border: '1px solid var(--border-light)', borderRadius: 2, padding: '1px 6px', cursor: 'pointer' }}>NONE</button>
+              <button onClick={onAllSources} style={{ fontSize: 10, letterSpacing: '0.03em', color: 'var(--text-muted)', background: 'none', border: '1px solid var(--border-light)', borderRadius: 2, padding: '3px 8px', cursor: 'pointer' }}>ALL</button>
+              <button onClick={onNoSources} style={{ fontSize: 10, letterSpacing: '0.03em', color: 'var(--text-muted)', background: 'none', border: '1px solid var(--border-light)', borderRadius: 2, padding: '3px 8px', cursor: 'pointer' }}>NONE</button>
             </div>
           </div>
 
           {REGION_GROUPS.map(([region, srcs]) => (
             <div key={region} style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 8, color: REGION_DOTS[region] || '#999', textTransform: 'uppercase', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ fontSize: 10, letterSpacing: '0.05em', color: REGION_DOTS[region] || '#999', textTransform: 'uppercase', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <div style={{ width: 6, height: 6, borderRadius: '50%', background: REGION_DOTS[region] || '#999' }} />
                 {REGION_LABELS[region as Source['region']] || region}
               </div>
@@ -786,9 +885,9 @@ function SidebarPanel({
                   const active = activeSources.has(s.id);
                   const count = sourceCountMap[s.id] || 0;
                   return (
-                    <button key={s.id} onClick={() => onToggleSource(s.id)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px', borderRadius: 4, border: 'none', background: active ? 'var(--surface-hover)' : 'transparent', cursor: 'pointer', textAlign: 'left' }}>
-                      <span style={{ fontSize: 11, color: active ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: active ? 700 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</span>
-                      {count > 0 && <span style={{ fontSize: 9, color: active ? 'var(--accent)' : 'var(--text-muted)', fontWeight: 800 }}>{count}</span>}
+                    <button key={s.id} onClick={() => onToggleSource(s.id)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 8px', borderRadius: 4, border: 'none', background: active ? 'var(--surface-hover)' : 'transparent', cursor: 'pointer', textAlign: 'left' }}>
+                      <span style={{ fontSize: 12, lineHeight: 1.35, color: active ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: active ? 700 : 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</span>
+                      {count > 0 && <span style={{ fontSize: 10, color: active ? 'var(--accent)' : 'var(--text-muted)', fontWeight: 800 }}>{count}</span>}
                     </button>
                   );
                 })}
@@ -798,15 +897,15 @@ function SidebarPanel({
 
           {pinnedItems.length > 0 && (
             <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border-light)' }}>
-              <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 900, marginBottom: 10 }}>PINNED_REPORTS ({pinnedItems.length})</div>
+              <div style={{ fontSize: 10, letterSpacing: '0.04em', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 900, marginBottom: 10 }}>PINNED_REPORTS ({pinnedItems.length})</div>
               {pinnedItems.map(item => (
                 <button
                   key={keyForItem(item)}
                   onClick={() => onTogglePin(item)}
                   style={{ display: 'block', width: '100%', padding: '10px', borderRadius: 4, border: '1px solid var(--accent-light)', background: 'var(--surface)', cursor: 'pointer', textAlign: 'left', marginBottom: 6 }}
                 >
-                  <div style={{ fontSize: 9, color: 'var(--accent)', fontWeight: 800, marginBottom: 4 }}>{item.sourceName}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-primary)', fontWeight: 700, lineHeight: 1.3 }}>{truncate(item.title, 60)}</div>
+                  <div style={{ fontSize: 10, letterSpacing: '0.03em', color: 'var(--accent)', fontWeight: 800, marginBottom: 4 }}>{item.sourceName}</div>
+                  <div style={{ fontSize: 12, lineHeight: 1.4, color: 'var(--text-primary)', fontWeight: 600 }}>{truncate(item.title, 60)}</div>
                 </button>
               ))}
             </div>
@@ -818,21 +917,21 @@ function SidebarPanel({
         <div style={{ animation: 'fadeInScale 0.2s ease forwards' }}>
           <MissileIntel items={items} limit={8} />
           
-          <div style={{ fontSize: 10, color: 'var(--accent)', textTransform: 'uppercase', fontWeight: 900, marginBottom: 16, marginTop: 20, borderBottom: '1px solid var(--accent-light)', paddingBottom: 6 }}>
+          <div style={{ fontSize: 11, letterSpacing: '0.05em', color: 'var(--accent)', textTransform: 'uppercase', fontWeight: 900, marginBottom: 16, marginTop: 20, borderBottom: '1px solid var(--accent-light)', paddingBottom: 6 }}>
              THEATER_INTEL_FOLDERS
           </div>
           {clusters.slice(0, 6).map((cluster, i) => (
             <div key={cluster.id} style={{ marginBottom: 14, padding: '14px', border: '1px solid var(--border-light)', borderRadius: 6, background: 'var(--surface)', position: 'relative' }}>
                <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 4, background: 'var(--accent)' }} />
-               <div style={{ fontSize: 14, fontWeight: 900, color: 'var(--text-primary)', marginBottom: 8, lineHeight: 1.2 }}>{cluster.title}</div>
+               <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 8, lineHeight: 1.25 }}>{cluster.title}</div>
                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                  <div style={{ fontSize: 9, color: 'var(--accent)', fontWeight: 800, background: 'var(--accent-light)', padding: '3px 8px', borderRadius: 3 }}>{Math.round(cluster.score * 10)} VITALITY</div>
-                  <div style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 700 }}>{cluster.items.length} ACTIVE_REPORTS</div>
+                  <div style={{ fontSize: 10, letterSpacing: '0.03em', color: 'var(--accent)', fontWeight: 800, background: 'var(--accent-light)', padding: '3px 8px', borderRadius: 3 }}>{Math.round(cluster.score * 10)} VITALITY</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 700 }}>{cluster.items.length} ACTIVE_REPORTS</div>
                </div>
             </div>
           ))}
           {clusters.length === 0 && (
-            <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-muted)', fontSize: 12, border: '1px dashed var(--border)', borderRadius: 6 }}>
+            <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, lineHeight: 1.5, border: '1px dashed var(--border)', borderRadius: 6 }}>
                SYSTEM IS COLLATING LIVE FEEDS...
             </div>
           )}
@@ -841,7 +940,7 @@ function SidebarPanel({
 
       {sidebarTab === 'assets' && (
         <div style={{ animation: 'fadeInScale 0.2s ease forwards' }}>
-          <div style={{ fontSize: 10, color: 'var(--accent)', textTransform: 'uppercase', fontWeight: 900, marginBottom: 16 }}>
+          <div style={{ fontSize: 11, letterSpacing: '0.05em', color: 'var(--accent)', textTransform: 'uppercase', fontWeight: 900, marginBottom: 16 }}>
              GLOBAL_ECONOMIC_INDICATORS
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
@@ -852,22 +951,22 @@ function SidebarPanel({
                { l: 'S&P 500', v: '5,123', d: '+0.2%' },
              ].map(a => (
                <div key={a.l} style={{ padding: '14px', border: '1px solid var(--border-light)', borderRadius: 8, background: 'var(--surface-muted)' }}>
-                  <div style={{ fontSize: 8, color: 'var(--text-muted)', fontWeight: 800, marginBottom: 4 }}>{a.l}</div>
+                  <div style={{ fontSize: 9, letterSpacing: '0.04em', color: 'var(--text-muted)', fontWeight: 800, marginBottom: 4 }}>{a.l}</div>
                   <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-primary)', marginBottom: 2 }}>{a.v}</div>
                   <div style={{ fontSize: 10, color: a.d.startsWith('+') ? '#27ae60' : '#e74c3c', fontWeight: 900 }}>{a.d}</div>
                </div>
              ))}
           </div>
 
-          <div style={{ fontSize: 10, color: 'var(--accent)', textTransform: 'uppercase', fontWeight: 900, marginTop: 24, marginBottom: 12 }}>
+          <div style={{ fontSize: 11, letterSpacing: '0.05em', color: 'var(--accent)', textTransform: 'uppercase', fontWeight: 900, marginTop: 24, marginBottom: 12 }}>
              THEATER_STATUS_LOG
           </div>
           <div style={{ padding: '16px', border: '1px solid var(--accent-light)', background: 'rgba(0,112,243,0.03)', borderRadius: 6 }}>
              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
                 <div className="live-dot" style={{ background: 'var(--accent)' }} />
-                <div style={{ fontSize: 11, fontWeight: 900, color: 'var(--accent)' }}>THEATER_SAT_RELAY</div>
+                <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.04em', color: 'var(--accent)' }}>THEATER_SAT_RELAY</div>
              </div>
-             <div style={{ fontSize: 12, color: 'var(--text-primary)', lineHeight: 1.6, fontFamily: 'var(--font-mono)' }}>
+             <div style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.65, fontFamily: 'var(--font-mono)' }}>
                 <span style={{ color: 'var(--accent)', fontWeight: 800 }}>[HORMUZ_STR]</span> PASSAGE_STABLE<br/>
                 <span style={{ color: 'var(--accent)', fontWeight: 800 }}>[FORDOW_SITE]</span> THERMAL_NORMAL<br/>
                 <span style={{ color: 'var(--accent)', fontWeight: 800 }}>[RED_SEA_TR]</span> RISK_ELEVATED
@@ -2090,7 +2189,7 @@ export default function Home() {
       <div className="page-layout">
 
         {/* Sidebar */}
-        <aside className={`sidebar-col${sidebarOpen ? ' open' : ''}`}>
+        <aside className={`sidebar-col ftg-nav-readable${sidebarOpen ? ' open' : ''}`}>
           {/* Mobile close button — only visible inside the off-canvas drawer */}
           <button
             className="sidebar-close-btn"
@@ -2122,7 +2221,7 @@ export default function Home() {
 
             {/* ── Alert Profiles ─────────────────────────────────────────── */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 12, borderTop: '1px solid var(--border-light)' }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.12em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.08em', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
                 ⚡ Alert Profiles
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -2131,7 +2230,7 @@ export default function Home() {
                     key={profile.id}
                     onClick={() => setActiveAlertProfile(activeAlertProfile === profile.id ? null : profile.id)}
                     style={{
-                      fontFamily: 'var(--font-mono)', fontSize: 11,
+                      fontFamily: 'var(--font-mono)', fontSize: 12, lineHeight: 1.4,
                       padding: '4px 8px', border: '1px solid var(--border-light)',
                       background: activeAlertProfile === profile.id ? 'var(--accent)' : 'var(--surface)',
                       color: activeAlertProfile === profile.id ? '#fff' : 'var(--text-primary)',
@@ -3112,7 +3211,7 @@ export default function Home() {
         </main>
 
         {/* ── THIRD COLUMN: STRATEGIC INTEL ─────────────────────────── */}
-        <aside className="intel-column" style={{
+        <aside className="intel-column ftg-nav-readable" style={{
           position: 'sticky',
           top: '24px',
           height: 'calc(100vh - 48px)',
@@ -3132,13 +3231,13 @@ export default function Home() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              padding: '14px 20px 12px',
+              padding: '14px 20px 14px',
             }}>
               <h2 style={{
                 fontFamily: 'var(--font-mono)',
-                fontSize: 15,
+                fontSize: 16,
                 fontWeight: 800,
-                letterSpacing: '0.12em',
+                letterSpacing: '0.08em',
                 textTransform: 'uppercase',
                 color: 'var(--accent)',
                 margin: 0
@@ -3147,7 +3246,7 @@ export default function Home() {
               </h2>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <div className="live-dot" />
-                <span style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Live</span>
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Live</span>
               </div>
             </div>
 
@@ -3159,7 +3258,7 @@ export default function Home() {
             )}
 
             {/* ── Intel Timeline ───────────────────────────────────────── */}
-            <div style={{ padding: '16px 20px' }}>
+            <div style={{ padding: '18px 20px 20px' }}>
               {hasMounted && <IntelTimeline events={intelEvents} />}
 
               {hasMounted && intelEvents.length > 0 && (
@@ -3171,7 +3270,7 @@ export default function Home() {
                   border: '1px dashed var(--border)',
                   textAlign: 'center'
                 }}>
-                  <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                  <span style={{ fontSize: 11, lineHeight: 1.45, letterSpacing: '0.05em', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
                     SCANNING GDELT & GCAPTAIN SENSORS
                   </span>
                 </div>

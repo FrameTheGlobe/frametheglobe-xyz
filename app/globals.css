@@ -907,6 +907,18 @@ body {
   transition: transform 0.22s ease;
 }
 
+/* Slightly clearer nav columns: smoothing + relaxed mono tracking in sidebar search */
+.ftg-nav-readable {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+.sidebar-col.ftg-nav-readable .search-input {
+  font-size: 13px;
+  letter-spacing: 0.03em;
+  padding: 8px 11px;
+}
+
 /* ══════════════════════════════════════════════════════
    RESPONSIVE OVERRIDES
 ══════════════════════════════════════════════════════ */

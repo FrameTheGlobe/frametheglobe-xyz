@@ -29,7 +29,7 @@ const STATUS_STYLES: Record<IntelStatus, { color: string; bg: string }> = {
 export default function IntelTimeline({ events }: Props) {
   if (!events || events.length === 0) {
     return (
-      <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: '11px' }}>
+      <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontSize: '12px', lineHeight: 1.5, letterSpacing: '0.04em' }}>
         SCANNING FREQUENCIES... NO INTEL DETECTED.
       </div>
     );
