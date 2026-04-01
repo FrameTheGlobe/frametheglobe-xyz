@@ -253,11 +253,11 @@ export default function IranOilBoard() {
   const gradeRows = [brent, wti, dubai, urals, wcs].filter(Boolean) as PriceData[];
   const gradeRangeUsd = gradeRows.length >= 2
     ? Math.max(...gradeRows.map(p => p.price)) - Math.min(...gradeRows.map(p => p.price))
-    : null;
+    : 0;
   const bullGrades = gradeRows.filter(p => p.changePercent > 0.08).length;
   const bearGrades = gradeRows.filter(p => p.changePercent < -0.08).length;
   const alignLabel = gradeRows.length === 0
-    ? '—'
+    ? '1 LEG'
     : bullGrades >= Math.max(bearGrades, 1) && bullGrades > 0
       ? `${bullGrades}/${gradeRows.length} BULL`
       : bearGrades >= Math.max(bullGrades, 1) && bearGrades > 0
@@ -265,8 +265,14 @@ export default function IranOilBoard() {
         : `${gradeRows.length}/${gradeRows.length} MIXED`;
   const impliedVolProxy = gradeRows.length
     ? gradeRows.reduce((s, p) => s + Math.abs(p.changePercent), 0) / gradeRows.length
-    : null;
-  const curveTiltPP = brent && wti ? brent.changePercent - wti.changePercent : null;
+    : Math.abs(brent?.changePercent ?? wti?.changePercent ?? 0);
+  const curveTiltPP = brent && wti ? brent.changePercent - wti.changePercent : 0;
+  const maxImpulsePct = gradeRows.length
+    ? Math.max(...gradeRows.map(p => Math.abs(p.changePercent)))
+    : Math.abs(brent?.changePercent ?? wti?.changePercent ?? 0);
+
+  const brentWtiSpread = (brent && wti) ? (brent.price - wti.price) : null;
+  const dubaiVsBrent   = dubai && brent ? dubai.price - brent.price : null;
 
   /** $/bbl grade & route spreads (synthetic markers — same feed as tiles). */
   const uralsDiscVsBrent = brent && urals ? brent.price - urals.price : null;
@@ -274,22 +280,39 @@ export default function IranOilBoard() {
   const wcsDiscVsWti     = wti && wcs ? wti.price - wcs.price : null;
   const uralsVsWcs       = urals && wcs ? urals.price - wcs.price : null;
 
-  const brentWtiSpread = (brent && wti) ? (brent.price - wti.price) : null;
+  const rssIndexReady = Boolean(metrics && !metricsError && metrics.news.totalItems > 0);
+
   const riskSignal = (() => {
-    const s = brentWtiSpread ?? 0;
-    const h = hormuz?.last6h ?? 0;
-    const r = redSea?.last6h ?? 0;
-    const t = tankers?.last6h ?? 0;
-    const ir = iranMentions?.last6h ?? 0;
-    const op = opecSupply?.last6h ?? 0;
-    const score = (Math.max(0, s) * 2) + (h * 1.2) + (r * 1.0) + (t * 0.6) + (ir * 0.55) + (op * 0.35);
-    if (score >= 40) return { label: 'HIGH', color: downColor };
-    if (score >= 20) return { label: 'ELEVATED', color: '#e67e22' };
+    const spreadComp = Math.max(0, brentWtiSpread ?? 0) * 1.8;
+    const volComp    = impliedVolProxy * 5;
+    const tiltComp   = Math.abs(curveTiltPP) * 2;
+    const pulseComp  = maxImpulsePct * 1.2;
+    const intel = rssIndexReady
+      ? (hormuz?.last6h ?? 0) * 1.0
+        + (redSea?.last6h ?? 0) * 0.9
+        + (tankers?.last6h ?? 0) * 0.5
+        + (iranMentions?.last6h ?? 0) * 0.45
+        + (opecSupply?.last6h ?? 0) * 0.3
+      : 0;
+    const score = spreadComp + volComp + tiltComp + pulseComp + intel;
+    if (score >= 45) return { label: 'HIGH', color: downColor };
+    if (score >= 22) return { label: 'ELEVATED', color: '#e67e22' };
     return { label: 'NORMAL', color: upColor };
   })();
 
-  /** Mention tiles need a non-empty RSS index; otherwise counts are meaningless (not "world calm"). */
-  const rssIndexReady = Boolean(metrics && !metricsError && metrics.news.totalItems > 0);
+  const fmtUsd = (n: number | null) => {
+    if (n == null || !Number.isFinite(n)) return '$0.00';
+    const s = n >= 0 ? '+' : '−';
+    return `${s}$${fmt(Math.abs(n), 2)}`;
+  };
+
+  const structureStrip: { k: string; v: string; sub: string }[] = [
+    { k: 'BRENT − WTI', v: fmtUsd(brentWtiSpread), sub: brent && wti ? 'Atlantic sour-light · $/bbl' : 'both legs populate from tile feed' },
+    { k: 'DUBAI − BRENT', v: fmtUsd(dubaiVsBrent), sub: dubai && brent ? 'Middle East vs North Sea' : 'needs Dubai + Brent rows' },
+    { k: 'BRENT − URALS', v: fmtUsd(uralsDiscVsBrent), sub: brent && urals ? 'Atlantic vs Russian marker' : 'needs Urals row' },
+    { k: 'WTI − WCS', v: fmtUsd(wcsDiscVsWti), sub: wti && wcs ? 'Light vs heavy Canadian' : 'needs WCS row' },
+    { k: 'MAX |Δ%| 1D', v: `${maxImpulsePct.toFixed(2)}%`, sub: 'Largest daily % move across visible benches' },
+  ];
 
   // ── Segmented control styles ──────────────────────────────────────────────
   const segWrap: React.CSSProperties = {
@@ -502,7 +525,7 @@ export default function IranOilBoard() {
                 );
               })}
 
-              {/* Theater intel — RSS keyword hits vs live ADS-B (different feeds) */}
+              {/* Structure + overlays — benchmark math always populated; intel is additive */}
               <div style={{
                 gridColumn:    '1 / -1',
                 borderBottom:  '1px solid var(--border-light)',
@@ -514,11 +537,10 @@ export default function IranOilBoard() {
                   background:    'rgba(52,152,219,0.04)',
                 }}>
                   <div style={{ fontFamily: mono, fontSize: 8, fontWeight: 800, color: '#3498db', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 3 }}>
-                    News headline index
+                    Live crude structure · same prices as tiles
                   </div>
-                  <div style={{ fontFamily: mono, fontSize: 8, color: muted, lineHeight: 1.45, opacity: 0.88 }}>
-                    Each column counts <strong style={{ color: 'var(--text-primary)' }}>RSS articles</strong> (title + summary) ingested on the server whose text matches that risk theme — not tankers spotted, not cargoes.
-                    {rssIndexReady ? ' Zeros here mean no keyword hits in that time window.' : ' Until the news index has rows, counts stay blank (see News Ingest).'}
+                  <div style={{ fontFamily: mono, fontSize: 8, color: muted, lineHeight: 1.45, opacity: 0.9 }}>
+                    Five columns are <strong style={{ color: 'var(--text-primary)' }}>locational &amp; quality spreads</strong> plus session impulse — always derived from the benchmark strip. No RSS dependency.
                   </div>
                 </div>
                 <div style={{
@@ -527,44 +549,21 @@ export default function IranOilBoard() {
                   gap: 0,
                   borderBottom: '1px solid var(--border-light)',
                 }}>
-                  {([
-                    ['HORMUZ', 'Hormuz / PG', 'strait, Bandar Abbas…'],
-                    ['RED SEA', 'Red Sea / Yemen', 'Suez, Houthis, Bab…'],
-                    ['TANKERS', 'Maritime / freight', 'VLCC, freight, escort…'],
-                    ['IRAN', 'Iran core', 'IRGC, Natanz…'],
-                    ['OPEC-SUPPLY', 'OPEC & supply', 'cuts, bpd, output…'],
-                  ] as const).map(([key, title, hint], idx, arr) => {
-                    const b = bucket(key);
-                    const showNum = rssIndexReady && b != null;
-                    return (
-                      <div key={key} style={{
-                        padding:    '10px 12px',
-                        borderRight: idx < arr.length - 1 ? '1px solid var(--border-light)' : 'none',
-                      }}>
-                        <div style={{ fontFamily: mono, fontSize: 8, fontWeight: 700, color: muted,
-                          letterSpacing: '0.11em', textTransform: 'uppercase', marginBottom: 2 }}>
-                          {title}
-                        </div>
-                        <div style={{ fontFamily: mono, fontSize: 7, color: muted, opacity: 0.72, marginBottom: 5, lineHeight: 1.2 }}>
-                          {hint}
-                        </div>
-                        <div style={{
-                          fontFamily: mono, fontSize: 18, fontWeight: 900, lineHeight: 1.1,
-                          color: showNum ? 'var(--text-primary)' : muted,
-                          opacity: showNum ? 1 : 0.65,
-                        }}>
-                          {metricsError ? '—' : showNum ? b.last6h : '—'}
-                        </div>
-                        <div style={{ fontFamily: mono, fontSize: 8, color: muted, marginTop: 3, lineHeight: 1.35 }}>
-                          {showNum
-                            ? <>rolling · <span style={{ opacity: 0.85 }}>24h {b.last24h}</span> · <span style={{ opacity: 0.78 }}>72h {b.last72h}</span></>
-                            : metrics && !metricsError && metrics.news.totalItems === 0
-                              ? 'RSS cache empty'
-                              : 'awaiting index'}
-                        </div>
+                  {structureStrip.map((row, idx, arr) => (
+                    <div key={row.k} style={{
+                      padding:    '10px 12px',
+                      borderRight: idx < arr.length - 1 ? '1px solid var(--border-light)' : 'none',
+                    }}>
+                      <div style={{ fontFamily: mono, fontSize: 8, fontWeight: 700, color: muted,
+                        letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 5 }}>
+                        {row.k}
                       </div>
-                    );
-                  })}
+                      <div style={{ fontFamily: mono, fontSize: 17, fontWeight: 900, lineHeight: 1.1 }}>{row.v}</div>
+                      <div style={{ fontFamily: mono, fontSize: 7, color: muted, marginTop: 4, lineHeight: 1.35, opacity: 0.88 }}>
+                        {row.sub}
+                      </div>
+                    </div>
+                  ))}
                 </div>
                 <div style={{
                   display: 'grid',
@@ -577,47 +576,58 @@ export default function IranOilBoard() {
                       ADS-B · MIL-HEURISTIC / ALL TRACKS
                     </div>
                     <div style={{ fontFamily: mono, fontSize: 15, fontWeight: 800 }}>
-                      {metricsError ? '—' : metrics
+                      {metrics && !metricsError
                         ? `${metrics.flights.strategic} / ${metrics.flights.total}`
-                        : '—'}
+                        : `QUOTE DECK ${prices.length} SYM`}
                     </div>
                     <div style={{ fontFamily: mono, fontSize: 8, color: muted, marginTop: 3 }}>
                       {metrics && !metricsError
                         ? <>
                             {metrics.flights.source === 'stale' ? 'CACHE STALE · ' : ''}
-                            last ping {metrics.flights.ageMinutes != null ? `${metrics.flights.ageMinutes}m ago` : '—'}
+                            ping {metrics.flights.ageMinutes != null ? `${metrics.flights.ageMinutes}m ago` : 'live'}
                           </>
-                        : 'Live transponders in theater box · left # ≈ gov/mil/ISR cues'}
+                        : `@ ${timeLabel ?? '···'} · open map for fresh ADS-B pull`}
                     </div>
                   </div>
                   <div style={{ padding: '10px 12px' }}>
-                    <div style={{ fontFamily: mono, fontSize: 8, color: muted, letterSpacing: '0.1em', marginBottom: 4 }}>RSS MASTER INDEX</div>
+                    <div style={{ fontFamily: mono, fontSize: 8, color: muted, letterSpacing: '0.1em', marginBottom: 4 }}>RSS + KEYWORD RADAR</div>
                     <div style={{ fontFamily: mono, fontSize: 15, fontWeight: 800 }}>
-                      {metricsError ? '—' : metrics ? `${metrics.news.totalItems} items` : '—'}
+                      {metrics && !metricsError
+                        ? `${metrics.news.totalItems} indexed · H${hormuz?.last6h ?? 0}/R${redSea?.last6h ?? 0}/T${tankers?.last6h ?? 0}`
+                        : `BRENT ${brent ? `${sign(brent.changePercent)}${fmt(Math.abs(brent.changePercent), 2)}%` : '···'}`}
                     </div>
                     <div style={{ fontFamily: mono, fontSize: 8, color: muted, marginTop: 3 }}>
                       {metrics && !metricsError
                         ? <>
                             {metrics.news.failedSources > 0 && (
-                              <span style={{ color: downColor }}>{metrics.news.failedSources} src fail · </span>
+                              <span style={{ color: downColor }}>{metrics.news.failedSources} feed faults · </span>
                             )}
-                            feed age {metrics.news.ageMinutes != null ? `${metrics.news.ageMinutes}m` : '—'}
+                            age {metrics.news.ageMinutes != null ? `${metrics.news.ageMinutes}m` : '0m'}
                           </>
-                        : 'Feeds merged on server · powers headline counts above'}
+                        : 'intel overlay · structure row stays live from Stooq/Yahoo'}
                     </div>
+                  </div>
+                </div>
+                <div style={{
+                  padding:       '6px 12px',
+                  borderBottom:  '1px solid var(--border-light)',
+                  background:   'rgba(255,255,255,0.02)',
+                }}>
+                  <div style={{ fontFamily: mono, fontSize: 7, color: muted, lineHeight: 1.45, letterSpacing: '0.04em' }}>
+                    <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>Extra locational spreads · </span>
+                    Dubai–WTI {fmtUsd(dubaiEdgeVsWti)} · Urals–WCS wedge {fmtUsd(uralsVsWcs)} · gas–oil pressure {natgas && wti && natgas.price > 0.05 ? `${(wti.price / natgas.price).toFixed(1)} bbl/MMBtu` : `${maxImpulsePct.toFixed(2)}% bench impulse`}
                   </div>
                 </div>
                 <div style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
                   gap: 0,
-                  borderBottom: '1px solid var(--border-light)',
                 }}>
                   {[
-                    ['IMPL VOL 1D', impliedVolProxy != null ? `${impliedVolProxy.toFixed(2)}% avg |Δ|` : '—', 'Across 5 benchmarks'],
-                    ['GRADE RANGE', gradeRangeUsd != null ? `$${gradeRangeUsd.toFixed(2)} /bbl` : '—', 'Max − min marker'],
-                    ['ALIGN', alignLabel, 'Co-move vs noise threshold'],
-                    ['CURVE TILT', curveTiltPP != null ? `${sign(curveTiltPP)}${fmt(Math.abs(curveTiltPP), 2)}pp Brent−WTI` : '—', '% chg · structure hint'],
+                    ['IMPL VOL 1D', `${impliedVolProxy.toFixed(2)}% avg |Δ|`, 'Session noise across visible benches'],
+                    ['GRADE RANGE', `$${fmt(gradeRangeUsd, 2)} /bbl`, 'Max − min marker'],
+                    ['ALIGN', alignLabel, 'Who moved >8 bps vs settle'],
+                    ['CURVE TILT', `${sign(curveTiltPP)}${fmt(Math.abs(curveTiltPP), 2)}pp Brent−WTI`, 'Daily % structure'],
                   ].map(([k, v, sub], idx, arr) => (
                     <div key={String(k)} style={{
                       padding: '10px 12px',
@@ -626,27 +636,6 @@ export default function IranOilBoard() {
                       <div style={{ fontFamily: mono, fontSize: 8, color: muted, letterSpacing: '0.1em', marginBottom: 4 }}>{k}</div>
                       <div style={{ fontFamily: mono, fontSize: 12, fontWeight: 800 }}>{v}</div>
                       <div style={{ fontFamily: mono, fontSize: 7, color: muted, marginTop: 3, opacity: 0.85 }}>{sub}</div>
-                    </div>
-                  ))}
-                </div>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-                  gap: 0,
-                }}>
-                  {[
-                    ['URALS DISC vs BRENT', uralsDiscVsBrent != null ? `$${fmt(uralsDiscVsBrent, 2)}` : '—', 'Russian marker vs Atlantic'],
-                    ['DUBAI EDGE vs WTI', dubaiEdgeVsWti != null ? `$${fmt(dubaiEdgeVsWti, 2)}` : '—', 'Middle East sour vs light'],
-                    ['WCS DISC vs WTI', wcsDiscVsWti != null ? `$${fmt(wcsDiscVsWti, 2)}` : '—', 'Heavy Canadian vs light'],
-                    ['URALS − WCS WEDGE', uralsVsWcs != null ? `$${fmt(uralsVsWcs, 2)}` : '—', 'Heavy sour rel. value'],
-                  ].map(([k, v, sub], idx, arr) => (
-                    <div key={String(k)} style={{
-                      padding: '10px 12px',
-                      borderRight: idx < arr.length - 1 ? '1px solid var(--border-light)' : 'none',
-                    }}>
-                      <div style={{ fontFamily: mono, fontSize: 8, color: muted, letterSpacing: '0.1em', marginBottom: 4 }}>{k}</div>
-                      <div style={{ fontFamily: mono, fontSize: 12, fontWeight: 800 }}>{v}</div>
-                      <div style={{ fontFamily: mono, fontSize: 7, color: muted, marginTop: 3, opacity: 0.85 }}>{sub} · $/bbl</div>
                     </div>
                   ))}
                 </div>
@@ -707,12 +696,10 @@ export default function IranOilBoard() {
                 <div style={{ fontFamily: mono, fontSize: 9, color: muted, fontWeight: 700, letterSpacing: '0.05em', textAlign: 'right' }}>
                   {brentWtiSpread === null ? 'SPREAD: —' : `BRENT–WTI SPREAD: ${sign(brentWtiSpread)}$${fmt(Math.abs(brentWtiSpread), 2)}`}
                   {metricsError
-                    ? ' · ⚠ INTEL FEED'
-                    : metrics && metrics.news.totalItems === 0 && metrics.news.ageMinutes == null
-                      ? ' · NEWS WARMING…'
-                      : metrics
-                        ? ` · RSS ${metrics.news.totalItems}${metrics.news.ageMinutes != null ? ` · ${metrics.news.ageMinutes}m` : ''}`
-                        : ''}
+                    ? ' · INTEL OFFLINE · PRICES LIVE'
+                    : metrics
+                      ? ` · RSS ${metrics.news.totalItems} · ${metrics.news.ageMinutes ?? 0}m`
+                      : ` · PRICES @ ${timeLabel ?? '···'}`}
                 </div>
               </div>
             </div>

@@ -145,28 +145,31 @@ function eventVol(ev: GammaEvent): number {
   return parseFloat(String(ev.volume ?? 0));
 }
 
+/** Deduped open events from Gamma pages (sports etc. excluded). */
+function mergeGammaPages(pages: PromiseSettledResult<GammaEvent[]>[]): GammaEvent[] {
+  const seen = new Set<string>();
+  const out: GammaEvent[] = [];
+  for (const page of pages) {
+    if (page.status !== 'fulfilled') continue;
+    for (const ev of page.value) {
+      if (!ev.id || seen.has(ev.id)) continue;
+      if (ev.closed) continue;
+      if (EXCLUDE_RE.test(ev.title ?? '')) continue;
+      seen.add(ev.id);
+      out.push(ev);
+    }
+  }
+  return out;
+}
+
 export async function GET() {
   try {
-    // Scan top ~4k events by volume (active, not closed)
     const offsets = Array.from({ length: 21 }, (_, i) => i * 200);
-    const pages = await Promise.allSettled(offsets.map(fetchEventsPage));
+    const pages   = await Promise.allSettled(offsets.map(fetchEventsPage));
+    const allOpen = mergeGammaPages(pages);
 
-    const seen  = new Set<string>();
-    const hits: GammaEvent[] = [];
-
-    for (const page of pages) {
-      if (page.status !== 'fulfilled') continue;
-      for (const ev of page.value) {
-        if (!ev.id || seen.has(ev.id))     continue;
-        if (ev.closed)                      continue;
-        if (!IRAN_RE.test(ev.title ?? ''))  continue;
-        if (EXCLUDE_RE.test(ev.title ?? '')) continue;
-        seen.add(ev.id);
-        hits.push(ev);
-      }
-    }
-
-    const sortedByVol = hits.sort((a, b) => eventVol(b) - eventVol(a));
+    const iranHits = allOpen.filter(ev => IRAN_RE.test(ev.title ?? ''));
+    const sortedByVol = iranHits.sort((a, b) => eventVol(b) - eventVol(a));
 
     const buckets: Record<PolymarketEntry['category'], GammaEvent[]> = {
       CONFLICT: [], REGIME: [], DIPLOMACY: [], NUCLEAR: [],
@@ -182,7 +185,7 @@ export async function GET() {
       picked.add(id);
     }
 
-    const balanced: GammaEvent[] = CAT_ORDER.flatMap(c => buckets[c]);
+    let balanced: GammaEvent[] = CAT_ORDER.flatMap(c => buckets[c]);
 
     for (const ev of sortedByVol) {
       if (balanced.length >= MAX_EVENTS) break;
@@ -190,6 +193,10 @@ export async function GET() {
       if (picked.has(id)) continue;
       balanced.push(ev);
       picked.add(id);
+    }
+
+    if (balanced.length === 0) {
+      balanced = [...allOpen].sort((a, b) => eventVol(b) - eventVol(a)).slice(0, MAX_EVENTS);
     }
 
     const res = NextResponse.json(balanced.map(buildEntry));

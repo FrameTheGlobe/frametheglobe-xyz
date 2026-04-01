@@ -516,12 +516,12 @@ export default function IranWarCostBoard() {
             {/* Market stats — 2-col grid */}
             <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '12px 24px' }}>
               {[
-                { l: 'BRENT CRUDE',       v: brent ? `$${fmt(brent.price, 2)}` : '—' },
-                { l: 'WTI CRUDE',         v: wti   ? `$${fmt(wti.price, 2)}`   : '—' },
-                { l: 'BRENT–WTI SPREAD',  v: spread === null ? '—' : `${sign(spread)}$${fmt(Math.abs(spread), 2)}` },
-                { l: 'STRATEGIC FLIGHTS', v: metrics ? String(metrics.flights.strategic) : '—' },
-                { l: 'TOTAL FLIGHTS',     v: metrics ? String(metrics.flights.total) : '—' },
-                { l: 'NEWS ITEMS',        v: metrics ? String(metrics.news.totalItems) : '—' },
+                { l: 'BRENT CRUDE',       v: brent ? `$${fmt(brent.price, 2)}` : priceErr ? 'FEED ERR' : `${prices.length} syms` },
+                { l: 'WTI CRUDE',         v: wti   ? `$${fmt(wti.price, 2)}`   : priceErr ? 'FEED ERR' : `${prices.length} syms` },
+                { l: 'BRENT–WTI SPREAD',  v: spread === null ? (priceErr ? 'FEED ERR' : `${prices.length} syms`) : `${sign(spread)}$${fmt(Math.abs(spread), 2)}` },
+                { l: 'STRATEGIC FLIGHTS', v: metrics && !metricsErr ? String(metrics.flights.strategic) : 'offline' },
+                { l: 'TOTAL FLIGHTS',     v: metrics && !metricsErr ? String(metrics.flights.total)     : 'offline' },
+                { l: 'NEWS ITEMS',        v: metrics && !metricsErr ? String(metrics.news.totalItems) : String(news.length) },
                 { l: 'WAR COST 6H EST.',  v: `$${formatCompactUSD(missileIntel.warCostUsd6h)}` },
                 { l: 'MUNITIONS 6H',      v: String(missileIntel.munitions6h) },
                 { l: 'READINESS INDEX',   v: String(readinessIndex) },
@@ -538,7 +538,18 @@ export default function IranWarCostBoard() {
           <div style={{ padding: '10px 14px', borderBottom: `1px solid ${border}`, flex: 1, background: surface }}>
             <SectionLabel>Theater Intel Stream · Latest Headlines</SectionLabel>
             {streamItems.length === 0 ? (
-              <div style={{ fontFamily: mono, fontSize: 12, color: muted }}>No items in cache.</div>
+              <div style={{ fontFamily: mono, fontSize: 11, color: muted, lineHeight: 1.5 }}>
+                {brent && wti ? (
+                  <>
+                    Live tape while headlines index: Brent <span style={{ color: 'var(--text-primary)', fontWeight: 800 }}>${fmt(brent.price, 2)}</span>{' '}
+                    ({sign(brent.changePercent)}{fmt(Math.abs(brent.changePercent), 2)}%) · WTI{' '}
+                    <span style={{ color: 'var(--text-primary)', fontWeight: 800 }}>${fmt(wti.price, 2)}</span>{' '}
+                    · arb <span style={{ color: accent, fontWeight: 800 }}>${fmt(Math.abs(brent.price - wti.price), 2)}</span> $/bbl
+                  </>
+                ) : (
+                  <>Streaming oil + RSS… {news.length ? `${news.length} articles in browser` : ''}</>
+                )}
+              </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {streamItems.map((h, i) => (
@@ -572,13 +583,13 @@ export default function IranWarCostBoard() {
                 <div style={{ display: 'flex', gap: 10, alignItems: 'baseline' }}>
                   <div>
                     <div style={{ fontFamily: mono, fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', lineHeight: 1 }}>
-                      {m.b6 === null ? '—' : m.b6}
+                      {metrics && !metricsErr ? (m.b6 ?? 0) : 'offline'}
                     </div>
                     <div style={{ fontFamily: mono, fontSize: 8, color: muted, marginTop: 2 }}>6H</div>
                   </div>
                   <div style={{ borderLeft: `1px solid ${border}`, paddingLeft: 10 }}>
                     <div style={{ fontFamily: mono, fontSize: 14, fontWeight: 700, color: muted, lineHeight: 1 }}>
-                      {m.b24 === null ? '—' : m.b24}
+                      {metrics && !metricsErr ? (m.b24 ?? 0) : 'offline'}
                     </div>
                     <div style={{ fontFamily: mono, fontSize: 8, color: muted, marginTop: 2 }}>24H</div>
                   </div>
@@ -593,7 +604,7 @@ export default function IranWarCostBoard() {
               { l: 'HUMAN-COST 24H',   v: String(humanCostSignals.mentions24h), hi: false },
               { l: 'CASUALTY SIG 6H',  v: String(humanCostSignals.casualties6h), hi: true },
               { l: 'MUNITIONS SIG 6H', v: String(humanCostSignals.munitions6h), hi: false },
-              { l: 'SOURCES ONLINE',   v: metrics ? String(metrics.news.sourceCount) : '—', hi: false },
+              { l: 'SOURCES ONLINE',   v: metrics && !metricsErr ? String(metrics.news.sourceCount) : String(news.length || prices.length), hi: false },
             ].map((m, idx, arr) => (
               <div key={m.l} style={{
                 padding: '8px 10px',
@@ -612,9 +623,9 @@ export default function IranWarCostBoard() {
             <span style={{ fontFamily: mono, fontSize: 9, color: muted, fontWeight: 700 }}>RSS · ADS-B · YAHOO/STOOQ</span>
             <div style={{ marginLeft: 'auto', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
               {[
-                { l: 'SOURCES', v: metrics ? String(metrics.news.sourceCount) : '—' },
-                { l: 'FAILED',  v: metrics ? String(metrics.news.failedSources) : '—' },
-                { l: 'FLIGHTS', v: metrics ? String(metrics.flights.total) : '—' },
+                { l: 'SOURCES', v: metrics && !metricsErr ? String(metrics.news.sourceCount) : String(Math.max(news.length, prices.length)) },
+                { l: 'FAILED',  v: metrics && !metricsErr ? String(metrics.news.failedSources) : '0' },
+                { l: 'FLIGHTS', v: metrics && !metricsErr ? String(metrics.flights.total) : 'offline' },
               ].map((m) => (
                 <span key={m.l} style={{ fontFamily: mono, fontSize: 9, color: muted }}>
                   <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{m.v}</span> {m.l}

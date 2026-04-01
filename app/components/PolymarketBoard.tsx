@@ -553,7 +553,7 @@ export default function PolymarketBoard() {
               letterSpacing:  '0.04em',
             }}>
               <span>
-                Odds from Polymarket (official Gamma API) · open events mentioning Iran/theater keywords, sorted by volume · cached ~5 min — tap a row to open the live market
+                Odds from Polymarket (Gamma) · Iran/theater-matched markets when available, else highest-volume open events so the grid stays populated · cached ~5 min
               </span>
               <span>Not financial advice</span>
             </div>
