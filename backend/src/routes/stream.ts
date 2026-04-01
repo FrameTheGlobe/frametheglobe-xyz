@@ -16,7 +16,6 @@ import {
 } from '../lib/news-store.js';
 import { SOURCES } from '../lib/sources.js';
 import { fetchAllFeeds } from '../lib/fetcher.js';
-import { rateLimit, retryAfterSeconds } from '../lib/rate-limit.js';
 
 const router = Router();
 
@@ -26,14 +25,13 @@ const _ipConnections = new Map<string, number>();
 const MAX_SSE_PER_IP = 10;
 
 function getClientIP(req: Request): string {
-  return req.ip ?? req.socket.remoteAddress ?? '127.0.0.1';
+  return (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()
+      ?? req.socket.remoteAddress
+      ?? '127.0.0.1';
 }
 
 router.get('/', (req: Request, res: Response) => {
   const ip           = getClientIP(req);
-  if (!rateLimit(`stream-open:${ip}`, 20, 60_000)) {
-    return res.status(429).set('Retry-After', String(retryAfterSeconds(`stream-open:${ip}`))).json({ error: 'Too many stream attempts' });
-  }
   const currentCount = _ipConnections.get(ip) ?? 0;
   if (currentCount >= MAX_SSE_PER_IP) {
     return res.status(429).set('Retry-After', '60').json({ error: 'Too many concurrent connections.' });

@@ -599,7 +599,7 @@ export default function MapView({ items }: MapViewProps) {
             borderRadius:   2,
             backdropFilter: 'blur(4px)',
           }}>
-            ADS-B · updated {timeAgo(flightUpdated)} · 5 min refresh
+            ADS-B · updated {timeAgo(flightUpdated)} · 60 s refresh
           </div>
         )}
         {flightsOn && flightStatus === 'error' && (
@@ -772,7 +772,7 @@ function paintMarkers(L: LType, map: LeafletMap, items: FeedItem[]) {
     const safeTitle  = esc(item.title);
     const safeSrc    = esc(item.sourceName);
     const safeLoc    = esc(loc.name);
-    const safeLink   = safeExternalLink(item.link);
+    const safeLink   = encodeURI(item.link);
     const safeTime   = esc(timeAgo(item.pubDate));
 
     const popupHTML = `
@@ -795,18 +795,6 @@ function esc(str: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
-}
-
-function safeExternalLink(url: string): string {
-  try {
-    const parsed = new URL(url);
-    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
-      return parsed.toString();
-    }
-  } catch {
-    // Ignore parse errors and use safe fallback.
-  }
-  return 'about:blank';
 }
 
 // ── Flight layer painting ─────────────────────────────────────────────────────

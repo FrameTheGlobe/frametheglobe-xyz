@@ -5,16 +5,10 @@
 
 import { Router, Request, Response } from 'express';
 import { fetchFlights, getFlightsCache, isFlightCacheStale } from '../lib/flights.js';
-import { rateLimit, retryAfterSeconds } from '../lib/rate-limit.js';
 
 const router = Router();
 
 router.get('/', async (req: Request, res: Response) => {
-  const ip = req.ip ?? req.socket.remoteAddress ?? 'unknown';
-  if (!rateLimit(`flights:${ip}`, 60, 60_000)) {
-    return res.status(429).set('Retry-After', String(retryAfterSeconds(`flights:${ip}`))).json({ error: 'Too many requests' });
-  }
-
   const strategicOnly = req.query.strategic === '1';
   const forceRefresh  = req.query.refresh   === '1';
 

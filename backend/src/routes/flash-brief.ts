@@ -80,7 +80,7 @@ function algorithmicBrief(items: MinItem[]): FlashBriefPayload {
 }
 
 router.post('/', async (req: Request, res: Response) => {
-  const ip = req.ip ?? req.socket.remoteAddress ?? 'unknown';
+  const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ?? 'unknown';
   if (!rateLimit(`flash-brief:${ip}`, 10, 60_000)) {
     return res.status(429).set('Retry-After', String(retryAfterSeconds(`flash-brief:${ip}`))).json({ error: 'Too many requests' });
   }

@@ -33,10 +33,6 @@ import liveFeedsRouter       from './routes/live-feeds.js';
 
 const app  = express();
 const PORT = process.env.PORT ?? 4000;
-const INTERNAL_PROXY_TOKEN = process.env.INTERNAL_PROXY_TOKEN ?? '';
-
-// Respect Vercel/Railway forwarded headers for req.ip.
-app.set('trust proxy', 1);
 
 // ── CORS ────────────────────────────────────────────────────────────────────
 // Allow requests from the Vercel frontend and local dev.
@@ -49,30 +45,12 @@ const ALLOWED_ORIGINS = [
 
 app.use(cors({
   origin: (origin, cb) => {
-    if (origin && ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
-    // Allow token-authenticated server-to-server proxy calls with no Origin.
-    if (!origin) return cb(null, true);
+    // Allow server-to-server (no origin header) and whitelisted origins
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
     cb(new Error(`CORS blocked: ${origin}`));
   },
   credentials: true,
 }));
-
-app.use((req, res, next) => {
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('Referrer-Policy', 'no-referrer');
-  next();
-});
-
-app.use('/api', (req, res, next) => {
-  if (req.path === '/stream' || req.path === '/rss') return next();
-  if (!INTERNAL_PROXY_TOKEN) return next();
-  const token = req.get('x-internal-proxy-token') ?? '';
-  if (token !== INTERNAL_PROXY_TOKEN) {
-    return res.status(401).json({ error: 'Unauthorized proxy access' });
-  }
-  return next();
-});
 
 // ── Body parsing ─────────────────────────────────────────────────────────────
 app.use(express.json({ limit: '1mb' }));

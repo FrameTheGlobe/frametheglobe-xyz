@@ -350,7 +350,7 @@ export default function PolymarketBoard() {
   const load = useCallback(async () => {
     setError(false);
     try {
-      const res  = await fetch('/api/polymarket');
+      const res  = await fetch('/api/polymarket', { cache: 'no-store' });
       if (!res.ok) { setError(true); return; }
       const json = await res.json();
       if (Array.isArray(json) && json.length > 0) {
