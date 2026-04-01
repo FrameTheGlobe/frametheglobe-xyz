@@ -6,12 +6,12 @@
  * The previous version tried to fetch from Stooq's historical CSV download
  * endpoint (/q/d/l/) which is blocked/returns "No data" from Vercel.
  * TradingView mini chart widgets are client-side, always live, and need no
- * API key. The 1D / 7D toggle re-mounts the widgets with the new range.
+ * API key. The 1D / 5D / 1M toggle re-mounts the widgets (TV does not support 7D).
  */
 
 import { useEffect, useRef, useState } from 'react';
 
-type RangeKey = '1D' | '7D' | '1M';
+type RangeKey = '1D' | '5D' | '1M';
 
 const SYMBOLS = [
   { id: 'wti',    tv: 'NYMEX:CL1!',  name: 'WTI Crude',   color: '#e74c3c' },
@@ -115,7 +115,7 @@ function TVMiniChart({
 // ── Main component ─────────────────────────────────────────────────────────
 
 export default function OilPriceChart() {
-  const [range,     setRange]     = useState<RangeKey>('7D');
+  const [range,     setRange]     = useState<RangeKey>('5D');
   const [collapsed, setCollapsed] = useState(false);
   // Detect theme — TradingView needs explicit dark/light
   const [tvTheme,   setTvTheme]   = useState<'dark' | 'light'>('dark');
@@ -134,7 +134,7 @@ export default function OilPriceChart() {
 
   const RANGES: { key: RangeKey; label: string }[] = [
     { key: '1D', label: '1 Day'   },
-    { key: '7D', label: '7 Days'  },
+    { key: '5D', label: '5 Days'  },
     { key: '1M', label: '1 Month' },
   ];
 

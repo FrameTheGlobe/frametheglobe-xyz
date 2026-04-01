@@ -29,7 +29,8 @@ type PriceData = {
   currency:      string;
 };
 
-type RangeKey  = '1D' | '7D' | '1M';
+// TradingView mini-symbol-overview accepts 1D / 5D / 1M (not 7D — invalid ⇒ blank chart).
+type RangeKey  = '1D' | '5D' | '1M';
 type ViewKey   = 'BOARD' | 'CHARTS';
 
 type TheaterMetrics = {
@@ -53,7 +54,7 @@ const CHART_SYMBOLS = [
 
 const RANGES: { key: RangeKey; label: string }[] = [
   { key: '1D', label: '1 DAY'   },
-  { key: '7D', label: '7 DAYS'  },
+  { key: '5D', label: '5 DAYS'  },
   { key: '1M', label: '1 MONTH' },
 ];
 
@@ -152,7 +153,7 @@ export default function IranOilBoard() {
 
   // View / chart state
   const [view,     setView]     = useState<ViewKey>('BOARD');
-  const [range,    setRange]    = useState<RangeKey>('7D');
+  const [range,    setRange]    = useState<RangeKey>('5D');
   const [tvTheme,  setTvTheme]  = useState<'dark' | 'light'>('dark');
 
   // ── Fetch prices ──────────────────────────────────────────────────────────

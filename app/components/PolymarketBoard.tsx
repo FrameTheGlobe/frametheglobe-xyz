@@ -552,7 +552,9 @@ export default function PolymarketBoard() {
               opacity:        0.5,
               letterSpacing:  '0.04em',
             }}>
-              <span>Data via Polymarket decentralized prediction markets · ~5 min refresh</span>
+              <span>
+                Odds from Polymarket (official Gamma API) · open events mentioning Iran/theater keywords, sorted by volume · cached ~5 min — tap a row to open the live market
+              </span>
               <span>Not financial advice</span>
             </div>
           )}

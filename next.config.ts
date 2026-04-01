@@ -34,14 +34,16 @@ const nextConfig: NextConfig = {
       }
     } catch { /* ignore malformed URL */ }
 
+    // TradingView mini-chart embeds load https://s3.tradingview.com/... — missing
+    // from script-src was causing totally blank chart tiles (CSP blocked).
     const CSP = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://s.tradingview.com https://cdn.tradingview.com https://va.vercel-scripts.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://s.tradingview.com https://s3.tradingview.com https://cdn.tradingview.com https://va.vercel-scripts.com",
       "style-src 'self' 'unsafe-inline'",
       "font-src 'self' data:",
       "img-src 'self' data: blob: https:",
-      "frame-src https://www.youtube.com https://www.youtube-nocookie.com https://s.tradingview.com https://www.tradingview.com",
-      `connect-src 'self' https://vitals.vercel-insights.com${backendOrigin ? ` ${backendOrigin}` : ''}`,
+      "frame-src https://www.youtube.com https://www.youtube-nocookie.com https://s.tradingview.com https://www.tradingview.com https://www.tradingview-widget.com",
+      `connect-src 'self' https://vitals.vercel-insights.com https://data.tradingview.com https://scanner.tradingview.com https://symbol-search.tradingview.com${backendOrigin ? ` ${backendOrigin}` : ''}`,
       "worker-src 'self' blob:",
       "media-src 'self' https://www.youtube.com",
       "object-src 'none'",
