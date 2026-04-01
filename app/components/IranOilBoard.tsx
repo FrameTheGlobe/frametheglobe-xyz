@@ -268,6 +268,12 @@ export default function IranOilBoard() {
     : null;
   const curveTiltPP = brent && wti ? brent.changePercent - wti.changePercent : null;
 
+  /** $/bbl grade & route spreads (synthetic markers — same feed as tiles). */
+  const uralsDiscVsBrent = brent && urals ? brent.price - urals.price : null;
+  const dubaiEdgeVsWti   = dubai && wti ? dubai.price - wti.price : null;
+  const wcsDiscVsWti     = wti && wcs ? wti.price - wcs.price : null;
+  const uralsVsWcs       = urals && wcs ? urals.price - wcs.price : null;
+
   const brentWtiSpread = (brent && wti) ? (brent.price - wti.price) : null;
   const riskSignal = (() => {
     const s = brentWtiSpread ?? 0;
@@ -282,21 +288,8 @@ export default function IranOilBoard() {
     return { label: 'NORMAL', color: upColor };
   })();
 
-  const openOilAi = () => {
-    const p = brent ?? wti;
-    if (!p) return;
-    openDrawer({
-      symbol:        p.symbol,
-      name:          p.name,
-      price:         p.price,
-      change:        p.change,
-      changePercent: p.changePercent,
-      currency:      '$',
-      unit:          'USD/BBL',
-      category:      'oil',
-      accentColor:   'var(--accent)',
-    });
-  };
+  /** Mention tiles need a non-empty RSS index; otherwise counts are meaningless (not "world calm"). */
+  const rssIndexReady = Boolean(metrics && !metricsError && metrics.news.totalItems > 0);
 
   // ── Segmented control styles ──────────────────────────────────────────────
   const segWrap: React.CSSProperties = {
@@ -364,6 +357,9 @@ export default function IranOilBoard() {
               fontFamily:    mono, textTransform: 'uppercase', color: 'var(--accent)',
             }}>
               Crude Oil · Tactical Market Board
+            </span>
+            <span style={{ fontFamily: mono, fontSize: 8, color: muted, letterSpacing: '0.06em', opacity: 0.75 }}>
+              Tiles → Groq brief
             </span>
           </div>
 
@@ -506,12 +502,25 @@ export default function IranOilBoard() {
                 );
               })}
 
-              {/* Theater intel — full width; RSS mention windows + ADS-B strip */}
+              {/* Theater intel — RSS keyword hits vs live ADS-B (different feeds) */}
               <div style={{
                 gridColumn:    '1 / -1',
                 borderBottom:  '1px solid var(--border-light)',
                 background:    'rgba(255,255,255,0.015)',
               }}>
+                <div style={{
+                  padding:       '8px 12px',
+                  borderBottom:  '1px solid var(--border-light)',
+                  background:    'rgba(52,152,219,0.04)',
+                }}>
+                  <div style={{ fontFamily: mono, fontSize: 8, fontWeight: 800, color: '#3498db', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 3 }}>
+                    News headline index
+                  </div>
+                  <div style={{ fontFamily: mono, fontSize: 8, color: muted, lineHeight: 1.45, opacity: 0.88 }}>
+                    Each column counts <strong style={{ color: 'var(--text-primary)' }}>RSS articles</strong> (title + summary) ingested on the server whose text matches that risk theme — not tankers spotted, not cargoes.
+                    {rssIndexReady ? ' Zeros here mean no keyword hits in that time window.' : ' Until the news index has rows, counts stay blank (see News Ingest).'}
+                  </div>
+                </div>
                 <div style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(auto-fit, minmax(108px, 1fr))',
@@ -519,29 +528,39 @@ export default function IranOilBoard() {
                   borderBottom: '1px solid var(--border-light)',
                 }}>
                   {([
-                    ['HORMUZ', 'Hormuz / PG'],
-                    ['RED SEA', 'Red Sea'],
-                    ['TANKERS', 'Tankers'],
-                    ['IRAN', 'Iran'],
-                    ['OPEC-SUPPLY', 'OPEC · supply'],
-                  ] as const).map(([key, title], idx, arr) => {
+                    ['HORMUZ', 'Hormuz / PG', 'strait, Bandar Abbas…'],
+                    ['RED SEA', 'Red Sea / Yemen', 'Suez, Houthis, Bab…'],
+                    ['TANKERS', 'Maritime / freight', 'VLCC, freight, escort…'],
+                    ['IRAN', 'Iran core', 'IRGC, Natanz…'],
+                    ['OPEC-SUPPLY', 'OPEC & supply', 'cuts, bpd, output…'],
+                  ] as const).map(([key, title, hint], idx, arr) => {
                     const b = bucket(key);
+                    const showNum = rssIndexReady && b != null;
                     return (
                       <div key={key} style={{
                         padding:    '10px 12px',
                         borderRight: idx < arr.length - 1 ? '1px solid var(--border-light)' : 'none',
                       }}>
                         <div style={{ fontFamily: mono, fontSize: 8, fontWeight: 700, color: muted,
-                          letterSpacing: '0.11em', textTransform: 'uppercase', marginBottom: 4 }}>
+                          letterSpacing: '0.11em', textTransform: 'uppercase', marginBottom: 2 }}>
                           {title}
                         </div>
-                        <div style={{ fontFamily: mono, fontSize: 18, fontWeight: 900, lineHeight: 1.1 }}>
-                          {metricsError ? '—' : b != null ? b.last6h : metrics ? '0' : '—'}
+                        <div style={{ fontFamily: mono, fontSize: 7, color: muted, opacity: 0.72, marginBottom: 5, lineHeight: 1.2 }}>
+                          {hint}
+                        </div>
+                        <div style={{
+                          fontFamily: mono, fontSize: 18, fontWeight: 900, lineHeight: 1.1,
+                          color: showNum ? 'var(--text-primary)' : muted,
+                          opacity: showNum ? 1 : 0.65,
+                        }}>
+                          {metricsError ? '—' : showNum ? b.last6h : '—'}
                         </div>
                         <div style={{ fontFamily: mono, fontSize: 8, color: muted, marginTop: 3, lineHeight: 1.35 }}>
-                          {b != null
-                            ? <>6h · <span style={{ opacity: 0.85 }}>24h {b.last24h}</span> · <span style={{ opacity: 0.75 }}>72h {b.last72h}</span></>
-                            : 'RSS windows · mentions in headlines'}
+                          {showNum
+                            ? <>rolling · <span style={{ opacity: 0.85 }}>24h {b.last24h}</span> · <span style={{ opacity: 0.78 }}>72h {b.last72h}</span></>
+                            : metrics && !metricsError && metrics.news.totalItems === 0
+                              ? 'RSS cache empty'
+                              : 'awaiting index'}
                         </div>
                       </div>
                     );
@@ -554,7 +573,9 @@ export default function IranOilBoard() {
                   borderBottom: '1px solid var(--border-light)',
                 }}>
                   <div style={{ padding: '10px 12px', borderRight: '1px solid var(--border-light)' }}>
-                    <div style={{ fontFamily: mono, fontSize: 8, color: muted, letterSpacing: '0.1em', marginBottom: 4 }}>ADS-B · STRATEGIC / TRACKS</div>
+                    <div style={{ fontFamily: mono, fontSize: 8, color: muted, letterSpacing: '0.1em', marginBottom: 4 }}>
+                      ADS-B · MIL-HEURISTIC / ALL TRACKS
+                    </div>
                     <div style={{ fontFamily: mono, fontSize: 15, fontWeight: 800 }}>
                       {metricsError ? '—' : metrics
                         ? `${metrics.flights.strategic} / ${metrics.flights.total}`
@@ -566,11 +587,11 @@ export default function IranOilBoard() {
                             {metrics.flights.source === 'stale' ? 'CACHE STALE · ' : ''}
                             last ping {metrics.flights.ageMinutes != null ? `${metrics.flights.ageMinutes}m ago` : '—'}
                           </>
-                        : 'Theater-wide transponders · mil / tanker heuristics'}
+                        : 'Live transponders in theater box · left # ≈ gov/mil/ISR cues'}
                     </div>
                   </div>
                   <div style={{ padding: '10px 12px' }}>
-                    <div style={{ fontFamily: mono, fontSize: 8, color: muted, letterSpacing: '0.1em', marginBottom: 4 }}>NEWS INGEST</div>
+                    <div style={{ fontFamily: mono, fontSize: 8, color: muted, letterSpacing: '0.1em', marginBottom: 4 }}>RSS MASTER INDEX</div>
                     <div style={{ fontFamily: mono, fontSize: 15, fontWeight: 800 }}>
                       {metricsError ? '—' : metrics ? `${metrics.news.totalItems} items` : '—'}
                     </div>
@@ -582,7 +603,7 @@ export default function IranOilBoard() {
                             )}
                             feed age {metrics.news.ageMinutes != null ? `${metrics.news.ageMinutes}m` : '—'}
                           </>
-                        : 'Multi-source RSS · keyword buckets'}
+                        : 'Feeds merged on server · powers headline counts above'}
                     </div>
                   </div>
                 </div>
@@ -590,6 +611,7 @@ export default function IranOilBoard() {
                   display: 'grid',
                   gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
                   gap: 0,
+                  borderBottom: '1px solid var(--border-light)',
                 }}>
                   {[
                     ['IMPL VOL 1D', impliedVolProxy != null ? `${impliedVolProxy.toFixed(2)}% avg |Δ|` : '—', 'Across 5 benchmarks'],
@@ -604,6 +626,27 @@ export default function IranOilBoard() {
                       <div style={{ fontFamily: mono, fontSize: 8, color: muted, letterSpacing: '0.1em', marginBottom: 4 }}>{k}</div>
                       <div style={{ fontFamily: mono, fontSize: 12, fontWeight: 800 }}>{v}</div>
                       <div style={{ fontFamily: mono, fontSize: 7, color: muted, marginTop: 3, opacity: 0.85 }}>{sub}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                  gap: 0,
+                }}>
+                  {[
+                    ['URALS DISC vs BRENT', uralsDiscVsBrent != null ? `$${fmt(uralsDiscVsBrent, 2)}` : '—', 'Russian marker vs Atlantic'],
+                    ['DUBAI EDGE vs WTI', dubaiEdgeVsWti != null ? `$${fmt(dubaiEdgeVsWti, 2)}` : '—', 'Middle East sour vs light'],
+                    ['WCS DISC vs WTI', wcsDiscVsWti != null ? `$${fmt(wcsDiscVsWti, 2)}` : '—', 'Heavy Canadian vs light'],
+                    ['URALS − WCS WEDGE', uralsVsWcs != null ? `$${fmt(uralsVsWcs, 2)}` : '—', 'Heavy sour rel. value'],
+                  ].map(([k, v, sub], idx, arr) => (
+                    <div key={String(k)} style={{
+                      padding: '10px 12px',
+                      borderRight: idx < arr.length - 1 ? '1px solid var(--border-light)' : 'none',
+                    }}>
+                      <div style={{ fontFamily: mono, fontSize: 8, color: muted, letterSpacing: '0.1em', marginBottom: 4 }}>{k}</div>
+                      <div style={{ fontFamily: mono, fontSize: 12, fontWeight: 800 }}>{v}</div>
+                      <div style={{ fontFamily: mono, fontSize: 7, color: muted, marginTop: 3, opacity: 0.85 }}>{sub} · $/bbl</div>
                     </div>
                   ))}
                 </div>
@@ -633,33 +676,6 @@ export default function IranOilBoard() {
                   <span style={{ fontFamily: mono, fontSize: 9, color: muted }}>USD/MMBtu</span>
                 </div>
               )}
-              <div style={{
-                flex: '0 1 200px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                padding: '10px 12px', borderRight: '1px solid var(--border-light)',
-              }}>
-                <button
-                  type="button"
-                  onClick={openOilAi}
-                  disabled={!brent && !wti}
-                  style={{
-                    fontFamily:    mono,
-                    fontSize:      9,
-                    fontWeight:    700,
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
-                    padding:       '8px 14px',
-                    borderRadius:  3,
-                    border:        '1px solid rgba(52,152,219,0.45)',
-                    background:    'rgba(52,152,219,0.08)',
-                    color:         '#3498db',
-                    cursor:        brent || wti ? 'pointer' : 'not-allowed',
-                    opacity:       brent || wti ? 1 : 0.45,
-                    whiteSpace:    'nowrap',
-                  }}
-                >
-                  Groq · crude read
-                </button>
-              </div>
               {uso && (
                 <div style={{
                   flex: '1 1 200px', display: 'flex', alignItems: 'center', gap: 12,
