@@ -223,7 +223,7 @@ export default function IranOilBoard() {
 
   const fetchMetrics = useCallback(async () => {
     try {
-      const res = await fetch('/api/theater-metrics', { cache: 'no-store' });
+      const res = await fetch('/api/theater-metrics');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       if (data && typeof data === 'object') {

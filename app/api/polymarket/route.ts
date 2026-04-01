@@ -164,9 +164,17 @@ function mergeGammaPages(pages: PromiseSettledResult<GammaEvent[]>[]): GammaEven
 
 export async function GET() {
   try {
-    const offsets = Array.from({ length: 21 }, (_, i) => i * 200);
-    const pages   = await Promise.allSettled(offsets.map(fetchEventsPage));
-    const allOpen = mergeGammaPages(pages);
+    // Stage requests to minimize upstream calls/cost.
+    const primaryOffsets = Array.from({ length: 6 }, (_, i) => i * 200);
+    const primaryPages   = await Promise.allSettled(primaryOffsets.map(fetchEventsPage));
+    let allOpen = mergeGammaPages(primaryPages);
+
+    // Only expand to deeper pages if Iran-specific coverage is still thin.
+    if (allOpen.filter(ev => IRAN_RE.test(ev.title ?? '')).length < MAX_EVENTS) {
+      const extraOffsets = Array.from({ length: 15 }, (_, i) => (i + 6) * 200);
+      const extraPages   = await Promise.allSettled(extraOffsets.map(fetchEventsPage));
+      allOpen = mergeGammaPages([...primaryPages, ...extraPages]);
+    }
 
     const iranHits = allOpen.filter(ev => IRAN_RE.test(ev.title ?? ''));
     const sortedByVol = iranHits.sort((a, b) => eventVol(b) - eventVol(a));

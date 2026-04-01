@@ -37,6 +37,17 @@ type ResolvedFeed = {
 };
 
 const parser = new Parser({ timeout: 5000 });
+type LiveFeedsCache = {
+  at: number;
+  payload: {
+    ok: boolean;
+    fetchedAt: string;
+    feeds: ResolvedFeed[];
+    warning?: string;
+  };
+};
+let _cache: LiveFeedsCache | null = null;
+const CACHE_TTL_MS = 3 * 60 * 1000;
 
 // Built-in fallback feeds. These keep the widget functional even when Railway
 // env vars are missing or misconfigured.
@@ -95,6 +106,12 @@ async function resolveFromRss(channelId: string): Promise<{ videoId: string | nu
 }
 
 router.get('/', async (_req: Request, res: Response) => {
+  if (_cache && Date.now() - _cache.at < CACHE_TTL_MS) {
+    return res
+      .set('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=120')
+      .json({ ..._cache.payload, cached: true });
+  }
+
   const cfg = safeJsonParse<FeedConfig[]>(process.env.YOUTUBE_LIVE_FEEDS_JSON);
   const envFeeds: FeedConfig[] = Array.isArray(cfg) ? cfg : [];
   const usingFallback = envFeeds.length === 0;
@@ -131,14 +148,17 @@ router.get('/', async (_req: Request, res: Response) => {
     })
   );
 
+  const payload = {
+    ok: true,
+    fetchedAt: new Date().toISOString(),
+    feeds: resolved,
+    warning: usingFallback ? 'Using built-in fallback live-feed config (set YOUTUBE_LIVE_FEEDS_JSON to override).' : undefined,
+  };
+  _cache = { at: Date.now(), payload };
+
   return res
     .set('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=120')
-    .json({
-      ok: true,
-      fetchedAt: new Date().toISOString(),
-      feeds: resolved,
-      warning: usingFallback ? 'Using built-in fallback live-feed config (set YOUTUBE_LIVE_FEEDS_JSON to override).' : undefined,
-    });
+    .json(payload);
 });
 
 export default router;
