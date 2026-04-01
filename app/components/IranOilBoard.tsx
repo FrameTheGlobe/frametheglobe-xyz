@@ -61,8 +61,9 @@ const POLL_MS = 3 * 60 * 1000;
 const CHART_SYMBOLS = [
   { id: 'wti',    tv: 'TVC:USOIL',   name: 'WTI Crude',       color: '#e74c3c' },
   { id: 'brent',  tv: 'TVC:UKOIL',   name: 'Brent Crude',     color: '#3498db' },
-  { id: 'rbob',   tv: 'NYMEX:RB=F', name: 'RBOB Gasoline',   color: '#9b59b6' },
-  { id: 'heat',   tv: 'NYMEX:HO=F', name: 'Heating Oil',    color: '#1abc9c' },
+  // Continuous futures (RB=F/HO=F often fail in free embed); RB1!/HO1! are TV-native.
+  { id: 'rbob',   tv: 'NYMEX:RB1!', name: 'RBOB Gasoline', color: '#9b59b6' },
+  { id: 'heat',   tv: 'NYMEX:HO1!', name: 'Heating Oil',   color: '#1abc9c' },
   { id: 'natgas', tv: 'AMEX:UNG',    name: 'Nat Gas (UNG)',   color: '#2ecc71' },
   { id: 'uso',    tv: 'AMEX:USO',    name: 'USO ETF',         color: '#f39c12' },
 ];
