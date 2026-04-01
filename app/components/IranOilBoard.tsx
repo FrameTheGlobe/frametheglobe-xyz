@@ -61,9 +61,10 @@ const POLL_MS = 3 * 60 * 1000;
 const CHART_SYMBOLS = [
   { id: 'wti',    tv: 'TVC:USOIL',   name: 'WTI Crude',       color: '#e74c3c' },
   { id: 'brent',  tv: 'TVC:UKOIL',   name: 'Brent Crude',     color: '#3498db' },
-  // Continuous futures (RB=F/HO=F often fail in free embed); RB1!/HO1! are TV-native.
-  { id: 'rbob',   tv: 'NYMEX:RB1!', name: 'RBOB Gasoline', color: '#9b59b6' },
-  { id: 'heat',   tv: 'NYMEX:HO1!', name: 'Heating Oil',   color: '#1abc9c' },
+  // Free mini-chart embed cannot load NYMEX futures (=F, RB1!, HO1!): "only on TradingView".
+  // ETFs on AMEX match USO/UNG and still track cracks / distillates for analysts.
+  { id: 'rbob',   tv: 'AMEX:UGA', name: 'Gasoline (UGA)',      color: '#9b59b6' },
+  { id: 'heat',   tv: 'AMEX:USE', name: 'Distillate mix (USE)', color: '#1abc9c' },
   { id: 'natgas', tv: 'AMEX:UNG',    name: 'Nat Gas (UNG)',   color: '#2ecc71' },
   { id: 'uso',    tv: 'AMEX:USO',    name: 'USO ETF',         color: '#f39c12' },
 ];
@@ -772,7 +773,7 @@ export default function IranOilBoard() {
         {/* ══════════════════════════════════════════════════════════════════ */}
         {view === 'CHARTS' && (
           <>
-            {/* 2×2 chart grid — strict 2 columns so all 4 fill evenly */}
+            {/* Two-column grid; symbols must be embed-allowed (TVC + AMEX), not NYMEX futures */}
             <div style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(2, 1fr)',
@@ -790,6 +791,17 @@ export default function IranOilBoard() {
                   colorTheme={tvTheme}
                 />
               ))}
+            </div>
+            <div style={{
+              padding:    '4px 12px 2px',
+              fontFamily: mono,
+              fontSize:   7,
+              color:      muted,
+              lineHeight: 1.45,
+              opacity:    0.92,
+            }}>
+              Gasoline / distillate charts use tickers UGA and USE (NYSE American ETFs). The free TradingView mini-chart
+              widget does not allow NYMEX RBOB or heating-oil futures — same constraint class as USO / UNG.
             </div>
 
             {/* Info row — live spreads + market signals */}
