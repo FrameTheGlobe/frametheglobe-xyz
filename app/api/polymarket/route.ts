@@ -25,13 +25,16 @@ export type PolymarketEntry = {
 // ── Classifiers ───────────────────────────────────────────────────────────────
 function classify(title: string): PolymarketEntry['category'] {
   const t = title.toLowerCase();
-  if (/nuclear|nuke|weapon|warhead|enrich|iaea|uranium|plutonium|detona/.test(t)) return 'NUCLEAR';
+  if (/nuclear|nuke|weapon|warhead|enrich|iaea|uranium|plutonium|detona|bushehr|fordow|natanz/.test(t)) return 'NUCLEAR';
   if (/regime|supreme leader|khamenei|fall|collapse|coup|overthrow|reza pahlavi|leadership/.test(t)) return 'REGIME';
-  if (/ceasefire|deal|negotiat|hostage|treaty|peace|agreement|end of.*operat|conflict ends/.test(t)) return 'DIPLOMACY';
+  if (/ceasefire|deal|negotiat|hostage|treaty|peace|agreement|end of.*operat|conflict ends|embargo|sanctions|diplomat|talks with|summit/.test(t)) {
+    return 'DIPLOMACY';
+  }
   return 'CONFLICT';
 }
 
-const IRAN_RE    = /\b(iran|iranian|irgc|khamenei|hormuz|tehran|hezbollah|houthi)\b/i;
+/** Title must match Iran/Gulf theater — widen enough to backfill grids without unrelated sports/politics. */
+const IRAN_RE = /\b(?:iran|iranian|irgc|khamenei|hormuz|strait of hormuz|persian gulf|tehran|hezbollah|houthi|jcpoa|kharg|natanz|fordow|bandar abbas|south pars|qom)\b|against iran|iranian regime|\benter iran\b|\bin iran by\b|military action against iran|us x iran|u\.s\..*iran|iran.*ceasefire|ceasefire.*iran|strike.*\biran\b|\biran\b.*strike|blockade.*hormuz|hormuz.*blockade|idf.*iran|iran.*idf/i;
 const EXCLUDE_RE = /nba|nfl|nhl|mlb|fifa|soccer|basketball|baseball|esports|tennis|golf|formula/i;
 
 // ── Gamma API types ───────────────────────────────────────────────────────────
@@ -77,7 +80,7 @@ async function fetchEventsPage(offset: number): Promise<GammaEvent[]> {
   const controller = new AbortController();
   const timeout    = setTimeout(() => controller.abort(), 8_000);
   try {
-    const url = `https://gamma-api.polymarket.com/events?limit=200&active=true&offset=${offset}&order=volume&ascending=false`;
+    const url = `https://gamma-api.polymarket.com/events?limit=200&closed=false&active=true&offset=${offset}&order=volume&ascending=false`;
     const res = await fetch(url, {
       signal:  controller.signal,
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FrameTheGlobe/1.0)' },
@@ -132,10 +135,20 @@ function buildEntry(ev: GammaEvent): PolymarketEntry {
   };
 }
 
+const CAT_ORDER: PolymarketEntry['category'][] = ['CONFLICT', 'REGIME', 'DIPLOMACY', 'NUCLEAR'];
+/** Prefer a few cards per bucket so one category does not crowd out others (fills sparse rows). */
+const PER_CATEGORY_CAP = 10;
+/** Upper bound ≈ 4 × per-category cap; backfill tops up if buckets are thin. */
+const MAX_EVENTS       = 40;
+
+function eventVol(ev: GammaEvent): number {
+  return parseFloat(String(ev.volume ?? 0));
+}
+
 export async function GET() {
   try {
-    // Scan the top ~2200 events by volume across 11 pages
-    const offsets = [0, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000];
+    // Scan top ~4k events by volume (active, not closed)
+    const offsets = Array.from({ length: 21 }, (_, i) => i * 200);
     const pages = await Promise.allSettled(offsets.map(fetchEventsPage));
 
     const seen  = new Set<string>();
@@ -144,21 +157,42 @@ export async function GET() {
     for (const page of pages) {
       if (page.status !== 'fulfilled') continue;
       for (const ev of page.value) {
-        if (!ev.id || seen.has(ev.id))    continue;
-        if (ev.closed)                    continue;
-        if (!IRAN_RE.test(ev.title ?? '')) continue;
+        if (!ev.id || seen.has(ev.id))     continue;
+        if (ev.closed)                      continue;
+        if (!IRAN_RE.test(ev.title ?? ''))  continue;
         if (EXCLUDE_RE.test(ev.title ?? '')) continue;
         seen.add(ev.id);
         hits.push(ev);
       }
     }
 
-    // Sort events by total volume and cap at 12
-    const sorted = hits
-      .sort((a, b) => parseFloat(String(b.volume ?? 0)) - parseFloat(String(a.volume ?? 0)))
-      .slice(0, 12);
+    const sortedByVol = hits.sort((a, b) => eventVol(b) - eventVol(a));
 
-    const res = NextResponse.json(sorted.map(buildEntry));
+    const buckets: Record<PolymarketEntry['category'], GammaEvent[]> = {
+      CONFLICT: [], REGIME: [], DIPLOMACY: [], NUCLEAR: [],
+    };
+    const picked = new Set<string>();
+
+    for (const ev of sortedByVol) {
+      const cat = classify(ev.title ?? '');
+      if (buckets[cat].length >= PER_CATEGORY_CAP) continue;
+      const id = String(ev.id);
+      if (picked.has(id)) continue;
+      buckets[cat].push(ev);
+      picked.add(id);
+    }
+
+    const balanced: GammaEvent[] = CAT_ORDER.flatMap(c => buckets[c]);
+
+    for (const ev of sortedByVol) {
+      if (balanced.length >= MAX_EVENTS) break;
+      const id = String(ev.id);
+      if (picked.has(id)) continue;
+      balanced.push(ev);
+      picked.add(id);
+    }
+
+    const res = NextResponse.json(balanced.map(buildEntry));
     res.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
     return res;
   } catch (err) {

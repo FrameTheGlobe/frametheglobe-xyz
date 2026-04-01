@@ -491,10 +491,7 @@ export default function PreciousMetalsBoard() {
         gap:            6,
       }}>
         <span style={{ fontFamily: mono, fontSize: 9, color: muted }}>
-          Price data via{' '}
-          <a href="https://stooq.com" target="_blank" rel="noopener noreferrer"
-            style={{ color: muted, textDecoration: 'underline' }}>Stooq.com</a>
-          {' '}· GC.F · SI.F · PL.F · PA.F · GLD.US · SLV.US · ~15 min delay
+          Futures &amp; ETFs via Yahoo Finance (Stooq fallback) · GC.F · SI.F · PL.F · PA.F · GLD.US · SLV.US · ~15 min delay
         </span>
         <span style={{ fontFamily: mono, fontSize: 9, color: muted }}>
           GLD &amp; SLV are equity ETF proxies for spot gold/silver prices
