@@ -26,7 +26,7 @@ async function callGroq(items: MinItem[]): Promise<string | null> {
   const headlines = items.slice(0, 15).map((item, i) => `${i + 1}. [${item.region ?? 'global'}] ${item.sourceName ?? '?'}: ${item.title}`).join('\n');
   const prompt    = `You are a senior CIA analyst writing the morning intelligence brief for the Director.\n\nBased on these ${items.length} live headlines, write a punchy, scannable brief of 5-8 sentences maximum.\nStyle: direct, confident, no fluff. Think CIA morning brief meets Bloomberg first word.\nCover: the single most important development, key escalation signals, and one thing to watch.\nNO bullet points. NO headers. Plain flowing prose only.\n\nLIVE HEADLINES (${new Date().toUTCString()}):\n${headlines}\n\nWrite the brief now:`;
   const controller = new AbortController();
-  const timeout    = setTimeout(() => controller.abort(), 12_000);
+  const timeout    = setTimeout(() => controller.abort(), 22_000);
   try {
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST', signal: controller.signal,
@@ -34,11 +34,18 @@ async function callGroq(items: MinItem[]): Promise<string | null> {
       body: JSON.stringify({ model: 'llama-3.1-8b-instant', max_tokens: 600, temperature: 0.4,
         messages: [{ role: 'system', content: 'Senior CIA analyst. 5-8 sentences max. No bullets. Flowing prose.' }, { role: 'user', content: prompt }] }),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      console.error('[FTG flash-brief] Groq HTTP', res.status, errText.slice(0, 500));
+      return null;
+    }
     const data = await res.json() as any;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return data?.choices?.[0]?.message?.content?.trim() ?? null;
-  } catch { return null; }
+  } catch (e) {
+    console.error('[FTG flash-brief] Groq fetch failed:', (e as Error).message);
+    return null;
+  }
   finally { clearTimeout(timeout); }
 }
 
@@ -61,12 +68,14 @@ function algorithmicBrief(items: MinItem[]): FlashBriefPayload {
   if (mktCount > 3) themes.push('Energy Markets');
   if (dipCount > 2) themes.push('Diplomatic Activity');
   if (themes.length === 0) themes.push('Monitoring');
+  const leadCap = 220;
+  const leadTail = topItem && topItem.title.length > leadCap ? '…' : '';
   const brief = `Intelligence cycle running across ${items.length} dispatches from ${sources} sources. `
     + (escCount > 0 ? `${escCount} escalation-tagged reports in the current cycle. ` : '')
     + (nucCount > 0 ? `${nucCount} nuclear/diplomatic signals detected. ` : '')
-    + (topItem ? `Lead story: "${topItem.title.slice(0, 90)}${topItem.title.length > 90 ? '…' : ''}". ` : '')
+    + (topItem ? `Lead story: "${topItem.title.slice(0, leadCap)}${leadTail}". ` : '')
     + (mktCount > 0 ? `Energy market indicators present in ${mktCount} stories. ` : '')
-    + 'AI narrative synthesis temporarily unavailable — algorithmic summary active.';
+    + 'Rule-based synthesis (Groq assist did not return a narrative this cycle — check Railway logs if this persists).';
   return { brief, generatedAt: new Date().toISOString(), generatedBy: 'algorithmic', storiesAnalysed: items.length, topThemes: themes };
 }
 

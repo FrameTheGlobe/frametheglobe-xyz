@@ -18,18 +18,9 @@ type Quote = {
 let _cache: { data: Quote[]; at: number } | null = null;
 const CACHE_TTL = 60 * 1000; // 60 seconds
 
-// ── Front-month Brent symbol (auto-rolls monthly) ────────────────────────────
-function getBrentSymbol(): string {
-  const CODES = 'FGHJKMNQUVXZ';
-  const now   = new Date();
-  const month = now.getMonth();
-  const day   = now.getDate();
-  const year  = now.getFullYear();
-  const offset = day >= 20 ? 2 : 1;
-  const fmi    = (month + offset) % 12;
-  const fmYear = month + offset >= 12 ? year + 1 : year;
-  return `BZ${CODES[fmi]}${String(fmYear).slice(-2)}.NYM`;
-}
+// Brent: use continuous front-month (`BZ=F`), same pattern as WTI (`CL=F`).
+// The old NYMEX-specific contract code (e.g. BZK26.NYM) often diverged from
+// what users expect as “Brent spot” and could show stale or off-curve prints.
 
 // ── Yahoo Finance ────────────────────────────────────────────────────────────
 async function fetchYahoo(yfSym: string, outSym: string, name: string): Promise<Quote | null> {
@@ -74,8 +65,9 @@ async function fetchStooqBatch(entries: { stooq: string; name: string }[]): Prom
       const price = r.close || r.open || 0;
       if (price <= 0) return [];
       const open  = r.open || price || 1;
-      const entry = entries.find(e => e.stooq.toUpperCase() === r.symbol);
-      return [{ symbol: r.symbol, name: entry?.name ?? r.symbol, price,
+      const symU  = String(r.symbol ?? '').toUpperCase();
+      const entry = entries.find(e => e.stooq.toUpperCase() === symU);
+      return [{ symbol: symU, name: entry?.name ?? symU, price,
                 change: price - open, changePercent: ((price - open) / open) * 100, currency: 'USD' }];
     });
   } catch { return []; }
@@ -91,10 +83,9 @@ router.get('/', async (_req: Request, res: Response) => {
   }
 
   try {
-    const brentSym = getBrentSymbol();
     const YF = [
       { yf: 'CL=F',   out: 'CL.F',   name: 'WTI Crude'         },
-      { yf: brentSym, out: 'CB.F',   name: 'Brent Crude'        },
+      { yf: 'BZ=F',   out: 'CB.F',   name: 'Brent Crude'        },
       { yf: 'NG=F',   out: 'NG.F',   name: 'Natural Gas'        },
       { yf: 'RB=F',   out: 'RB.F',   name: 'Gasoline RBOB'      },
       { yf: 'HO=F',   out: 'HO.F',   name: 'Heating Oil'        },
@@ -118,16 +109,35 @@ router.get('/', async (_req: Request, res: Response) => {
       fetchStooqBatch(ALL_STOOQ),
     ]);
 
-    const stooqMap = new Map<string, Quote>(stooqResults.map(q => [q.symbol, q]));
+    const stooqMap = new Map<string, Quote>(stooqResults.map(q => [q.symbol.toUpperCase(), q]));
+    // If Yahoo BZ=F misses, try ICE Brent continuous (some regions quote this more reliably).
+    let brentYf = yfResults[1];
+    if (!brentYf) {
+      brentYf = await fetchYahoo('BRN=F', 'CB.F', 'Brent Crude');
+    }
+
+    const yfWithBrent = [...yfResults.slice(0, 1), brentYf, ...yfResults.slice(2)];
+
     const mapped: Quote[] = [
-      ...YF.map((cfg, i) => yfResults[i] ?? stooqMap.get(cfg.out) ?? null)
+      ...YF.map((cfg, i) => yfWithBrent[i] ?? stooqMap.get(cfg.out.toUpperCase()) ?? null)
            .filter((q): q is Quote => q !== null),
       ...['UX.F', 'TG.F', 'LU.F', 'LF.F']
-           .flatMap(sym => { const q = stooqMap.get(sym); return q ? [q] : []; }),
+           .flatMap(sym => { const q = stooqMap.get(sym.toUpperCase()); return q ? [q] : []; }),
     ];
 
-    const brent = mapped.find(m => m.symbol === 'CB.F');
-    const wti   = mapped.find(m => m.symbol === 'CL.F');
+    let brent = mapped.find(m => m.symbol === 'CB.F');
+    const wti = mapped.find(m => m.symbol === 'CL.F');
+    // If Yahoo continuous Brent prints an outlier vs WTI but Stooq CB.F looks sane, prefer Stooq.
+    const stooqBrent = stooqMap.get('CB.F');
+    if (brent && wti && stooqBrent && brent.price - wti.price > 14 && stooqBrent.price > 0) {
+      const yahooSpread = brent.price - wti.price;
+      const stooqSpread = stooqBrent.price - wti.price;
+      if (stooqSpread > 0 && stooqSpread < yahooSpread - 8) {
+        const idx = mapped.findIndex(m => m.symbol === 'CB.F');
+        if (idx >= 0) mapped[idx] = stooqBrent;
+        brent = stooqBrent;
+      }
+    }
     if (brent && wti) {
       mapped.push({ symbol: 'WCS',   name: 'Western Canadian Select', price: wti.price * 0.88,   change: wti.change * 0.9,   changePercent: wti.changePercent,   currency: 'USD' });
       mapped.push({ symbol: 'REBCO', name: 'Urals Crude Oil',         price: brent.price - 14.5, change: brent.change * 0.95, changePercent: brent.changePercent, currency: 'USD' });
