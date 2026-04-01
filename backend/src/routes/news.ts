@@ -11,10 +11,16 @@ import {
   setNewsCache, getNewsCache, isCacheStale,
   canForceRefresh, markForcedRefresh, nextForceRefreshIn,
 } from '../lib/news-store.js';
+import { rateLimit, retryAfterSeconds } from '../lib/rate-limit.js';
 
 const router = Router();
 
 router.get('/', async (req: Request, res: Response) => {
+  const ip = req.ip ?? req.socket.remoteAddress ?? 'unknown';
+  if (!rateLimit(`news:${ip}`, 60, 60_000)) {
+    return res.status(429).set('Retry-After', String(retryAfterSeconds(`news:${ip}`))).json({ error: 'Too many requests' });
+  }
+
   const wantsForce  = req.query.refresh === '1';
   const forceRefresh = wantsForce && canForceRefresh();
 

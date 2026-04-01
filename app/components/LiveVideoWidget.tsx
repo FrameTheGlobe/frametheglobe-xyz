@@ -26,7 +26,7 @@ export default function LiveVideoWidget() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/live-feeds', { cache: 'no-store' });
+        const res = await fetch('/api/live-feeds');
         const data = await res.json();
         const list = Array.isArray(data?.feeds) ? (data.feeds as LiveFeed[]) : [];
         if (cancelled) return;

@@ -62,7 +62,7 @@ async function callGroq(t: TickerClickPayload): Promise<string | null> {
 }
 
 router.post('/', async (req: Request, res: Response) => {
-  const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ?? 'anon';
+  const ip = req.ip ?? req.socket.remoteAddress ?? 'anon';
   if (!rateLimit(`analyze-ticker:${ip}`, 30, 60_000)) {
     return res.status(429).set('Retry-After', String(retryAfterSeconds(`analyze-ticker:${ip}`))).json({ error: 'Rate limit exceeded' });
   }

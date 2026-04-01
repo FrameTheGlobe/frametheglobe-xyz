@@ -352,7 +352,7 @@ function algorithmicSynth(items: MinItem[]): Omit<AIIntelPayload, 'generatedAt' 
 // ── Route handler ──────────────────────────────────────────────────────────
 
 router.post('/', async (req: Request, res: Response) => {
-  const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ?? 'unknown';
+  const ip = req.ip ?? req.socket.remoteAddress ?? 'unknown';
   if (!rateLimit(`ai-intel:${ip}`, 20, 60_000)) {
     return res.status(429).set('Retry-After', String(retryAfterSeconds(`ai-intel:${ip}`))).json({ error: 'Too many requests' });
   }

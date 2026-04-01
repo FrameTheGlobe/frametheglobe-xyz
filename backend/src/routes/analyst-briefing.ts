@@ -65,7 +65,7 @@ function algorithmicBriefing(oilSummary: string, polymarketSummary: string): Omi
 }
 
 router.post('/', async (req: Request, res: Response) => {
-  const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ?? 'anon';
+  const ip = req.ip ?? req.socket.remoteAddress ?? 'anon';
   if (!rateLimit(`analyst-briefing:${ip}`, 10, 60_000)) {
     return res.status(429).set('Retry-After', String(retryAfterSeconds(`analyst-briefing:${ip}`))).json({ error: 'Rate limit exceeded' });
   }

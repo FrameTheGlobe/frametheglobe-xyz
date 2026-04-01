@@ -146,7 +146,7 @@ export default function IranWarCostBoard() {
 
   const fetchMetrics = useCallback(async () => {
     try {
-      const res = await fetch('/api/theater-metrics', { cache: 'no-store' });
+      const res = await fetch('/api/theater-metrics');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setMetrics(data as TheaterMetrics);
@@ -158,7 +158,7 @@ export default function IranWarCostBoard() {
 
   const fetchPrices = useCallback(async () => {
     try {
-      const res = await fetch('/api/market', { cache: 'no-store' });
+      const res = await fetch('/api/market');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       if (Array.isArray(data)) setPrices(data as Quote[]);
@@ -170,7 +170,7 @@ export default function IranWarCostBoard() {
 
   const fetchNews = useCallback(async () => {
     try {
-      const res = await fetch('/api/news', { cache: 'no-store' });
+      const res = await fetch('/api/news');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       const items = Array.isArray(data?.items) ? data.items : [];
@@ -187,7 +187,7 @@ export default function IranWarCostBoard() {
 
   const fetchFlightsLocal = useCallback(async () => {
     try {
-      const res = await fetch('/api/flights', { cache: 'no-store' });
+      const res = await fetch('/api/flights');
       if (!res.ok) return;
       const d = await res.json();
       setLocalFlights({

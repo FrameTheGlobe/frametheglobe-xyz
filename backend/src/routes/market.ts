@@ -5,6 +5,7 @@
  */
 
 import { Router, Request, Response } from 'express';
+import { rateLimit, retryAfterSeconds } from '../lib/rate-limit.js';
 
 const router = Router();
 
@@ -76,6 +77,11 @@ async function fetchStooqBatch(entries: { stooq: string; name: string }[]): Prom
 
 // ── Handler ──────────────────────────────────────────────────────────────────
 router.get('/', async (_req: Request, res: Response) => {
+  const ip = _req.ip ?? _req.socket.remoteAddress ?? 'unknown';
+  if (!rateLimit(`market:${ip}`, 90, 60_000)) {
+    return res.status(429).set('Retry-After', String(retryAfterSeconds(`market:${ip}`))).json({ error: 'Too many requests' });
+  }
+
   // Serve from cache if fresh
   if (_cache && Date.now() - _cache.at < CACHE_TTL) {
     return res.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=30')

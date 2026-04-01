@@ -3,6 +3,21 @@ import { NextResponse } from 'next/server';
 export const runtime   = 'nodejs';
 export const revalidate = 300;
 
+type RateBucket = { count: number; resetAt: number };
+const RATE_STORE = new Map<string, RateBucket>();
+
+function allowRequest(key: string, maxReqs: number, windowMs: number): boolean {
+  const now = Date.now();
+  const bucket = RATE_STORE.get(key);
+  if (!bucket || now > bucket.resetAt) {
+    RATE_STORE.set(key, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+  if (bucket.count >= maxReqs) return false;
+  bucket.count += 1;
+  return true;
+}
+
 // ── Public types ──────────────────────────────────────────────────────────────
 export type PolyOutcome = {
   label:    string;   // groupItemTitle or short question
@@ -162,8 +177,16 @@ function mergeGammaPages(pages: PromiseSettledResult<GammaEvent[]>[]): GammaEven
   return out;
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const forwarded = req.headers.get('x-forwarded-for') ?? '';
+    const ip = forwarded.split(',')[0]?.trim() || 'unknown';
+    if (!allowRequest(`poly:${ip}`, 30, 60_000)) {
+      const res = NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+      res.headers.set('Retry-After', '60');
+      return res;
+    }
+
     const offsets = Array.from({ length: 21 }, (_, i) => i * 200);
     const pages   = await Promise.allSettled(offsets.map(fetchEventsPage));
     const allOpen = mergeGammaPages(pages);

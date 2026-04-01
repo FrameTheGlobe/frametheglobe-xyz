@@ -20,10 +20,12 @@ function backendUrl(path: string): string {
 }
 
 function forwardHeaders(req: NextRequest): HeadersInit {
+  const internalToken = process.env.INTERNAL_PROXY_TOKEN;
   return {
     'Content-Type': req.headers.get('content-type') ?? 'application/json',
-    'x-forwarded-for': req.headers.get('x-forwarded-for') ?? req.headers.get('x-real-ip') ?? '127.0.0.1',
-    'x-real-ip': req.headers.get('x-real-ip') ?? '',
+    'x-internal-proxy-token': internalToken ?? '',
+    'x-forwarded-host': req.headers.get('x-forwarded-host') ?? '',
+    'x-forwarded-proto': req.headers.get('x-forwarded-proto') ?? '',
     'user-agent': req.headers.get('user-agent') ?? '',
   };
 }
@@ -38,8 +40,6 @@ export function proxyGet(backendPath: string) {
     try {
       const upstream = await fetch(url, {
         headers: forwardHeaders(req),
-        // Don't cache here — backend sets its own Cache-Control
-        cache: 'no-store',
       });
       const body = await upstream.text();
       const res  = new NextResponse(body, {
