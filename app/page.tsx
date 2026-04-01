@@ -550,25 +550,44 @@ type SidebarPanelProps = {
   items: FeedItem[];
 };
 
-function SidebarOpsSnapshot({
-  items,
-  sourceHealth,
-}: {
-  items: FeedItem[];
-  sourceHealth: SourceHealth[];
-}) {
-  const sixHourCutoff = Date.now() - 6 * 60 * 60 * 1000;
-  const freshCount = items.filter(i => new Date(i.pubDate).getTime() >= sixHourCutoff).length;
-  const newest = items[0];
-  const healthySources = sourceHealth.filter(s => s.ok).length;
-  const totalSources = sourceHealth.length || SOURCES.length;
+/** Kinetic / escalation signals analysts scan first — same feed, no extra API. */
+const THEATER_PULSE_KW = [
+  'missile', 'airstrike', 'drone', 'strike', 'attack', 'explosion', 'shelling',
+  'rocket', 'bomb', 'intercept', 'barrage', 'killed', 'casualties', 'invasion',
+];
 
-  const topRegion = Object.entries(
-    items.slice(0, 80).reduce((acc, item) => {
-      acc[item.region] = (acc[item.region] ?? 0) + 1;
-      return acc;
-    }, {} as Record<string, number>)
-  ).sort((a, b) => b[1] - a[1])[0];
+function itemInWindow(item: FeedItem, ms: number): boolean {
+  return Date.now() - new Date(item.pubDate).getTime() <= ms;
+}
+
+function textHasKineticSignal(text: string): boolean {
+  const t = text.toLowerCase();
+  return THEATER_PULSE_KW.some(k => t.includes(k));
+}
+
+/**
+ * Theater escalation pulse — breaking + kinetic density + lead storyline cluster.
+ * Replaces generic volume/health stats; health remains under NET tab.
+ */
+function SidebarTheaterPulse({ items, clusters }: { items: FeedItem[]; clusters: Cluster[] }) {
+  const breakingCount = items.filter(i => getAgeBadge(i.pubDate) === 'breaking').length;
+  const sixH = 6 * 60 * 60 * 1000;
+  const kinetic6h = items.filter(i => itemInWindow(i, sixH) && textHasKineticSignal(`${i.title} ${i.summary}`)).length;
+  const hormuz6h = items.filter(i => {
+    if (!itemInWindow(i, sixH)) return false;
+    const t = `${i.title} ${i.summary}`.toLowerCase();
+    return t.includes('hormuz') || t.includes('strait of hormuz') || t.includes('tanker');
+  }).length;
+
+  const lead = clusters[0];
+  const leadSources = lead ? new Set(lead.items.map(i => i.sourceId)).size : 0;
+  const missileLead = Boolean(lead?.hasMissileSignal);
+  const corroboration = lead?.corroborationCount ?? 0;
+
+  const elevated = breakingCount > 0 || kinetic6h >= 4 || missileLead || hormuz6h >= 2;
+  const critical = missileLead && kinetic6h >= 2;
+  const pulseColor = critical ? '#c0392b' : elevated ? '#e67e22' : '#27ae60';
+  const pulseLabel = critical ? 'ELEVATED' : elevated ? 'WATCH' : 'STABLE';
 
   return (
     <div style={{
@@ -582,47 +601,75 @@ function SidebarOpsSnapshot({
         borderBottom: '1px solid var(--border-light)',
         display: 'flex',
         alignItems: 'center',
-        gap: 7,
+        justifyContent: 'space-between',
+        gap: 8,
       }}>
-        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#27ae60', display: 'inline-block' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: pulseColor, display: 'inline-block', flexShrink: 0 }} />
+          <span style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 9,
+            fontWeight: 900,
+            letterSpacing: '0.11em',
+            textTransform: 'uppercase',
+            color: 'var(--accent)',
+          }}>
+            Theater Escalation Pulse
+          </span>
+        </div>
         <span style={{
           fontFamily: 'var(--font-mono)',
-          fontSize: 9,
-          fontWeight: 900,
-          letterSpacing: '0.11em',
-          textTransform: 'uppercase',
-          color: 'var(--accent)',
+          fontSize: 8,
+          fontWeight: 800,
+          letterSpacing: '0.08em',
+          color: pulseColor,
+          flexShrink: 0,
         }}>
-          Quick Ops Snapshot
+          {pulseLabel}
         </span>
       </div>
 
-      <div style={{ padding: 10, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-        <div style={{ border: '1px solid var(--border-light)', borderRadius: 4, padding: '7px 8px', background: 'var(--surface-muted)' }}>
-          <div style={{ fontSize: 8, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>STORIES 6H</div>
-          <div style={{ fontSize: 17, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--text-primary)' }}>{freshCount}</div>
+      <div style={{ padding: 10, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
+        <div style={{ border: '1px solid var(--border-light)', borderRadius: 4, padding: '6px 7px', background: 'var(--surface-muted)' }}>
+          <div style={{ fontSize: 7, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>BREAKING</div>
+          <div style={{ fontSize: 15, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--text-primary)' }}>{breakingCount}</div>
+          <div style={{ fontSize: 7, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>&lt;15m</div>
         </div>
-        <div style={{ border: '1px solid var(--border-light)', borderRadius: 4, padding: '7px 8px', background: 'var(--surface-muted)' }}>
-          <div style={{ fontSize: 8, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>SOURCE HEALTH</div>
-          <div style={{ fontSize: 17, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--text-primary)' }}>
-            {healthySources}/{totalSources}
-          </div>
+        <div style={{ border: '1px solid var(--border-light)', borderRadius: 4, padding: '6px 7px', background: 'var(--surface-muted)' }}>
+          <div style={{ fontSize: 7, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>KINETIC</div>
+          <div style={{ fontSize: 15, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--text-primary)' }}>{kinetic6h}</div>
+          <div style={{ fontSize: 7, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>6h</div>
+        </div>
+        <div style={{ border: '1px solid var(--border-light)', borderRadius: 4, padding: '6px 7px', background: 'var(--surface-muted)' }}>
+          <div style={{ fontSize: 7, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>HORMUZ</div>
+          <div style={{ fontSize: 15, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--text-primary)' }}>{hormuz6h}</div>
+          <div style={{ fontSize: 7, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>6h</div>
         </div>
       </div>
 
-      <div style={{
-        padding: '8px 10px',
-        borderTop: '1px solid var(--border-light)',
-        fontFamily: 'var(--font-mono)',
-        fontSize: 9,
-        color: 'var(--text-muted)',
-        lineHeight: 1.45,
-      }}>
-        <span style={{ color: 'var(--text-primary)', fontWeight: 800 }}>Latest:</span>{' '}
-        {newest ? timeAgo(newest.pubDate) : 'n/a'} ·{' '}
-        <span style={{ color: 'var(--text-primary)', fontWeight: 800 }}>Top region:</span>{' '}
-        {topRegion ? `${REGION_LABELS[topRegion[0] as Source['region']] || topRegion[0]} (${topRegion[1]})` : 'n/a'}
-      </div>
+      {lead && (
+        <div style={{
+          padding: '8px 10px',
+          borderTop: '1px solid var(--border-light)',
+          background: 'rgba(0,112,243,0.04)',
+        }}>
+          <div style={{ fontSize: 7, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', fontWeight: 800, marginBottom: 4, letterSpacing: '0.06em' }}>
+            LEAD STORYLINE · V{Math.round(lead.score * 10)}{missileLead ? ' · ⚡MISSILE' : ''}{corroboration > 0 ? ` · ${corroboration}×CORR` : ''} · {leadSources} SRC
+          </div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.35 }}>
+            {truncate(lead.title, 110)}
+          </div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)', marginTop: 4 }}>
+            Open <strong style={{ color: 'var(--accent)' }}>INTEL</strong> for full clusters
+          </div>
+        </div>
+      )}
+
+      {!lead && (
+        <div style={{ padding: '10px', borderTop: '1px solid var(--border-light)', fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)' }}>
+          Storylines building…
+        </div>
+      )}
     </div>
   );
 }
@@ -2054,7 +2101,7 @@ export default function Home() {
             ✕ Close
           </button>
           <div style={{ position: 'sticky', top: 80, display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {!loading && <SidebarOpsSnapshot items={items} sourceHealth={sourceHealth} />}
+            {!loading && <SidebarTheaterPulse items={items} clusters={clusters} />}
             <SidebarPanel
               search={search}
               onSearch={setSearch}
