@@ -141,7 +141,12 @@ router.get('/', async (_req: Request, res: Response) => {
     if (brent && wti) {
       mapped.push({ symbol: 'WCS',   name: 'Western Canadian Select', price: wti.price * 0.88,   change: wti.change * 0.9,   changePercent: wti.changePercent,   currency: 'USD' });
       mapped.push({ symbol: 'REBCO', name: 'Urals Crude Oil',         price: brent.price - 14.5, change: brent.change * 0.95, changePercent: brent.changePercent, currency: 'USD' });
-      mapped.push({ symbol: 'DUBAI', name: 'Dubai Crude Oil',         price: brent.price * 1.01, change: brent.change * 1.02, changePercent: brent.changePercent, currency: 'USD' });
+      const dubaiPx = brent.price * 1.01;
+      mapped.push({ symbol: 'DUBAI', name: 'Dubai Crude Oil',         price: dubaiPx,            change: brent.change * 1.02, changePercent: brent.changePercent, currency: 'USD' });
+      // Analyst proxies — tied to Brent/WTI/Dubai strip (not exchange prints).
+      mapped.push({ symbol: 'MURBAN', name: 'Murban Crude (prox.)',  price: dubaiPx * 0.997,   change: brent.change * 1.01, changePercent: brent.changePercent, currency: 'USD' });
+      mapped.push({ symbol: 'OMAN',   name: 'Oman Export (prox.)',   price: brent.price * 0.992, change: brent.change * 0.99, changePercent: brent.changePercent, currency: 'USD' });
+      mapped.push({ symbol: 'LLS',    name: 'Louisiana Light (prox.)', price: wti.price * 1.012, change: wti.change * 1.01, changePercent: wti.changePercent, currency: 'USD' });
     }
 
     _cache = { data: mapped, at: Date.now() };

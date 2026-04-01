@@ -77,8 +77,11 @@ export default function TickerAnalysisDrawer({ data, onClose }: Props) {
 
   const isOpen = !!data;
   const accent = data ? (CATEGORY_COLOR[data.category] ?? 'var(--accent)') : 'var(--accent)';
+  const fineTickUnit = data && (data.unit.includes('gal') || data.unit.includes('MMBtu'));
+  const priceDecimals = fineTickUnit ? 3 : 2;
+  const changeDecimals = fineTickUnit ? 4 : 2;
   const fmtChg = data
-    ? `${data.change >= 0 ? '+' : ''}${data.change.toFixed(2)} (${data.changePercent >= 0 ? '+' : ''}${data.changePercent.toFixed(2)}%)`
+    ? `${data.change >= 0 ? '+' : ''}${data.change.toFixed(changeDecimals)} (${data.changePercent >= 0 ? '+' : ''}${data.changePercent.toFixed(2)}%)`
     : '';
   const chgColor = data ? (data.change >= 0 ? '#27ae60' : '#c0392b') : 'inherit';
 
@@ -183,7 +186,7 @@ export default function TickerAnalysisDrawer({ data, onClose }: Props) {
               </div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginTop: 4 }}>
                 <span style={{ fontFamily: mono, fontSize: 22, fontWeight: 900, color: 'var(--text-primary)', lineHeight: 1 }}>
-                  {data.currency}{data.price.toFixed(2)}
+                  {data.currency}{data.price.toFixed(priceDecimals)}
                   {data.unit && (
                     <span style={{ fontSize: 10, fontWeight: 400, color: 'var(--text-muted)', marginLeft: 4 }}>{data.unit}</span>
                   )}

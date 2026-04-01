@@ -59,11 +59,19 @@ type TheaterMetrics = {
 const POLL_MS = 3 * 60 * 1000;
 
 const CHART_SYMBOLS = [
-  { id: 'wti',    tv: 'TVC:USOIL',        name: 'WTI Crude',   color: '#e74c3c' },
-  { id: 'brent',  tv: 'TVC:UKOIL',        name: 'Brent Crude', color: '#3498db' },
-  { id: 'natgas', tv: 'AMEX:UNG',          name: 'Nat Gas (UNG)', color: '#2ecc71' },
-  { id: 'uso',    tv: 'AMEX:USO',         name: 'USO ETF',     color: '#f39c12' },
+  { id: 'wti',    tv: 'TVC:USOIL',   name: 'WTI Crude',       color: '#e74c3c' },
+  { id: 'brent',  tv: 'TVC:UKOIL',   name: 'Brent Crude',     color: '#3498db' },
+  { id: 'rbob',   tv: 'NYMEX:RB=F', name: 'RBOB Gasoline',   color: '#9b59b6' },
+  { id: 'heat',   tv: 'NYMEX:HO=F', name: 'Heating Oil',    color: '#1abc9c' },
+  { id: 'natgas', tv: 'AMEX:UNG',    name: 'Nat Gas (UNG)',   color: '#2ecc71' },
+  { id: 'uso',    tv: 'AMEX:USO',    name: 'USO ETF',         color: '#f39c12' },
 ];
+
+/** Main board row order — benchmarks, route grades, Gulf proxies, NYMEX cracks, gas. */
+const BENCH_SYMBOL_ORDER = [
+  'CB.F', 'CL.F', 'DUBAI', 'REBCO', 'WCS', 'MURBAN', 'OMAN', 'LLS',
+  'RB.F', 'HO.F', 'NG.F', 'TG.F', 'LF.F',
+] as const;
 
 const RANGES: { key: RangeKey; label: string }[] = [
   { key: '1D', label: '1 DAY'   },
@@ -75,6 +83,26 @@ const RANGES: { key: RangeKey; label: string }[] = [
 
 function fmt(n: number, d = 2) { return n.toFixed(d); }
 function sign(n: number)       { return n >= 0 ? '+' : ''; }
+
+function tickerCurrency(sym: string): string {
+  return sym === 'TG.F' ? '€' : '$';
+}
+
+function tickerUnit(sym: string): string {
+  if (sym === 'RB.F' || sym === 'HO.F') return 'USD/gal';
+  if (sym === 'NG.F') return 'USD/MMBtu';
+  if (sym === 'TG.F') return 'EUR/MWh';
+  if (sym === 'LF.F') return 'USD/MT';
+  return 'USD/bbl';
+}
+
+function fmtTilePrice(p: PriceData): string {
+  const dec = symNeedsExtraDecimals(p.symbol) ? 3 : 2;
+  return fmt(p.price, dec);
+}
+function symNeedsExtraDecimals(sym: string): boolean {
+  return sym === 'RB.F' || sym === 'HO.F' || sym === 'NG.F';
+}
 
 // ── TradingView mini chart (single symbol) ──────────────────────────────────
 
@@ -224,10 +252,20 @@ export default function IranOilBoard() {
   const brent  = prices.find(p => p.symbol === 'CB.F');
   const wti    = prices.find(p => p.symbol === 'CL.F');
   const natgas = prices.find(p => p.symbol === 'NG.F');
-  const dubai  = prices.find(p => p.symbol === 'DUBAI');
-  const urals  = prices.find(p => p.symbol === 'REBCO');
-  const wcs    = prices.find(p => p.symbol === 'WCS');
-  const uso    = prices.find(p => p.symbol === 'USO.US');
+  const dubai   = prices.find(p => p.symbol === 'DUBAI');
+  const urals   = prices.find(p => p.symbol === 'REBCO');
+  const wcs     = prices.find(p => p.symbol === 'WCS');
+  const murban  = prices.find(p => p.symbol === 'MURBAN');
+  const oman    = prices.find(p => p.symbol === 'OMAN');
+  const lls     = prices.find(p => p.symbol === 'LLS');
+  const rbob    = prices.find(p => p.symbol === 'RB.F');
+  const heat    = prices.find(p => p.symbol === 'HO.F');
+  const ttf     = prices.find(p => p.symbol === 'TG.F');
+  const uso     = prices.find(p => p.symbol === 'USO.US');
+
+  const benchTiles = BENCH_SYMBOL_ORDER
+    .map(sym => prices.find(p => p.symbol === sym))
+    .filter((p): p is PriceData => p != null);
 
   const { openDrawer } = useTickerAnalysis();
 
@@ -250,7 +288,7 @@ export default function IranOilBoard() {
   const iranMentions = bucket('IRAN');
   const opecSupply = bucket('OPEC-SUPPLY');
 
-  const gradeRows = [brent, wti, dubai, urals, wcs].filter(Boolean) as PriceData[];
+  const gradeRows = [brent, wti, dubai, urals, wcs, murban, oman, lls].filter(Boolean) as PriceData[];
   const gradeRangeUsd = gradeRows.length >= 2
     ? Math.max(...gradeRows.map(p => p.price)) - Math.min(...gradeRows.map(p => p.price))
     : 0;
@@ -279,6 +317,9 @@ export default function IranOilBoard() {
   const dubaiEdgeVsWti   = dubai && wti ? dubai.price - wti.price : null;
   const wcsDiscVsWti     = wti && wcs ? wti.price - wcs.price : null;
   const uralsVsWcs       = urals && wcs ? urals.price - wcs.price : null;
+  const llsVsWti         = lls && wti ? lls.price - wti.price : null;
+  const rbobHoSpr        = rbob && heat ? rbob.price - heat.price : null;
+  const murbanDubaiEdge  = murban && dubai ? murban.price - dubai.price : null;
 
   const rssIndexReady = Boolean(metrics && !metricsError && metrics.news.totalItems > 0);
 
@@ -311,7 +352,9 @@ export default function IranOilBoard() {
     { k: 'DUBAI − BRENT', v: fmtUsd(dubaiVsBrent), sub: dubai && brent ? 'Middle East vs North Sea' : 'needs Dubai + Brent rows' },
     { k: 'BRENT − URALS', v: fmtUsd(uralsDiscVsBrent), sub: brent && urals ? 'Atlantic vs Russian marker' : 'needs Urals row' },
     { k: 'WTI − WCS', v: fmtUsd(wcsDiscVsWti), sub: wti && wcs ? 'Light vs heavy Canadian' : 'needs WCS row' },
-    { k: 'MAX |Δ%| 1D', v: `${maxImpulsePct.toFixed(2)}%`, sub: 'Largest daily % move across visible benches' },
+    { k: 'LLS − WTI', v: fmtUsd(llsVsWti), sub: lls && wti ? 'Gulf light vs Cushing' : 'needs LLS proxy + WTI' },
+    { k: 'RBOB − HO', v: rbobHoSpr == null ? '—' : `${rbobHoSpr >= 0 ? '+' : '−'}$${fmt(Math.abs(rbobHoSpr), 3)}/gal`, sub: rbob && heat ? 'Gasoline vs distillate · NYMEX' : 'needs RBOB + heating oil' },
+    { k: 'MAX |Δ%| 1D', v: `${maxImpulsePct.toFixed(2)}%`, sub: 'Largest daily % move across crude benches' },
   ];
 
   // ── Segmented control styles ──────────────────────────────────────────────
@@ -438,32 +481,33 @@ export default function IranOilBoard() {
             {/* Main price grid */}
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
               gap: 0,
             }}>
-              {[brent, wti, dubai, urals, wcs].filter(Boolean).map((p) => {
-                if (!p) return null;
+              {benchTiles.map((p) => {
                 const color = priceColor(p.change);
                 const absPct = Math.abs(p.changePercent);
                 const meta = {
                   sent: p.changePercent > 0.2 ? 'BULLISH' : p.changePercent < -0.2 ? 'BEARISH' : 'NEUTRAL',
                   vol:  absPct >= 2.0 ? 'HIGH' : absPct >= 1.0 ? 'MED' : 'LOW',
                 };
-                const synAi = p.symbol === 'WCS' || p.symbol === 'REBCO' || p.symbol === 'DUBAI';
+                const unitLbl = tickerUnit(p.symbol);
+                const cur = tickerCurrency(p.symbol);
+                const chgDec = symNeedsExtraDecimals(p.symbol) ? 4 : 2;
 
                 return (
                   <div
                     key={p.symbol}
                     className="ticker-cell-clickable"
-                    title="Click for AI analysis"
+                    title="Click for AI brief (Groq)"
                     onClick={() => openDrawer({
                       symbol:        p.symbol,
                       name:          p.name,
                       price:         p.price,
                       change:        p.change,
                       changePercent: p.changePercent,
-                      currency:      '$',
-                      unit:          'USD/BBL',
+                      currency:      cur,
+                      unit:          unitLbl,
                       category:      'oil',
                       accentColor:   'var(--accent)',
                     })}
@@ -479,32 +523,23 @@ export default function IranOilBoard() {
                           letterSpacing: '0.10em', textTransform: 'uppercase', color: muted }}>
                           {p.name}
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                          {synAi && (
-                            <span style={{
-                              fontFamily: mono, fontSize: 7, fontWeight: 800, letterSpacing: '0.12em',
-                              padding: '2px 5px', borderRadius: 2,
-                              background: 'rgba(52,152,219,0.12)', border: '1px solid rgba(52,152,219,0.35)', color: '#3498db',
-                            }}>AI</span>
-                          )}
-                          <div style={{
-                            fontFamily: mono, fontSize: 9, padding: '1px 5px',
-                            background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-light)',
-                            borderRadius: 2, color: muted,
-                          }}>VOL: {meta.vol}</div>
-                        </div>
+                        <div style={{
+                          fontFamily: mono, fontSize: 9, padding: '1px 5px',
+                          background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-light)',
+                          borderRadius: 2, color: muted,
+                        }}>VOL: {meta.vol}</div>
                       </div>
 
                       <div key={`${p.symbol}-${flashGen}`} className="ftg-price-flash ftg-oil-price"
                         style={{ fontFamily: mono, fontSize: 38, fontWeight: 900,
                           lineHeight: 1, color: 'var(--text-primary)', letterSpacing: '-0.02em', marginBottom: 8 }}>
-                        <span style={{ fontSize: 20, fontWeight: 600, color: muted, marginRight: 2, verticalAlign: 'top' }}>$</span>
-                        {fmt(p.price)}
+                        <span style={{ fontSize: 20, fontWeight: 600, color: muted, marginRight: 2, verticalAlign: 'top' }}>{cur}</span>
+                        {fmtTilePrice(p)}
                       </div>
 
                       <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
                         <span style={{ fontFamily: mono, fontSize: 13, fontWeight: 700, color }}>
-                          {arrowIcon(p.change)} {sign(p.change)}{fmt(Math.abs(p.change))}
+                          {arrowIcon(p.change)} {sign(p.change)}{fmt(Math.abs(p.change), chgDec)}
                         </span>
                         <span style={{ fontFamily: mono, fontSize: 11, fontWeight: 500, color, opacity: 0.8 }}>
                           ({sign(p.changePercent)}{fmt(p.changePercent)}%)
@@ -519,7 +554,7 @@ export default function IranOilBoard() {
                       <span style={{ fontFamily: mono, fontSize: 9, color: muted }}>
                         SENTIMENT: <span style={{ color }}>{meta.sent}</span>
                       </span>
-                      <span style={{ fontFamily: mono, fontSize: 9, color: muted }}>USD/BBL</span>
+                      <span style={{ fontFamily: mono, fontSize: 9, color: muted }}>{unitLbl}</span>
                     </div>
                   </div>
                 );
@@ -540,7 +575,7 @@ export default function IranOilBoard() {
                     Live crude structure · same prices as tiles
                   </div>
                   <div style={{ fontFamily: mono, fontSize: 8, color: muted, lineHeight: 1.45, opacity: 0.9 }}>
-                    Five columns are <strong style={{ color: 'var(--text-primary)' }}>locational &amp; quality spreads</strong> plus session impulse — always derived from the benchmark strip. No RSS dependency.
+                    <strong style={{ color: 'var(--text-primary)' }}>Locational, quality, and crack structure</strong> from the same prices as the tiles (crude markers + NYMEX cracks). No RSS dependency.
                   </div>
                 </div>
                 <div style={{
@@ -573,17 +608,21 @@ export default function IranOilBoard() {
                 }}>
                   <div style={{ padding: '10px 12px', borderRight: '1px solid var(--border-light)' }}>
                     <div style={{ fontFamily: mono, fontSize: 8, color: muted, letterSpacing: '0.1em', marginBottom: 4 }}>
-                      ADS-B · MIL-HEURISTIC / ALL TRACKS
+                      ADS-B · TOTAL TRACKS (MIL-CLASS SECONDARY)
                     </div>
-                    <div style={{ fontFamily: mono, fontSize: 15, fontWeight: 800 }}>
+                    <div style={{ fontFamily: mono, fontSize: 17, fontWeight: 900, letterSpacing: '-0.02em' }}>
                       {metrics && !metricsError
-                        ? `${metrics.flights.strategic} / ${metrics.flights.total}`
-                        : `QUOTE DECK ${prices.length} SYM`}
+                        ? <>{metrics.flights.total} <span style={{ fontSize: 10, fontWeight: 700, color: muted }}>tracks</span></>
+                        : <>{prices.length} <span style={{ fontSize: 10, fontWeight: 700, color: muted }}>quotes</span></>}
                     </div>
-                    <div style={{ fontFamily: mono, fontSize: 8, color: muted, marginTop: 3 }}>
+                    <div style={{ fontFamily: mono, fontSize: 8, color: muted, marginTop: 4, lineHeight: 1.35 }}>
                       {metrics && !metricsError
                         ? <>
-                            {metrics.flights.source === 'stale' ? 'CACHE STALE · ' : ''}
+                            Mil-heuristic {metrics.flights.strategic} ·{' '}
+                            {metrics.flights.total > 0
+                              ? `${fmt(100 - (metrics.flights.strategic / metrics.flights.total) * 100, 1)}% other traffic`
+                              : 'no track bucket'}{' '}
+                            · {metrics.flights.source === 'stale' ? 'cache stale · ' : ''}
                             ping {metrics.flights.ageMinutes != null ? `${metrics.flights.ageMinutes}m ago` : 'live'}
                           </>
                         : `@ ${timeLabel ?? '···'} · open map for fresh ADS-B pull`}
@@ -615,7 +654,7 @@ export default function IranOilBoard() {
                 }}>
                   <div style={{ fontFamily: mono, fontSize: 7, color: muted, lineHeight: 1.45, letterSpacing: '0.04em' }}>
                     <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>Extra locational spreads · </span>
-                    Dubai–WTI {fmtUsd(dubaiEdgeVsWti)} · Urals–WCS wedge {fmtUsd(uralsVsWcs)} · gas–oil pressure {natgas && wti && natgas.price > 0.05 ? `${(wti.price / natgas.price).toFixed(1)} bbl/MMBtu` : `${maxImpulsePct.toFixed(2)}% bench impulse`}
+                    Dubai–WTI {fmtUsd(dubaiEdgeVsWti)} · Murban–Dubai {fmtUsd(murbanDubaiEdge)} · Urals–WCS {fmtUsd(uralsVsWcs)} · gas–oil {natgas && wti && natgas.price > 0.05 ? `${(wti.price / natgas.price).toFixed(1)} bbl/MMBtu` : `${maxImpulsePct.toFixed(2)}% bench impulse`}
                   </div>
                 </div>
                 <div style={{
