@@ -120,25 +120,33 @@ export function setNewsCache(data: NewsPayload): void {
 const BACKGROUND_REFRESH_MS = 8 * 60 * 1000; // 8 min — just under the 10-min store TTL
 let _bgInterval: ReturnType<typeof setInterval> | null = null;
 
+async function runBackgroundNewsFetch(): Promise<void> {
+  try {
+    const { items, health } = await fetchAllFeeds(SOURCES);
+    items.sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
+    setNewsCache({
+      items,
+      total:         items.length,
+      fetchedAt:     new Date().toISOString(),
+      sourceCount:   SOURCES.length,
+      failedSources: health.filter(h => !h.ok).length,
+      health,
+    });
+    console.log(`[FTG] Background refresh: ${items.length} items from ${SOURCES.length} sources`);
+  } catch (err) {
+    console.warn('[FTG] Background refresh failed:', (err as Error).message);
+  }
+}
+
 function startBackgroundRefresh(): void {
   if (_bgInterval) return; // already running (guard against HMR double-start)
-  _bgInterval = setInterval(async () => {
-    if (!isCacheStale()) return; // still fresh — nothing to do
-    try {
-      const { items, health } = await fetchAllFeeds(SOURCES);
-      items.sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
-      setNewsCache({
-        items,
-        total:         items.length,
-        fetchedAt:     new Date().toISOString(),
-        sourceCount:   SOURCES.length,
-        failedSources: health.filter(h => !h.ok).length,
-        health,
-      });
-      console.log(`[FTG] Background refresh: ${items.length} items from ${SOURCES.length} sources`);
-    } catch (err) {
-      console.warn('[FTG] Background refresh failed:', (err as Error).message);
-    }
+  // First visitor after deploy should not wait 8m for RSS — warm cache immediately.
+  void runBackgroundNewsFetch();
+  _bgInterval = setInterval(() => {
+    void (async () => {
+      if (!isCacheStale()) return;
+      await runBackgroundNewsFetch();
+    })();
   }, BACKGROUND_REFRESH_MS);
 }
 

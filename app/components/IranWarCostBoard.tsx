@@ -22,9 +22,22 @@ import { useVisibilityPolling } from '@/lib/use-visibility-polling';
 type TheaterMetrics = {
   ok: boolean;
   fetchedAt: string;
-  news: { cached: boolean; totalItems: number; sourceCount: number; failedSources: number };
-  flights: { cached: boolean; total: number; strategic: number; source: string; fetchedAt: string | null };
-  buckets: { label: string; last6h: number; last24h: number }[];
+  news: {
+    cached: boolean;
+    totalItems: number;
+    sourceCount: number;
+    failedSources: number;
+    ageMinutes?: number | null;
+  };
+  flights: {
+    cached: boolean;
+    total: number;
+    strategic: number;
+    source: string;
+    fetchedAt: string | null;
+    ageMinutes?: number | null;
+  };
+  buckets: { label: string; last6h: number; last24h: number; last72h?: number }[];
 };
 
 type FeedItem = {

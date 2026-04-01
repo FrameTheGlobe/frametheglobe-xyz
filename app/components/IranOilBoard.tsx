@@ -36,9 +36,22 @@ type ViewKey   = 'BOARD' | 'CHARTS';
 type TheaterMetrics = {
   ok: boolean;
   fetchedAt: string;
-  news: { cached: boolean; totalItems: number; sourceCount: number; failedSources: number };
-  flights: { cached: boolean; total: number; strategic: number; source: string; fetchedAt: string | null };
-  buckets: { label: string; last6h: number; last24h: number }[];
+  news: {
+    cached: boolean;
+    totalItems: number;
+    sourceCount: number;
+    failedSources: number;
+    ageMinutes: number | null;
+  };
+  flights: {
+    cached: boolean;
+    total: number;
+    strategic: number;
+    source: string;
+    fetchedAt: string | null;
+    ageMinutes: number | null;
+  };
+  buckets: { label: string; last6h: number; last24h: number; last72h: number }[];
 };
 
 // ── Constants ───────────────────────────────────────────────────────────────
@@ -235,6 +248,25 @@ export default function IranOilBoard() {
   const redSea = bucket('RED SEA');
   const tankers = bucket('TANKERS');
   const iranMentions = bucket('IRAN');
+  const opecSupply = bucket('OPEC-SUPPLY');
+
+  const gradeRows = [brent, wti, dubai, urals, wcs].filter(Boolean) as PriceData[];
+  const gradeRangeUsd = gradeRows.length >= 2
+    ? Math.max(...gradeRows.map(p => p.price)) - Math.min(...gradeRows.map(p => p.price))
+    : null;
+  const bullGrades = gradeRows.filter(p => p.changePercent > 0.08).length;
+  const bearGrades = gradeRows.filter(p => p.changePercent < -0.08).length;
+  const alignLabel = gradeRows.length === 0
+    ? '—'
+    : bullGrades >= Math.max(bearGrades, 1) && bullGrades > 0
+      ? `${bullGrades}/${gradeRows.length} BULL`
+      : bearGrades >= Math.max(bullGrades, 1) && bearGrades > 0
+        ? `${bearGrades}/${gradeRows.length} BEAR`
+        : `${gradeRows.length}/${gradeRows.length} MIXED`;
+  const impliedVolProxy = gradeRows.length
+    ? gradeRows.reduce((s, p) => s + Math.abs(p.changePercent), 0) / gradeRows.length
+    : null;
+  const curveTiltPP = brent && wti ? brent.changePercent - wti.changePercent : null;
 
   const brentWtiSpread = (brent && wti) ? (brent.price - wti.price) : null;
   const riskSignal = (() => {
@@ -242,11 +274,29 @@ export default function IranOilBoard() {
     const h = hormuz?.last6h ?? 0;
     const r = redSea?.last6h ?? 0;
     const t = tankers?.last6h ?? 0;
-    const score = (Math.max(0, s) * 2) + (h * 1.2) + (r * 1.0) + (t * 0.6);
+    const ir = iranMentions?.last6h ?? 0;
+    const op = opecSupply?.last6h ?? 0;
+    const score = (Math.max(0, s) * 2) + (h * 1.2) + (r * 1.0) + (t * 0.6) + (ir * 0.55) + (op * 0.35);
     if (score >= 40) return { label: 'HIGH', color: downColor };
     if (score >= 20) return { label: 'ELEVATED', color: '#e67e22' };
     return { label: 'NORMAL', color: upColor };
   })();
+
+  const openOilAi = () => {
+    const p = brent ?? wti;
+    if (!p) return;
+    openDrawer({
+      symbol:        p.symbol,
+      name:          p.name,
+      price:         p.price,
+      change:        p.change,
+      changePercent: p.changePercent,
+      currency:      '$',
+      unit:          'USD/BBL',
+      category:      'oil',
+      accentColor:   'var(--accent)',
+    });
+  };
 
   // ── Segmented control styles ──────────────────────────────────────────────
   const segWrap: React.CSSProperties = {
@@ -380,6 +430,7 @@ export default function IranOilBoard() {
                   sent: p.changePercent > 0.2 ? 'BULLISH' : p.changePercent < -0.2 ? 'BEARISH' : 'NEUTRAL',
                   vol:  absPct >= 2.0 ? 'HIGH' : absPct >= 1.0 ? 'MED' : 'LOW',
                 };
+                const synAi = p.symbol === 'WCS' || p.symbol === 'REBCO' || p.symbol === 'DUBAI';
 
                 return (
                   <div
@@ -409,11 +460,20 @@ export default function IranOilBoard() {
                           letterSpacing: '0.10em', textTransform: 'uppercase', color: muted }}>
                           {p.name}
                         </div>
-                        <div style={{
-                          fontFamily: mono, fontSize: 9, padding: '1px 5px',
-                          background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-light)',
-                          borderRadius: 2, color: muted,
-                        }}>VOL: {meta.vol}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                          {synAi && (
+                            <span style={{
+                              fontFamily: mono, fontSize: 7, fontWeight: 800, letterSpacing: '0.12em',
+                              padding: '2px 5px', borderRadius: 2,
+                              background: 'rgba(52,152,219,0.12)', border: '1px solid rgba(52,152,219,0.35)', color: '#3498db',
+                            }}>AI</span>
+                          )}
+                          <div style={{
+                            fontFamily: mono, fontSize: 9, padding: '1px 5px',
+                            background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-light)',
+                            borderRadius: 2, color: muted,
+                          }}>VOL: {meta.vol}</div>
+                        </div>
                       </div>
 
                       <div key={`${p.symbol}-${flashGen}`} className="ftg-price-flash ftg-oil-price"
@@ -446,28 +506,107 @@ export default function IranOilBoard() {
                 );
               })}
 
-              {/* Theater intel (real feed-derived metrics) */}
+              {/* Theater intel — full width; RSS mention windows + ADS-B strip */}
               <div style={{
-                borderBottom: '1px solid var(--border-light)',
-                background: 'rgba(255,255,255,0.01)',
-                display: 'grid', gridTemplateColumns: '1fr 1fr',
+                gridColumn:    '1 / -1',
+                borderBottom:  '1px solid var(--border-light)',
+                background:    'rgba(255,255,255,0.015)',
               }}>
-                {[
-                  { l: 'HORMUZ MENTIONS', v: hormuz ? String(hormuz.last6h) : '—', s: 'LAST 6H' },
-                  { l: 'RED SEA MENTIONS', v: redSea ? String(redSea.last6h) : '—', s: 'LAST 6H' },
-                  { l: 'TANKER/SHIPPING', v: tankers ? String(tankers.last6h) : '—', s: 'LAST 6H' },
-                  { l: 'STRATEGIC FLIGHTS', v: metrics ? String(metrics.flights.strategic) : '—', s: metrics?.flights.source?.toUpperCase?.() ?? 'ADS-B' },
-                ].map((s, i) => (
-                  <div key={s.l} style={{
-                    padding: '12px 14px',
-                    borderRight: i % 2 === 0 ? '1px solid var(--border-light)' : 'none',
-                    borderBottom: i < 2 ? '1px solid var(--border-light)' : 'none',
-                  }}>
-                    <div style={{ fontFamily: mono, fontSize: 9, color: muted, marginBottom: 4 }}>{s.l}</div>
-                    <div style={{ fontFamily: mono, fontSize: 14, fontWeight: 800 }}>{s.v}</div>
-                    <div style={{ fontFamily: mono, fontSize: 8, color: muted }}>{s.s}</div>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(108px, 1fr))',
+                  gap: 0,
+                  borderBottom: '1px solid var(--border-light)',
+                }}>
+                  {([
+                    ['HORMUZ', 'Hormuz / PG'],
+                    ['RED SEA', 'Red Sea'],
+                    ['TANKERS', 'Tankers'],
+                    ['IRAN', 'Iran'],
+                    ['OPEC-SUPPLY', 'OPEC · supply'],
+                  ] as const).map(([key, title], idx, arr) => {
+                    const b = bucket(key);
+                    return (
+                      <div key={key} style={{
+                        padding:    '10px 12px',
+                        borderRight: idx < arr.length - 1 ? '1px solid var(--border-light)' : 'none',
+                      }}>
+                        <div style={{ fontFamily: mono, fontSize: 8, fontWeight: 700, color: muted,
+                          letterSpacing: '0.11em', textTransform: 'uppercase', marginBottom: 4 }}>
+                          {title}
+                        </div>
+                        <div style={{ fontFamily: mono, fontSize: 18, fontWeight: 900, lineHeight: 1.1 }}>
+                          {metricsError ? '—' : b != null ? b.last6h : metrics ? '0' : '—'}
+                        </div>
+                        <div style={{ fontFamily: mono, fontSize: 8, color: muted, marginTop: 3, lineHeight: 1.35 }}>
+                          {b != null
+                            ? <>6h · <span style={{ opacity: 0.85 }}>24h {b.last24h}</span> · <span style={{ opacity: 0.75 }}>72h {b.last72h}</span></>
+                            : 'RSS windows · mentions in headlines'}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                  gap: 0,
+                  borderBottom: '1px solid var(--border-light)',
+                }}>
+                  <div style={{ padding: '10px 12px', borderRight: '1px solid var(--border-light)' }}>
+                    <div style={{ fontFamily: mono, fontSize: 8, color: muted, letterSpacing: '0.1em', marginBottom: 4 }}>ADS-B · STRATEGIC / TRACKS</div>
+                    <div style={{ fontFamily: mono, fontSize: 15, fontWeight: 800 }}>
+                      {metricsError ? '—' : metrics
+                        ? `${metrics.flights.strategic} / ${metrics.flights.total}`
+                        : '—'}
+                    </div>
+                    <div style={{ fontFamily: mono, fontSize: 8, color: muted, marginTop: 3 }}>
+                      {metrics && !metricsError
+                        ? <>
+                            {metrics.flights.source === 'stale' ? 'CACHE STALE · ' : ''}
+                            last ping {metrics.flights.ageMinutes != null ? `${metrics.flights.ageMinutes}m ago` : '—'}
+                          </>
+                        : 'Theater-wide transponders · mil / tanker heuristics'}
+                    </div>
                   </div>
-                ))}
+                  <div style={{ padding: '10px 12px' }}>
+                    <div style={{ fontFamily: mono, fontSize: 8, color: muted, letterSpacing: '0.1em', marginBottom: 4 }}>NEWS INGEST</div>
+                    <div style={{ fontFamily: mono, fontSize: 15, fontWeight: 800 }}>
+                      {metricsError ? '—' : metrics ? `${metrics.news.totalItems} items` : '—'}
+                    </div>
+                    <div style={{ fontFamily: mono, fontSize: 8, color: muted, marginTop: 3 }}>
+                      {metrics && !metricsError
+                        ? <>
+                            {metrics.news.failedSources > 0 && (
+                              <span style={{ color: downColor }}>{metrics.news.failedSources} src fail · </span>
+                            )}
+                            feed age {metrics.news.ageMinutes != null ? `${metrics.news.ageMinutes}m` : '—'}
+                          </>
+                        : 'Multi-source RSS · keyword buckets'}
+                    </div>
+                  </div>
+                </div>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                  gap: 0,
+                }}>
+                  {[
+                    ['IMPL VOL 1D', impliedVolProxy != null ? `${impliedVolProxy.toFixed(2)}% avg |Δ|` : '—', 'Across 5 benchmarks'],
+                    ['GRADE RANGE', gradeRangeUsd != null ? `$${gradeRangeUsd.toFixed(2)} /bbl` : '—', 'Max − min marker'],
+                    ['ALIGN', alignLabel, 'Co-move vs noise threshold'],
+                    ['CURVE TILT', curveTiltPP != null ? `${sign(curveTiltPP)}${fmt(Math.abs(curveTiltPP), 2)}pp Brent−WTI` : '—', '% chg · structure hint'],
+                  ].map(([k, v, sub], idx, arr) => (
+                    <div key={String(k)} style={{
+                      padding: '10px 12px',
+                      borderRight: idx < arr.length - 1 ? '1px solid var(--border-light)' : 'none',
+                    }}>
+                      <div style={{ fontFamily: mono, fontSize: 8, color: muted, letterSpacing: '0.1em', marginBottom: 4 }}>{k}</div>
+                      <div style={{ fontFamily: mono, fontSize: 12, fontWeight: 800 }}>{v}</div>
+                      <div style={{ fontFamily: mono, fontSize: 7, color: muted, marginTop: 3, opacity: 0.85 }}>{sub}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -479,7 +618,7 @@ export default function IranOilBoard() {
             }}>
               {natgas && (
                 <div style={{
-                  flex: '1 1 300px', display: 'flex', alignItems: 'center', gap: 12,
+                  flex: '1 1 260px', display: 'flex', alignItems: 'center', gap: 12,
                   padding: '12px 18px', borderRight: '1px solid var(--border-light)',
                 }}>
                   <span style={{ fontFamily: mono, fontSize: 10, fontWeight: 700,
@@ -494,6 +633,33 @@ export default function IranOilBoard() {
                   <span style={{ fontFamily: mono, fontSize: 9, color: muted }}>USD/MMBtu</span>
                 </div>
               )}
+              <div style={{
+                flex: '0 1 200px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                padding: '10px 12px', borderRight: '1px solid var(--border-light)',
+              }}>
+                <button
+                  type="button"
+                  onClick={openOilAi}
+                  disabled={!brent && !wti}
+                  style={{
+                    fontFamily:    mono,
+                    fontSize:      9,
+                    fontWeight:    700,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    padding:       '8px 14px',
+                    borderRadius:  3,
+                    border:        '1px solid rgba(52,152,219,0.45)',
+                    background:    'rgba(52,152,219,0.08)',
+                    color:         '#3498db',
+                    cursor:        brent || wti ? 'pointer' : 'not-allowed',
+                    opacity:       brent || wti ? 1 : 0.45,
+                    whiteSpace:    'nowrap',
+                  }}
+                >
+                  Groq · crude read
+                </button>
+              </div>
               {uso && (
                 <div style={{
                   flex: '1 1 200px', display: 'flex', alignItems: 'center', gap: 12,
@@ -522,9 +688,15 @@ export default function IranOilBoard() {
                     {riskSignal.label}
                   </span>
                 </div>
-                <div style={{ fontFamily: mono, fontSize: 9, color: muted, fontWeight: 700, letterSpacing: '0.05em' }}>
+                <div style={{ fontFamily: mono, fontSize: 9, color: muted, fontWeight: 700, letterSpacing: '0.05em', textAlign: 'right' }}>
                   {brentWtiSpread === null ? 'SPREAD: —' : `BRENT–WTI SPREAD: ${sign(brentWtiSpread)}$${fmt(Math.abs(brentWtiSpread), 2)}`}
-                  {metricsError ? ' · ⚠ METRICS' : metrics ? ` · NEWS ITEMS: ${metrics.news.totalItems}` : ''}
+                  {metricsError
+                    ? ' · ⚠ INTEL FEED'
+                    : metrics && metrics.news.totalItems === 0 && metrics.news.ageMinutes == null
+                      ? ' · NEWS WARMING…'
+                      : metrics
+                        ? ` · RSS ${metrics.news.totalItems}${metrics.news.ageMinutes != null ? ` · ${metrics.news.ageMinutes}m` : ''}`
+                        : ''}
                 </div>
               </div>
             </div>
