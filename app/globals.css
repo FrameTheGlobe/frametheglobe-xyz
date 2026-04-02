@@ -330,6 +330,7 @@ body {
   color: var(--text-primary);
   cursor: pointer;
   user-select: none;
+  white-space: nowrap;
 }
 
 .ftg-compact-meta {
@@ -597,7 +598,8 @@ body {
   .ftg-compact-ticker-wrap { grid-area: ticker; }
 
   .ftg-compact-brand {
-    font-size: 20px;
+    font-size: 19px;
+    letter-spacing: -0.01em;
   }
 
   .ftg-beta-badge {
@@ -624,12 +626,20 @@ body {
     gap: 6px;
   }
 
+  .ftg-compact-time-wrap {
+    display: none;
+  }
+
   .ftg-compact-divider {
     display: none;
   }
 
   .ftg-compact-actions {
     gap: 4px;
+  }
+
+  .ftg-compact-social {
+    display: none;
   }
 
   .ftg-compact-right .icon-link-ghost {
@@ -667,6 +677,79 @@ body {
     gap: 6px !important;
     flex-wrap: wrap;
     font-size: 9px;
+  }
+}
+
+@media (max-width: 640px) {
+  .ftg-compact-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 8px;
+    padding: 6px 8px 8px;
+  }
+
+  .ftg-compact-brand {
+    font-size: 17px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .ftg-beta-badge {
+    display: none;
+  }
+
+  .ftg-compact-right .icon-link-ghost {
+    width: 20px;
+    height: 20px;
+  }
+
+  .ftg-compact-actions .hud-action-btn-refined {
+    padding: 0 7px !important;
+    font-size: 8px !important;
+  }
+}
+
+@media (max-width: 375px) {
+  .ftg-compact-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'left right'
+      'ticker ticker';
+    gap: 5px 6px;
+    padding: 5px 6px 7px;
+  }
+
+  .ftg-compact-brand {
+    font-size: 16px;
+    line-height: 0.95;
+    max-width: 100%;
+  }
+
+  /* Keep only brand + theme/refresh on ultra narrow phones */
+  .ftg-compact-right .ftg-compact-divider,
+  .ftg-compact-right .ftg-compact-time-wrap,
+  .ftg-compact-right .ftg-compact-social,
+  .ftg-compact-right .ftg-compact-actions button[title="Generate AI Analyst Briefing"] {
+    display: none !important;
+  }
+
+  .ftg-compact-right {
+    gap: 4px;
+  }
+
+  .ftg-compact-actions {
+    gap: 3px;
+  }
+
+  .ftg-compact-right .icon-link-ghost {
+    width: 20px;
+    height: 20px;
+  }
+
+  .ftg-compact-actions .hud-action-btn-refined {
+    height: 22px !important;
+    padding: 0 6px !important;
+    font-size: 8px !important;
+    min-width: 58px;
   }
 }
 

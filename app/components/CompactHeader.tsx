@@ -67,7 +67,7 @@ export default function CompactHeader({
 
         <div className="ftg-compact-divider" />
 
-        <div className="ftg-compact-actions" aria-label="Social links">
+        <div className="ftg-compact-actions ftg-compact-social" aria-label="Social links">
           <a
             href="https://x.com/FrameTheGlobe"
             target="_blank"
