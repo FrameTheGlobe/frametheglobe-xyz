@@ -1305,6 +1305,8 @@ export default function Home() {
   const [liveStatus, setLiveStatus]     = useState<'connecting' | 'live' | 'polling'>('connecting');
   const [focusedIdx, setFocusedIdx]     = useState<number>(-1);
   const searchRef                        = useRef<HTMLInputElement>(null);
+  const headerRef                        = useRef<HTMLElement>(null);
+  const [headerStickyHeight, setHeaderStickyHeight] = useState(64);
   // Track when data was last successfully fetched so the visibility handler
   // can skip a re-fetch if the data is still reasonably fresh (< 10 min).
   const lastFetchedAtRef                 = useRef<number>(0);
@@ -1336,6 +1338,26 @@ export default function Home() {
     // Bump the time tick every 60s so timeAgo labels refresh
     const tickTimer = setInterval(() => setTimeTick((n: number) => n + 1), 60_000);
     return () => { clearInterval(t); clearInterval(tickTimer); };
+  }, []);
+
+  // Keep breaking ticker offset aligned with actual sticky header height.
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+
+    const updateHeight = () => {
+      const next = Math.ceil(el.getBoundingClientRect().height);
+      if (next > 0) setHeaderStickyHeight(next);
+    };
+
+    updateHeight();
+    const ro = new ResizeObserver(updateHeight);
+    ro.observe(el);
+    window.addEventListener('resize', updateHeight, { passive: true });
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', updateHeight);
+    };
   }, []);
 
   // ── Debounce search ───────────────────────────────────────────────────────
@@ -2160,7 +2182,7 @@ export default function Home() {
       />
 
       {/* ── ELITE MISSION HUD HEADER ────────────────────────────────────────── */}
-      <header className="command-header-hud" style={{
+      <header ref={headerRef} className="command-header-hud" style={{
         position: 'sticky',
         top: 0,
         zIndex: 100,
@@ -2183,7 +2205,7 @@ export default function Home() {
       </header>
 
       {/* ── BREAKING TICKER ────────────────────────────────────────────── */}
-      <BreakingTicker items={items} />
+      <BreakingTicker items={items} stickyOffset={headerStickyHeight} />
 
       {/* ── BODY ───────────────────────────────────────────────────────── */}
       <div className="page-layout">

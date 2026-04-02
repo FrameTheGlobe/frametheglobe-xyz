@@ -20,11 +20,12 @@ type FeedItem = {
 
 interface Props {
   items: FeedItem[];
+  stickyOffset?: number;
 }
 
 const WINDOW_MS = 30 * 60 * 1000; // 30 minutes
 
-function BreakingTicker({ items }: Props) {
+function BreakingTicker({ items, stickyOffset = 0 }: Props) {
   // Date.now() inside useMemo is intentional: it runs once per items change,
   // not on every render, keeping the timestamp stable within a render pass.
   // eslint-disable-next-line react-hooks/purity, react-hooks/exhaustive-deps
@@ -40,16 +41,17 @@ function BreakingTicker({ items }: Props) {
   const doubled = [...breaking, ...breaking];
 
   return (
-    <div style={{
+    <div className="ftg-breaking-ticker" style={{
       background:   'var(--accent)',
       overflow:     'hidden',
       whiteSpace:   'nowrap',
       borderBottom: '1px solid rgba(0, 0, 0, 0.1)',
-      position:     'relative',
-      zIndex:       150,
+      position:     'sticky',
+      top:          stickyOffset,
+      zIndex:       95,
     }}>
       {/* BREAKING label */}
-      <span style={{
+      <span className="ftg-breaking-ticker-label" style={{
         position:       'absolute',
         left:           0,
         top:            0,
@@ -72,7 +74,7 @@ function BreakingTicker({ items }: Props) {
       </span>
 
       {/* Scrolling track */}
-      <div style={{
+      <div className="ftg-breaking-ticker-track" style={{
         display:        'inline-flex',
         alignItems:     'center',
         animation:      `ticker-scroll ${Math.max(20, breaking.length * 8)}s linear infinite`,
@@ -81,6 +83,7 @@ function BreakingTicker({ items }: Props) {
         {doubled.map((item, idx) => (
           <span key={idx} style={{ display: 'inline-flex', alignItems: 'center' }}>
             <a
+              className="ftg-ticker-link"
               href={item.link || undefined}
               target="_blank"
               rel="noopener noreferrer"
@@ -96,12 +99,12 @@ function BreakingTicker({ items }: Props) {
               onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
               onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.95)')}
             >
-              <span style={{ fontWeight: 700, marginRight: 6, color: 'rgba(255,255,255,0.7)', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+              <span className="ftg-ticker-source" style={{ fontWeight: 700, marginRight: 6, color: 'rgba(255,255,255,0.7)', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                 {item.sourceName}
               </span>
               {item.title}
             </a>
-            <span style={{ margin: '0 30px', color: 'rgba(255,255,255,0.25)', fontSize: 11 }}>◆</span>
+            <span className="ftg-ticker-sep" style={{ margin: '0 30px', color: 'rgba(255,255,255,0.25)', fontSize: 11 }}>◆</span>
           </span>
         ))}
       </div>
@@ -110,6 +113,50 @@ function BreakingTicker({ items }: Props) {
         @keyframes ticker-scroll {
           0%   { transform: translateX(0); }
           100% { transform: translateX(-50%); }
+        }
+
+        @media (max-width: 820px) {
+          .ftg-breaking-ticker-label {
+            padding: 0 10px !important;
+            font-size: 10px !important;
+            letter-spacing: 0.1em !important;
+          }
+          .ftg-breaking-ticker-track {
+            padding-left: 72px !important;
+          }
+          .ftg-ticker-link {
+            font-size: 12px !important;
+            padding: 7px 0 !important;
+          }
+          .ftg-ticker-source,
+          .ftg-ticker-sep {
+            font-size: 10px !important;
+          }
+          .ftg-ticker-sep {
+            margin: 0 20px !important;
+          }
+        }
+
+        @media (max-width: 375px) {
+          .ftg-breaking-ticker-label {
+            padding: 0 8px !important;
+            font-size: 9px !important;
+            letter-spacing: 0.08em !important;
+          }
+          .ftg-breaking-ticker-track {
+            padding-left: 62px !important;
+          }
+          .ftg-ticker-link {
+            font-size: 11px !important;
+            padding: 6px 0 !important;
+          }
+          .ftg-ticker-source,
+          .ftg-ticker-sep {
+            font-size: 9px !important;
+          }
+          .ftg-ticker-sep {
+            margin: 0 14px !important;
+          }
         }
       `}</style>
     </div>
