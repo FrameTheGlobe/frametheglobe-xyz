@@ -1,6 +1,6 @@
 # FrameTheGlobe — Technical Architecture & System Manifesto
 
-**Version:** 7.0.0 — *The Split-Stack Update*
+**Version:** 7.1.0 — *Split-Stack + Mobile Sticky HUD*
 **Mission:** Low-latency, high-density tactical oversight of global geopolitical events with a specialised focus on the Iran War Theater.
 **Infrastructure:** Vercel (frontend) + Railway (backend) — split-stack architecture as of March 2026.
 
@@ -796,6 +796,47 @@ This pattern is useless on Vercel (every cold lambda has empty memory) but works
 ---
 
 ## 12. Known Gotchas & Lessons Learned
+
+---
+
+## Addendum — Recent Frontend Delivery Updates (Apr 2026)
+
+These updates were applied after the initial split-stack migration.
+
+### A) Theater Escalation Pulse Expansion
+
+`SidebarTheaterPulse` in `app/page.tsx` now includes:
+
+- Nuclear/IAEA-related wire count (6h window)
+- Brent-WTI spread with daily context (`/api/market`)
+- Polymarket maximum YES probability (`/api/polymarket`)
+
+The pulse elevation logic was extended to include nuclear threshold conditions.
+
+### B) Visibility-Aware Polling
+
+Selective refreshes (market/probability strip metrics) use visibility-aware polling so background tabs do not continuously re-fetch.
+
+### C) Readability Upgrades (Both Nav Columns)
+
+- Left nav (`SidebarPanel`) typography/spacing refinement
+- Right nav (`intel-column` / Strategic Brief) heading + secondary text legibility tuning
+- Shared `ftg-nav-readable` usage for clearer rendering
+
+### D) Mobile Header Hardening
+
+To prevent top-row overlap on small phones:
+
+- compact header controls progressively hide at narrow breakpoints
+- 320-375px behavior degrades to essential controls for clarity
+
+### E) Sticky Header + Sticky Breaking Ticker
+
+- Main command header remains sticky at top
+- Breaking ticker is also sticky and positioned beneath the header
+- Ticker top offset is computed from measured header height (`ResizeObserver`) for breakpoint-safe alignment
+
+For implementation history, see `docs/RECENT_UPDATES.md`.
 
 ### Railway Railpack vs NIXPACKS
 

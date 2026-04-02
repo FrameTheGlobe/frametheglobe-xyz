@@ -1,6 +1,6 @@
 # FrameTheGlobe Geopolitical Intelligence Hub
 
-**Version:** 5.2.10 — *Universal Deployment Readiness*  
+**Version:** 7.1.0 — *Split-Stack + Mobile Sticky HUD*  
 **Mission:** Real-time news aggregation and intelligence monitoring for the Iran War Theater, South Asia, and the Global Pivot.  
 **Production URL:** [frametheglobe.xyz](https://frametheglobe.xyz)
 
@@ -13,7 +13,7 @@ FrameTheGlobe is engineered as a **High-Performance Intelligence Hub**. It disti
 ### Core Components:
 1.  **Ingestion & Heuristics**: Custom algorithms that parse RSS/XML feeds, apply Jaccard Similarity for story clustering, and calculate "Impact Scores."
 2.  **Thematic Lenses**: 16 specialized filters (e.g., Nuclear/Diplomacy, Oil Markets, Naval/Hormuz) that use regex-driven keyword engines to categorize intelligence in real-time.
-3.  **Real-Time Delivery**: Uses **Server-Sent Events (SSE)** via `/api/stream` to push updates without the overhead of WebSockets, with a 5-minute polling fallback.
+3.  **Real-Time Delivery**: Uses **SSE redirect routing** via `/api/stream` (browser connects to Railway directly), with polling fallback where needed.
 4.  **Resilience Layer**: A JSON sanitization engine built in `lib/fetcher.ts` that automatically repairs malformed data streams from third-party news providers.
 
 ---
@@ -54,6 +54,19 @@ Configured via `netlify.toml` with the `@netlify/plugin-nextjs`.
 ---
 
 ## 🔧 Maintenance & Ops
+
+### Recent Changes Snapshot (Apr 2026)
+- API routes are now thin proxies to Railway (`lib/backend-proxy.ts`), with SSE redirect routing.
+- Left sidebar **Theater Escalation Pulse** now includes:
+  - Nuclear/IAEA 6h signal
+  - Brent-WTI spread strip (`/api/market`)
+  - Polymarket max YES signal (`/api/polymarket`)
+- Added visibility-aware polling for selected market/probability refreshes.
+- Readability pass shipped for both left and right nav columns.
+- Mobile header overlap fixes shipped for 320-375px devices.
+- Header + breaking ticker are sticky during scroll with dynamic ticker offset.
+
+For full implementation details, see [`docs/RECENT_UPDATES.md`](docs/RECENT_UPDATES.md).
 
 ### Deploying Updates (Master Branch)
 We use a versioning system mapped to Git tags (e.g., `v5.2.1`). To ship a new version:

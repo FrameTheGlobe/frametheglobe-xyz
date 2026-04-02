@@ -6,4 +6,5 @@ This folder contains the “why” and “how” behind FrameTheGlobe.
 - [DESIGN_GUIDE](DESIGN_GUIDE.md) - UI/UX and styling conventions (HUD, theme tokens, motion)
 - [APP_PHILOSOPHY](APP_PHILOSOPHY.md) - the product philosophy and operational assumptions
 - [ARCHITECTURE_AND_BUILD](ARCHITECTURE_AND_BUILD.md) - what the app does and how it was built
+- [RECENT_UPDATES](RECENT_UPDATES.md) - implementation updates since the split-stack docs baseline (performance, pulse metrics, readability, mobile, sticky header+ticker)
 
