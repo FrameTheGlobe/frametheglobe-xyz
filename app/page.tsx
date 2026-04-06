@@ -630,6 +630,7 @@ function SidebarTheaterPulse({ items, clusters }: { items: FeedItem[]; clusters:
     } catch { /* keep last snapshot */ }
   }, []);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void loadMarketPoly(); }, [loadMarketPoly]);
   useVisibilityPolling(loadMarketPoly, PULSE_MARKET_POLY_MS);
 
@@ -1286,16 +1287,21 @@ export default function Home() {
   const [search, setSearch]             = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [sidebarOpen, setSidebarOpen]   = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const theaterRef = useRef<HTMLElement>(null);
+  const widgetsRef = useRef<HTMLElement>(null);
+  const filtersRef = useRef<HTMLDivElement>(null);
+  const alertsRef = useRef<HTMLDivElement>(null);
 
   // ── AI features state ──────────────────────────────────────────────────────
   const [tickerDrawerData, setTickerDrawerData] = useState<TickerDrawerData | null>(null);
   const [aiModalOpen,      setAiModalOpen]      = useState(false);
 
-  // Lock body scroll when the mobile sidebar drawer is open
+  // Lock body scroll when mobile overlays are open
   useEffect(() => {
-    document.body.style.overflow = sidebarOpen ? 'hidden' : '';
+    document.body.style.overflow = (sidebarOpen || mobileNavOpen) ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
-  }, [sidebarOpen]);
+  }, [sidebarOpen, mobileNavOpen]);
   const [theme, setTheme]               = useState<Theme>('light');
   const [liveStatus, setLiveStatus]     = useState<'connecting' | 'live' | 'polling'>('connecting');
   const [focusedIdx, setFocusedIdx]     = useState<number>(-1);
@@ -1867,6 +1873,27 @@ export default function Home() {
     try { window.localStorage.setItem('ftg_briefing_dismissed', new Date().toDateString()); } catch { /* ignore */ }
   }, []);
 
+  const jumpTo = useCallback((ref: { current: HTMLElement | HTMLDivElement | null }) => {
+    if (ref.current) {
+      ref.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    setMobileNavOpen(false);
+  }, []);
+
+  const openSearchPanel = useCallback(() => {
+    setMobileNavOpen(false);
+    setSidebarOpen(true);
+    setTimeout(() => searchRef.current?.focus(), 140);
+  }, []);
+
+  const openAlertsPanel = useCallback(() => {
+    setMobileNavOpen(false);
+    setSidebarOpen(true);
+    setTimeout(() => {
+      alertsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 140);
+  }, []);
+
   const filteredBySource = useMemo(() => {
     // Pass 1: URL / exact-key dedup
     const seen = new Set<string>();
@@ -2135,7 +2162,7 @@ export default function Home() {
       openDrawer:  (data) => setTickerDrawerData(data),
       closeDrawer: ()     => setTickerDrawerData(null),
     }}>
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', position: 'relative' }}>
+    <div className="ftg-adaptive-density" style={{ minHeight: '100vh', background: 'var(--bg)', position: 'relative' }}>
       {/* Tactical visual layer */}
       <div className="scanline-overlay" />
 
@@ -2206,7 +2233,7 @@ export default function Home() {
             />
 
             {/* ── Alert Profiles ─────────────────────────────────────────── */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 12, borderTop: '1px solid var(--border-light)' }}>
+            <div ref={alertsRef} style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 12, borderTop: '1px solid var(--border-light)' }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.08em', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
                 ⚡ Alert Profiles
               </div>
@@ -2241,18 +2268,20 @@ export default function Home() {
         {/* Main feed */}
         <main className="ftg-main">
           {/* ── Iran War Theater ─────────────────────────────────── */}
-          <IranWarSection 
-            items={items} 
-            sourceCountMap={sourceCountMap} 
-            brief={<IntelTimeline events={intelEvents} />}
-            pinnedKeys={pinnedKeys}
-            onTogglePin={togglePin}
-            keyForItem={keyForItem}
-          />
+          <section ref={theaterRef} className="ftg-focus-block">
+            <IranWarSection 
+              items={items} 
+              sourceCountMap={sourceCountMap} 
+              brief={<IntelTimeline events={intelEvents} />}
+              pinnedKeys={pinnedKeys}
+              onTogglePin={togglePin}
+              keyForItem={keyForItem}
+            />
+          </section>
 
           {/* ── Widgets row (TopStorylines, RapidResponse, Macro, Oil) ── */}
-          <div className="ftg-widgets-section">
-            {!loading && items.length > 0 && (
+          <section ref={widgetsRef} className="ftg-widgets-section">
+            {!loading && items.length > 0 ? (
               <div className="widgets-grid" style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
@@ -2268,8 +2297,23 @@ export default function Home() {
                 <MacroWatch items={items} limit={4} />
                 <OilTicker items={items} />
               </div>
+            ) : (
+              <div className="widgets-grid" style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                gap: 12,
+                marginBottom: 14
+              }}>
+                {Array.from({ length: 4 }).map((_, idx) => (
+                  <div
+                    key={`widget-skeleton-${idx}`}
+                    className="skeleton"
+                    style={{ height: 150, borderRadius: 6, border: '1px solid var(--border-light)' }}
+                  />
+                ))}
+              </div>
             )}
-          </div>
+          </section>
 
           <RegionStatsStrip items={visibleItems} />
 
@@ -2282,7 +2326,7 @@ export default function Home() {
           )}
 
           {/* ── FILTER + VIEW CONTROLS ─────────────────────────────────────── */}
-          <div style={{ marginBottom: 10, display: 'flex', flexDirection: 'column', gap: 7 }}>
+          <div ref={filtersRef} style={{ marginBottom: 10, display: 'flex', flexDirection: 'column', gap: 7 }}>
 
             {/* Top row: lenses + view/sort controls */}
             <div className="ftg-filter-top-row">
@@ -2581,10 +2625,26 @@ export default function Home() {
               color: 'var(--text-muted)',
               letterSpacing: '0.05em',
             }}>
-              {search
+              <div style={{ marginBottom: 10 }}>
+                {search
                 ? `No stories match "${search}" — try a broader term.`
                 : 'No stories found. Try a different lens or refresh.'
-              }
+                }
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => fetchNews()}
+                  style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '6px 10px', borderRadius: 4, border: '1px solid var(--accent)', background: 'var(--accent-light)', color: 'var(--accent)', cursor: 'pointer' }}
+                >
+                  Retry Feed
+                </button>
+                <button
+                  onClick={() => { setActiveLenses(new Set()); setActiveRegions(new Set()); setSearch(''); }}
+                  style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '6px 10px', borderRadius: 4, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-secondary)', cursor: 'pointer' }}
+                >
+                  Clear Filters
+                </button>
+              </div>
             </div>
 
           /* ── STREAM view ──────────────────────────────────────────── */
@@ -3265,6 +3325,28 @@ export default function Home() {
           </div>
         </aside>
       </div>
+
+      {/* ── MOBILE COMMAND BAR ───────────────────────────────────────────── */}
+      <div className="ftg-mobile-command">
+        <button onClick={openSearchPanel}>Search</button>
+        <button onClick={() => jumpTo(filtersRef)}>Filters</button>
+        <button onClick={openAlertsPanel}>Alerts</button>
+        <button onClick={() => setMobileNavOpen(true)}>Focus</button>
+      </div>
+
+      {/* ── MOBILE FOCUS SHEET ───────────────────────────────────────────── */}
+      {mobileNavOpen && (
+        <>
+          <button className="ftg-mobile-sheet-overlay" aria-label="Close focus menu" onClick={() => setMobileNavOpen(false)} />
+          <div className="ftg-mobile-sheet" role="dialog" aria-modal="true" aria-label="Quick focus menu">
+            <div className="ftg-mobile-sheet-title">Quick Focus</div>
+            <button onClick={() => jumpTo(theaterRef)}>Iran Theater</button>
+            <button onClick={() => jumpTo(widgetsRef)}>Widgets</button>
+            <button onClick={() => jumpTo(filtersRef)}>Feed Controls</button>
+            <button onClick={() => setMobileNavOpen(false)}>Close</button>
+          </div>
+        </>
+      )}
 
       {/* ── FOOTER ─────────────────────────────────────────────────────── */}
       <footer className="ftg-footer" style={{
