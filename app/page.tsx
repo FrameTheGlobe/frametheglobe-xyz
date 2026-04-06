@@ -681,17 +681,7 @@ function SidebarTheaterPulse({ items, clusters }: { items: FeedItem[]; clusters:
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: pulseColor, display: 'inline-block', flexShrink: 0 }} />
-          <span style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: 10,
-            fontWeight: 900,
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
-            color: 'var(--accent)',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}>
+          <span className="ftg-ui-header-label" style={{ color: 'var(--accent)' }}>
             Theater Escalation Pulse
           </span>
         </div>
@@ -709,17 +699,17 @@ function SidebarTheaterPulse({ items, clusters }: { items: FeedItem[]; clusters:
 
       <div style={{ padding: 10, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
         <div style={{ border: '1px solid var(--border-light)', borderRadius: 4, padding: '6px 7px', background: 'var(--surface-muted)' }}>
-          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>BREAKING</div>
+          <div className="ftg-ui-header-label ftg-ui-header-label--sm" style={{ color: 'var(--text-muted)' }}>BREAKING</div>
           <div style={{ fontSize: 16, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--text-primary)' }}>{breakingCount}</div>
           <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>&lt;15m</div>
         </div>
         <div style={{ border: '1px solid var(--border-light)', borderRadius: 4, padding: '6px 7px', background: 'var(--surface-muted)' }}>
-          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>KINETIC</div>
+          <div className="ftg-ui-header-label ftg-ui-header-label--sm" style={{ color: 'var(--text-muted)' }}>KINETIC</div>
           <div style={{ fontSize: 16, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--text-primary)' }}>{kinetic6h}</div>
           <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>6h</div>
         </div>
         <div style={{ border: '1px solid var(--border-light)', borderRadius: 4, padding: '6px 7px', background: 'var(--surface-muted)' }}>
-          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>HORMUZ</div>
+          <div className="ftg-ui-header-label ftg-ui-header-label--sm" style={{ color: 'var(--text-muted)' }}>HORMUZ</div>
           <div style={{ fontSize: 16, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--text-primary)' }}>{hormuz6h}</div>
           <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>6h</div>
         </div>
@@ -727,19 +717,19 @@ function SidebarTheaterPulse({ items, clusters }: { items: FeedItem[]; clusters:
 
       <div style={{ padding: '0 10px 10px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
         <div style={{ border: '1px solid var(--border-light)', borderRadius: 4, padding: '6px 7px', background: 'var(--surface-muted)' }}>
-          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>NUCLEAR</div>
+          <div className="ftg-ui-header-label ftg-ui-header-label--sm" style={{ color: 'var(--text-muted)' }}>NUCLEAR</div>
           <div style={{ fontSize: 16, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--text-primary)' }}>{nuclear6h}</div>
           <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>6h wires</div>
         </div>
         <div style={{ border: '1px solid var(--border-light)', borderRadius: 4, padding: '6px 7px', background: 'var(--surface-muted)' }}>
-          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>BRENT - WTI</div>
+          <div className="ftg-ui-header-label ftg-ui-header-label--sm" style={{ color: 'var(--text-muted)' }}>BRENT - WTI</div>
           <div style={{ fontSize: 14, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>{spreadStr}</div>
           <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', lineHeight: 1.35 }}>
             {oil == null ? 'Loading…' : `Δ Br ${oil.brentPct >= 0 ? '+' : ''}${oil.brentPct.toFixed(1)}% · WTI ${oil.wtiPct >= 0 ? '+' : ''}${oil.wtiPct.toFixed(1)}%`}
           </div>
         </div>
         <div style={{ border: '1px solid var(--border-light)', borderRadius: 4, padding: '6px 7px', background: 'var(--surface-muted)' }}>
-          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>POLY MAX</div>
+          <div className="ftg-ui-header-label ftg-ui-header-label--sm" style={{ color: 'var(--text-muted)' }}>POLY MAX</div>
           <div style={{ fontSize: 14, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--text-primary)' }}>{polyStr}</div>
           <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', lineHeight: 1.35, wordBreak: 'break-word' }} title={polySub}>
             {polySub}
@@ -753,7 +743,7 @@ function SidebarTheaterPulse({ items, clusters }: { items: FeedItem[]; clusters:
           borderTop: '1px solid var(--border-light)',
           background: 'rgba(0,112,243,0.04)',
         }}>
-          <div style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', fontWeight: 800, marginBottom: 4, letterSpacing: '0.05em', lineHeight: 1.4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div className="ftg-ui-header-label ftg-ui-header-label--sm" style={{ color: 'var(--text-muted)', marginBottom: 4, lineHeight: 1.4 }}>
             LEAD STORYLINE · V{Math.round(lead.score * 10)}{missileLead ? ' · ⚡MISSILE' : ''}{corroboration > 0 ? ` · ${corroboration}×CORR` : ''} · {leadSources} SRC
           </div>
           <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.45 }}>
@@ -795,7 +785,7 @@ function SidebarPanel({
     }}>
       {(['network', 'intel', 'assets'] as const).map(tab => {
         const active = sidebarTab === tab;
-        const labels: Record<string, string> = { network: '🌐 NET', intel: '📂 INTEL', assets: '📊 INDICATORS' };
+        const labels: Record<string, string> = { network: 'NET', intel: 'INTEL', assets: 'INDICATORS' };
         return (
           <button
             key={tab}
@@ -807,11 +797,14 @@ function SidebarPanel({
               background: active ? 'var(--accent)' : 'transparent',
               color: active ? '#fff' : 'var(--text-secondary)',
               transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
             onMouseEnter={e => !active && (e.currentTarget.style.background = 'var(--surface-hover)')}
             onMouseLeave={e => !active && (e.currentTarget.style.background = 'transparent')}
           >
-            {labels[tab]}
+            <span className="ftg-ui-header-label ftg-ui-header-label--sm ftg-sidebar-tab-label" style={{ color: 'inherit' }}>
+              {labels[tab]}
+            </span>
           </button>
         );
       })}

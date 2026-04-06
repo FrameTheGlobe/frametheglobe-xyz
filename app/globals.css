@@ -354,6 +354,30 @@ body {
   padding-left: var(--ftg-ticker-label-w);
 }
 
+/* Shared compact title style for dashboard/widget headers */
+.ftg-ui-header-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ftg-ui-header-label--sm {
+  font-size: 9px;
+  letter-spacing: 0.05em;
+}
+
+/* Sidebar tab labels stay one line without icons */
+.ftg-sidebar-tab-label {
+  max-width: 100%;
+  display: inline-block;
+  text-align: center;
+}
+
 .ftg-compact-header {
   width: 100%;
   display: grid;
