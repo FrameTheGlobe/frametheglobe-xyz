@@ -16,6 +16,7 @@
     "build": "bash scripts/build.sh",
     "start": "next start",
     "lint": "eslint",
+    "verify:env": "node scripts/verify-env.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },

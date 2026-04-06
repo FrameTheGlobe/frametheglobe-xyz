@@ -5,6 +5,14 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  {
+    files: ["backend/src/**/*.ts"],
+    rules: {
+      // Backend AI route handlers process highly variable upstream payloads.
+      // Keep lint non-blocking here while preserving strict checks elsewhere.
+      "@typescript-eslint/no-explicit-any": "off",
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
@@ -12,6 +20,13 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Project-specific generated/build artifacts:
+    "backend/dist/**",
+    "coverage/**",
+    "playwright-report/**",
+    "tsconfig.tsbuildinfo",
+    // Legacy CommonJS runtime file for Hostinger deploy path.
+    "server.js",
   ]),
 ]);
 

@@ -64,6 +64,7 @@ That is correct for Hostinger’s deployment model, but it can be disruptive if 
 
 ### Lint
 - `npm run lint` : `eslint`
+- `npm run verify:env` : split-stack env preflight (`BACKEND_URL`, `NEXT_PUBLIC_BACKEND_URL`)
 
 ### Tests
 - `npm run test` : `vitest run`
@@ -145,6 +146,8 @@ Use these pointers as a “map”:
 - If you did not set `GROQ_API_KEY`, the AI endpoints will return deterministic algorithmic outputs instead.
 
 ## Notes for Contributors
+
+Deployment runbook: `docs/DEPLOY_CHECKLIST.md`
 
 When adding a new data source, remember:
 - every source should have a unique `id` in `lib/sources.ts`

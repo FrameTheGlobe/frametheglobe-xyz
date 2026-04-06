@@ -16,8 +16,6 @@ import DailyBriefing, { BriefCluster } from './components/DailyBriefing';
 import CrossSourceComparison, { CompItem } from './components/CrossSourceComparison';
 import IntelTimeline, { IntelStatus } from './components/IntelTimeline';
 import CompactHeader  from './components/CompactHeader';
-import LiveFeeds      from './components/LiveFeeds';
-import AIIntelPanel   from './components/AIIntelPanel';
 import MissileIntel   from './components/MissileIntel';
 import FlashBrief            from './components/FlashBrief';
 import TickerAnalysisDrawer  from './components/TickerAnalysisDrawer';
@@ -543,7 +541,6 @@ type SidebarPanelProps = {
   onNoSources: () => void;
   sourceHealth: SourceHealth[];
   sourceCountMap: Record<string, number>;
-  failedSources: Set<string>;
   pinnedItems: FeedItem[];
   onTogglePin: (item: FeedItem) => void;
   keyForItem: (item: FeedItem) => string;
@@ -776,7 +773,7 @@ function SidebarTheaterPulse({ items, clusters }: { items: FeedItem[]; clusters:
 function SidebarPanel({
   search, onSearch, searchRef,
   activeSources, onToggleSource, onAllSources, onNoSources,
-  sourceCountMap, failedSources, sourceHealth,
+  sourceCountMap, sourceHealth,
   pinnedItems, onTogglePin, keyForItem,
   clusters, items
 }: SidebarPanelProps) {
@@ -785,9 +782,7 @@ function SidebarPanel({
 
   const failedHealth  = sourceHealth.filter(h => !h.ok);
   const isAllHealthy  = sourceHealth.length > 0 && failedHealth.length === 0;
-  const total         = sourceHealth.length || SOURCES.length;
-
-  const TabNav = () => (
+  const tabNav = (
     <div style={{
       display: 'flex', gap: 2, marginBottom: 18, 
       background: 'var(--surface-muted)', padding: 3, borderRadius: 6,
@@ -821,7 +816,7 @@ function SidebarPanel({
 
   return (
     <div style={{ fontFamily: 'var(--font-mono)', minHeight: '100%' }}>
-      <TabNav />
+      {tabNav}
 
       {sidebarTab === 'network' && (
         <div style={{ animation: 'fadeInScale 0.2s ease forwards' }}>
@@ -920,7 +915,7 @@ function SidebarPanel({
           <div style={{ fontSize: 11, letterSpacing: '0.05em', color: 'var(--accent)', textTransform: 'uppercase', fontWeight: 900, marginBottom: 16, marginTop: 20, borderBottom: '1px solid var(--accent-light)', paddingBottom: 6 }}>
              THEATER_INTEL_FOLDERS
           </div>
-          {clusters.slice(0, 6).map((cluster, i) => (
+          {clusters.slice(0, 6).map((cluster) => (
             <div key={cluster.id} style={{ marginBottom: 14, padding: '14px', border: '1px solid var(--border-light)', borderRadius: 6, background: 'var(--surface)', position: 'relative' }}>
                <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 4, background: 'var(--accent)' }} />
                <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 8, lineHeight: 1.25 }}>{cluster.title}</div>
@@ -1534,7 +1529,7 @@ export default function Home() {
     try {
       localStorage.setItem(LS_KEY, JSON.stringify({ items, health, savedAt: Date.now() }));
     } catch { /* quota exceeded or incognito */ }
-  }, []);
+  }, [LS_KEY]);
 
   // ── Data fetching (manual / fallback) ────────────────────────────────────
   const fetchNews = useCallback(async () => {
@@ -1568,7 +1563,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [saveToLocalStorage]);
 
   // ── SSE live feed (replaces polling) ─────────────────────────────────────
   useEffect(() => {
@@ -1712,7 +1707,7 @@ export default function Home() {
       window.removeEventListener('online', handleOnline);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [fetchNews]);
+  }, [fetchNews, LS_MAX_AGE, saveToLocalStorage]);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   // Wrapped in useCallback so the stable references prevent unnecessary
@@ -1735,6 +1730,8 @@ export default function Home() {
 
   // ── INTEL TIMELINE DATA (GDELT + CRITICAL) ─────────────────────────
   const intelEvents = useMemo(() => {
+    // Read tick so memo refreshes once/minute for relative-time labels.
+    void _timeTick;
     // ── CONFIG ────────────────────────────────────────────────────────
     const CRITICAL_KEYWORDS = ['strike', 'nuclear', 'explosion', 'intercept', 'attack', 'missile', 'ballistic', 'casualties', 'dead', 'war', 'invasion'];
     const STRATEGIC_KEYWORDS = ['pipeline', 'sanctions', 'treaty', 'oil price', 'production cut', 'uranium', 'iaea', 'veto', 'blockade'];
@@ -1999,16 +1996,6 @@ export default function Home() {
     [items]
   );
 
-  const failedSources = useMemo(() => {
-    const ids = new Set<string>();
-    if (sourceHealth.length > 0) {
-      sourceHealth.forEach(h => { if (!h.ok) ids.add(h.id); });
-    } else {
-      SOURCES.forEach(s => { if (!sourceCountMap[s.id]) ids.add(s.id); });
-    }
-    return ids;
-  }, [sourceHealth, sourceCountMap]);
-
   const lensCountMap = useMemo(() => {
     const map = {} as Record<LensId, number>;
     LENSES.forEach(l => {
@@ -2210,7 +2197,6 @@ export default function Home() {
               onAllSources={selectAllSources}
               onNoSources={selectNoSources}
               sourceCountMap={sourceCountMap}
-              failedSources={failedSources}
               sourceHealth={sourceHealth}
               pinnedItems={pinnedItems}
               onTogglePin={togglePin}

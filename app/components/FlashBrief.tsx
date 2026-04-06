@@ -121,7 +121,7 @@ export default function FlashBrief({ items, embedded = false }: Props) {
             fontFamily: 'var(--font-mono)', fontSize: 8,
             color: 'var(--text-muted)', letterSpacing: '0.08em',
           }}>
-            // AI Situation Summary · Updates hourly
+            AI Situation Summary · Updates hourly
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

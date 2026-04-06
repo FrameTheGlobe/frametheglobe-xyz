@@ -80,7 +80,7 @@ export default function LiveFeeds() {
             color: 'var(--text-muted)',
             letterSpacing: '0.06em',
           }}>
-            // {loading ? '…' : feeds.length} streams
+            {`${loading ? '…' : feeds.length} streams`}
           </span>
         </div>
 

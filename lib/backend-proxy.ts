@@ -88,7 +88,7 @@ export function proxyPost(backendPath: string) {
  * This avoids Vercel holding an open connection just to relay SSE.
  */
 export function proxySSE() {
-  return async function GET(_req: NextRequest) {
+  return async function GET() {
     const base = process.env.BACKEND_URL ?? 'http://localhost:4000';
     // Tell the browser to connect directly to Railway SSE
     return NextResponse.redirect(`${base}/api/stream`, 307);
