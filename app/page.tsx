@@ -2173,31 +2173,32 @@ export default function Home() {
         aria-hidden
       />
 
-      {/* ── ELITE MISSION HUD HEADER ────────────────────────────────────────── */}
-      <header className="command-header-hud" style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-        background: 'var(--bg)',
-        backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid var(--border)',
-        boxShadow: 'var(--shadow-md)',
-      }}>
-        <CompactHeader
-          hasMounted={hasMounted}
-          loading={loading}
-          missionTime={missionTime}
-          theme={theme}
-          storyCount={items.length}
-          sourceCount={SOURCES.length}
-          onThemeToggle={() => setTheme(ts => ts === 'light' ? 'dark' : 'light')}
-          onRefresh={() => fetchNews()}
-          onBriefing={() => setAiModalOpen(true)}
-        />
-      </header>
+      {/* ── FIXED SITE HEADER: white bar + solid blue news ticker (sticky together) ─ */}
+      <div className="ftg-site-header-stack">
+        <header className="command-header-hud" style={{
+          background: 'var(--bg)',
+          backdropFilter: 'blur(12px)',
+          borderBottom: '1px solid var(--border)',
+          boxShadow: 'var(--shadow-md)',
+        }}>
+          <CompactHeader
+            hasMounted={hasMounted}
+            loading={loading}
+            missionTime={missionTime}
+            theme={theme}
+            storyCount={items.length}
+            sourceCount={SOURCES.length}
+            onThemeToggle={() => setTheme(ts => ts === 'light' ? 'dark' : 'light')}
+            onRefresh={() => fetchNews()}
+            onBriefing={() => setAiModalOpen(true)}
+          />
+        </header>
 
-      {/* ── BREAKING TICKER ────────────────────────────────────────────── */}
-      <BreakingTicker items={items} />
+        {/* Solid blue strip below the white header — live / breaking headline crawl */}
+        <div className="ftg-news-ticker-bar" aria-label="Live headlines ticker">
+          <BreakingTicker items={items} />
+        </div>
+      </div>
 
       {/* ── BODY ───────────────────────────────────────────────────────── */}
       <div className="page-layout">

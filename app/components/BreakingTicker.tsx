@@ -1,11 +1,9 @@
 'use client';
 
 /**
- * BreakingTicker — scrolling strip of articles published < 30 minutes ago.
- * Rendered only when there are breaking items; otherwise returns null.
- *
- * Wrapped in React.memo with a custom comparator: only re-renders when the
- * set of recent article titles actually changes, not on every parent update.
+ * BreakingTicker — scrolling headline strip (breaking → live wire → standby).
+ * Background comes from the parent `.ftg-news-ticker-bar` (solid brand blue).
+ * Memo comparator limits re-renders to ticker-window item changes.
  */
 
 import { memo, useMemo } from 'react';
@@ -74,14 +72,17 @@ function BreakingTicker({ items }: Props) {
   const doubled = [...tickerFeed, ...tickerFeed];
 
   return (
-    <div style={{
-      background:   'var(--accent)',
-      overflow:     'hidden',
-      whiteSpace:   'nowrap',
-      borderBottom: '1px solid rgba(0, 0, 0, 0.1)',
-      position:     'relative',
-      zIndex:       150,
-    }}>
+    <div
+      className="ftg-breaking-ticker"
+      style={{
+        background:   'transparent',
+        overflow:     'hidden',
+        whiteSpace:   'nowrap',
+        borderBottom: 'none',
+        position:     'relative',
+        zIndex:       1,
+      }}
+    >
       {/* BREAKING label */}
       <span style={{
         position:       'absolute',
@@ -91,7 +92,7 @@ function BreakingTicker({ items }: Props) {
         display:        'flex',
         alignItems:     'center',
         padding:        '0 16px',
-        background:     'var(--accent-hover)',
+        background:     'rgba(0, 0, 0, 0.22)',
         fontFamily:     'var(--font-mono)',
         fontSize:       11,
         fontWeight:     800,
