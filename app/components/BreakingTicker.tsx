@@ -83,36 +83,18 @@ function BreakingTicker({ items }: Props) {
         zIndex:       1,
       }}
     >
-      {/* BREAKING label */}
-      <span style={{
-        position:       'absolute',
-        left:           0,
-        top:            0,
-        bottom:         0,
-        display:        'flex',
-        alignItems:     'center',
-        padding:        '0 16px',
-        background:     'rgba(0, 0, 0, 0.22)',
-        fontFamily:     'var(--font-mono)',
-        fontSize:       11,
-        fontWeight:     800,
-        letterSpacing:  '0.14em',
-        color:          '#fff',
-        textTransform:  'uppercase',
-        zIndex:         2,
-        borderRight:    '1px solid rgba(255,255,255,0.1)',
-        boxShadow:      '4px 0 10px rgba(0,0,0,0.15)'
-      }}>
+      {/* Left badge — solid fill masks scrolling text (no semi-transparent overlay) */}
+      <span className="ftg-breaking-ticker__label">
         {mode === 'breaking' ? 'Breaking' : mode === 'live' ? 'Live Wire' : 'Standby'}
       </span>
 
-      {/* Scrolling track */}
-      <div style={{
-        display:        'inline-flex',
-        alignItems:     'center',
-        animation:      `ticker-scroll ${Math.max(20, tickerFeed.length * 8)}s linear infinite`,
-        paddingLeft:    '90px', // clear the label
-      }}>
+      {/* Scrolling track — padding-left matches .ftg-breaking-ticker__label width */}
+      <div
+        className="ftg-breaking-ticker__track"
+        style={{
+          animation: `ticker-scroll ${Math.max(20, tickerFeed.length * 8)}s linear infinite`,
+        }}
+      >
         {doubled.map((item, idx) => (
           <span key={idx} style={{ display: 'inline-flex', alignItems: 'center' }}>
             {item.link ? (

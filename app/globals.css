@@ -321,6 +321,37 @@ body {
 
 .ftg-breaking-ticker {
   min-height: 28px;
+  /* Label + track padding stay aligned (covers “Live Wire” width) */
+  --ftg-ticker-label-w: 9rem;
+}
+
+/* Opaque panel — same blue as bar; masks crawl (no alpha background) */
+.ftg-breaking-ticker__label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 14px 0 16px;
+  min-width: var(--ftg-ticker-label-w);
+  box-sizing: border-box;
+  background: var(--brand-blue);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: #fff;
+  text-transform: uppercase;
+  z-index: 3;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 4px 0 14px rgba(0, 0, 0, 0.28);
+}
+
+.ftg-breaking-ticker__track {
+  display: inline-flex;
+  align-items: center;
+  padding-left: var(--ftg-ticker-label-w);
 }
 
 .ftg-compact-header {
