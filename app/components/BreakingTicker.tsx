@@ -22,7 +22,8 @@ interface Props {
   items: FeedItem[];
 }
 
-const WINDOW_MS = 30 * 60 * 1000; // 30 minutes
+const BREAKING_WINDOW_MS = 30 * 60 * 1000; // 30 minutes
+const LIVE_WIRE_WINDOW_MS = 6 * 60 * 60 * 1000; // fallback window
 
 function BreakingTicker({ items }: Props) {
   // Date.now() inside useMemo is intentional: it runs once per items change,
@@ -31,13 +32,46 @@ function BreakingTicker({ items }: Props) {
   const now = useMemo(() => Date.now(), [items]);
 
   const breaking = items.filter(
-    i => now - new Date(i.pubDate).getTime() < WINDOW_MS
+    i => now - new Date(i.pubDate).getTime() < BREAKING_WINDOW_MS
   );
 
-  if (breaking.length === 0) return null;
+  const fallback = items
+    .filter(i => now - new Date(i.pubDate).getTime() < LIVE_WIRE_WINDOW_MS)
+    .sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime())
+    .slice(0, 16);
 
-  // Duplicate the list so the scroll loops seamlessly
-  const doubled = [...breaking, ...breaking];
+  const feed = breaking.length > 0 ? breaking : fallback;
+  const mode: 'breaking' | 'live' | 'idle' =
+    breaking.length > 0 ? 'breaking' : feed.length > 0 ? 'live' : 'idle';
+
+  // Duplicate the list so the scroll loops seamlessly.
+  // If we have no feed items, inject stable fallback messages so the strip
+  // always renders and communicates system state.
+  const idleFeed: FeedItem[] = [
+    {
+      title: 'Monitoring global wires — awaiting fresh Iran-theater updates.',
+      link: '',
+      pubDate: new Date(now).toISOString(),
+      sourceName: 'FrameTheGlobe',
+      region: 'global',
+    },
+    {
+      title: 'Live stream connected — polling and SSE channels are active.',
+      link: '',
+      pubDate: new Date(now).toISOString(),
+      sourceName: 'System',
+      region: 'global',
+    },
+    {
+      title: 'Tip: use Filters and Alerts to surface your priority signals.',
+      link: '',
+      pubDate: new Date(now).toISOString(),
+      sourceName: 'Operator',
+      region: 'global',
+    },
+  ];
+  const tickerFeed = feed.length > 0 ? feed : idleFeed;
+  const doubled = [...tickerFeed, ...tickerFeed];
 
   return (
     <div style={{
@@ -68,39 +102,56 @@ function BreakingTicker({ items }: Props) {
         borderRight:    '1px solid rgba(255,255,255,0.1)',
         boxShadow:      '4px 0 10px rgba(0,0,0,0.15)'
       }}>
-        Breaking
+        {mode === 'breaking' ? 'Breaking' : mode === 'live' ? 'Live Wire' : 'Standby'}
       </span>
 
       {/* Scrolling track */}
       <div style={{
         display:        'inline-flex',
         alignItems:     'center',
-        animation:      `ticker-scroll ${Math.max(20, breaking.length * 8)}s linear infinite`,
+        animation:      `ticker-scroll ${Math.max(20, tickerFeed.length * 8)}s linear infinite`,
         paddingLeft:    '90px', // clear the label
       }}>
         {doubled.map((item, idx) => (
           <span key={idx} style={{ display: 'inline-flex', alignItems: 'center' }}>
-            <a
-              href={item.link || undefined}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                fontFamily:    'var(--font-body)',
-                fontSize:      14,
-                fontWeight:    500,
-                color:         'rgba(255,255,255,0.95)',
-                textDecoration:'none',
-                padding:       '8px 0',
-                transition:    'color 0.1s',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.95)')}
-            >
-              <span style={{ fontWeight: 700, marginRight: 6, color: 'rgba(255,255,255,0.7)', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                {item.sourceName}
+            {item.link ? (
+              <a
+                href={item.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  fontFamily:    'var(--font-body)',
+                  fontSize:      14,
+                  fontWeight:    500,
+                  color:         'rgba(255,255,255,0.95)',
+                  textDecoration:'none',
+                  padding:       '8px 0',
+                  transition:    'color 0.1s',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.95)')}
+              >
+                <span style={{ fontWeight: 700, marginRight: 6, color: 'rgba(255,255,255,0.7)', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                  {item.sourceName}
+                </span>
+                {item.title}
+              </a>
+            ) : (
+              <span
+                style={{
+                  fontFamily: 'var(--font-body)',
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: 'rgba(255,255,255,0.92)',
+                  padding: '8px 0',
+                }}
+              >
+                <span style={{ fontWeight: 700, marginRight: 6, color: 'rgba(255,255,255,0.7)', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                  {item.sourceName}
+                </span>
+                {item.title}
               </span>
-              {item.title}
-            </a>
+            )}
             <span style={{ margin: '0 30px', color: 'rgba(255,255,255,0.25)', fontSize: 11 }}>◆</span>
           </span>
         ))}
@@ -120,15 +171,16 @@ function BreakingTicker({ items }: Props) {
 // compare the titles + pubDates of items that are < 30 min old.
 function breakingItemsEqual(prev: Props, next: Props): boolean {
   const now = Date.now();
-  const isBreaking = (i: FeedItem) => now - new Date(i.pubDate).getTime() < WINDOW_MS;
+  const inTickerWindow = (i: FeedItem) =>
+    now - new Date(i.pubDate).getTime() < LIVE_WIRE_WINDOW_MS;
 
-  const prevBreaking = prev.items.filter(isBreaking);
-  const nextBreaking = next.items.filter(isBreaking);
+  const prevTicker = prev.items.filter(inTickerWindow);
+  const nextTicker = next.items.filter(inTickerWindow);
 
-  if (prevBreaking.length !== nextBreaking.length) return false;
-  return prevBreaking.every((item, i) =>
-    item.title === nextBreaking[i].title &&
-    item.pubDate === nextBreaking[i].pubDate
+  if (prevTicker.length !== nextTicker.length) return false;
+  return prevTicker.every((item, i) =>
+    item.title === nextTicker[i].title &&
+    item.pubDate === nextTicker[i].pubDate
   );
 }
 
