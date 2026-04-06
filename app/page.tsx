@@ -683,11 +683,14 @@ function SidebarTheaterPulse({ items, clusters }: { items: FeedItem[]; clusters:
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: pulseColor, display: 'inline-block', flexShrink: 0 }} />
           <span style={{
             fontFamily: 'var(--font-mono)',
-            fontSize: 11,
+            fontSize: 10,
             fontWeight: 900,
-            letterSpacing: '0.08em',
+            letterSpacing: '0.06em',
             textTransform: 'uppercase',
             color: 'var(--accent)',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
           }}>
             Theater Escalation Pulse
           </span>
@@ -706,17 +709,17 @@ function SidebarTheaterPulse({ items, clusters }: { items: FeedItem[]; clusters:
 
       <div style={{ padding: 10, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
         <div style={{ border: '1px solid var(--border-light)', borderRadius: 4, padding: '6px 7px', background: 'var(--surface-muted)' }}>
-          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>BREAKING</div>
+          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>BREAKING</div>
           <div style={{ fontSize: 16, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--text-primary)' }}>{breakingCount}</div>
           <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>&lt;15m</div>
         </div>
         <div style={{ border: '1px solid var(--border-light)', borderRadius: 4, padding: '6px 7px', background: 'var(--surface-muted)' }}>
-          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>KINETIC</div>
+          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>KINETIC</div>
           <div style={{ fontSize: 16, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--text-primary)' }}>{kinetic6h}</div>
           <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>6h</div>
         </div>
         <div style={{ border: '1px solid var(--border-light)', borderRadius: 4, padding: '6px 7px', background: 'var(--surface-muted)' }}>
-          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>HORMUZ</div>
+          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>HORMUZ</div>
           <div style={{ fontSize: 16, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--text-primary)' }}>{hormuz6h}</div>
           <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>6h</div>
         </div>
@@ -724,19 +727,19 @@ function SidebarTheaterPulse({ items, clusters }: { items: FeedItem[]; clusters:
 
       <div style={{ padding: '0 10px 10px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
         <div style={{ border: '1px solid var(--border-light)', borderRadius: 4, padding: '6px 7px', background: 'var(--surface-muted)' }}>
-          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>NUCLEAR</div>
+          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>NUCLEAR</div>
           <div style={{ fontSize: 16, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--text-primary)' }}>{nuclear6h}</div>
           <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>6h wires</div>
         </div>
         <div style={{ border: '1px solid var(--border-light)', borderRadius: 4, padding: '6px 7px', background: 'var(--surface-muted)' }}>
-          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>BRENT − WTI</div>
+          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>BRENT - WTI</div>
           <div style={{ fontSize: 14, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>{spreadStr}</div>
           <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', lineHeight: 1.35 }}>
             {oil == null ? 'Loading…' : `Δ Br ${oil.brentPct >= 0 ? '+' : ''}${oil.brentPct.toFixed(1)}% · WTI ${oil.wtiPct >= 0 ? '+' : ''}${oil.wtiPct.toFixed(1)}%`}
           </div>
         </div>
         <div style={{ border: '1px solid var(--border-light)', borderRadius: 4, padding: '6px 7px', background: 'var(--surface-muted)' }}>
-          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>POLY MAX</div>
+          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>POLY MAX</div>
           <div style={{ fontSize: 14, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--text-primary)' }}>{polyStr}</div>
           <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', lineHeight: 1.35, wordBreak: 'break-word' }} title={polySub}>
             {polySub}
@@ -750,7 +753,7 @@ function SidebarTheaterPulse({ items, clusters }: { items: FeedItem[]; clusters:
           borderTop: '1px solid var(--border-light)',
           background: 'rgba(0,112,243,0.04)',
         }}>
-          <div style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', fontWeight: 800, marginBottom: 4, letterSpacing: '0.05em', lineHeight: 1.4 }}>
+          <div style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', fontWeight: 800, marginBottom: 4, letterSpacing: '0.05em', lineHeight: 1.4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             LEAD STORYLINE · V{Math.round(lead.score * 10)}{missileLead ? ' · ⚡MISSILE' : ''}{corroboration > 0 ? ` · ${corroboration}×CORR` : ''} · {leadSources} SRC
           </div>
           <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.45 }}>
