@@ -109,47 +109,34 @@ export default function CompactHeader({
         <div className="ftg-compact-actions">
           {/* AI Analyst Briefing trigger */}
           <button
+            type="button"
             onClick={onBriefing}
             title="Generate AI Analyst Briefing"
-            style={{
-              fontFamily:    'var(--font-mono)',
-              fontSize:      9,
-              fontWeight:    800,
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              padding:       '5px 11px',
-              background:    'linear-gradient(135deg, #6d28d9, #9b59b6)',
-              color:         '#fff',
-              border:        'none',
-              borderRadius:  3,
-              cursor:        'pointer',
-              whiteSpace:    'nowrap',
-              touchAction:   'manipulation',
-              minHeight:     28,
-            }}
+            className="ftg-compact-ai-btn"
           >
             ⚡<span className="ftg-ai-btn-label"> AI Briefing</span>
           </button>
 
           <button 
-            className="icon-link-ghost" 
+            type="button"
+            className="icon-link-ghost ftg-compact-theme-btn" 
             onClick={onThemeToggle} 
             title="THEME_TOGGLE"
             aria-label="Toggle theme"
           >
             {hasMounted && theme === 'light' ? (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
             ) : hasMounted && theme === 'dark' ? (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="18.36" x2="5.64" y2="19.78"></line><line x1="18.36" y1="4.22" x2="19.78" y2="5.64"></line></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="18.36" x2="5.64" y2="19.78"></line><line x1="18.36" y1="4.22" x2="19.78" y2="5.64"></line></svg>
             ) : (
-              <div style={{ width: 16, height: 16, opacity: 0.2 }} />
+              <div style={{ width: 20, height: 20, opacity: 0.2 }} />
             )}
           </button>
           <button 
+            type="button"
             onClick={onRefresh} 
             disabled={loading}
-            className="hud-action-btn-refined"
-            style={{ height: 28, fontSize: 10, padding: '0 10px' }}
+            className="hud-action-btn-refined ftg-compact-refresh-btn"
           >
             {loading ? <span className="loader-dots">···</span> : 'Refresh'}
           </button>
