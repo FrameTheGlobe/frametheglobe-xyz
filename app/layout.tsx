@@ -1,15 +1,13 @@
 import type { Metadata, Viewport } from 'next';
-import { Lora, IBM_Plex_Mono } from 'next/font/google';
+import { Inter, IBM_Plex_Mono } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
 
 // next/font self-hosts these at build time → no round-trip to Google Fonts CDN,
 // no render-blocking stylesheet, fonts inlined into the page bundle.
-const lora = Lora({
+const inter = Inter({
   subsets:  ['latin'],
-  weight:   ['400', '500', '600', '700'],
-  style:    ['normal', 'italic'],
-  variable: '--font-lora',
+  variable: '--font-inter',
   display:  'swap',
   preload:  true,
 });
@@ -102,7 +100,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${lora.variable} ${ibmPlexMono.variable}`}>
+    <html lang="en" className={`${inter.variable} ${ibmPlexMono.variable}`}>
       <body>
         {children}
         <Analytics />

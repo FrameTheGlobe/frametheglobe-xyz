@@ -45,9 +45,9 @@
   --shadow-sm:   0 1px 3px rgba(0, 0, 0, 0.1);
   --shadow-md:   0 4px 6px -1px rgba(0, 0, 0, 0.1);
 
-  /* next/font injects --font-lora and --font-ibm-mono onto <html> */
-  --font-display: var(--font-lora), Georgia, serif;
-  --font-body:    var(--font-lora), system-ui, sans-serif;
+  /* next/font injects --font-inter and --font-ibm-mono onto <html> */
+  --font-display: var(--font-inter), system-ui, sans-serif;
+  --font-body:    var(--font-inter), system-ui, sans-serif;
   --font-mono:    var(--font-ibm-mono), monospace;
 
   /* HUD Overrides for Light Mode */
@@ -597,16 +597,16 @@ body {
 /* Primary header actions — desktop defaults; mobile scales up in breakpoints below */
 .ftg-compact-ai-btn {
   font-family: var(--font-mono);
-  font-size: 9px;
-  font-weight: 800;
+  font-size: 10px;
+  font-weight: 900;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  padding: 5px 11px;
+  padding: 5px 16px;
   min-height: 32px;
-  background: linear-gradient(135deg, #6d28d9, #9b59b6);
-  color: #fff;
-  border: none;
-  border-radius: 4px;
+  background: transparent;
+  color: var(--neon-amber);
+  border: 1px solid var(--border);
+  border-radius: 9999px;
   cursor: pointer;
   white-space: nowrap;
   touch-action: manipulation;
@@ -614,6 +614,13 @@ body {
   align-items: center;
   justify-content: center;
   line-height: 1;
+  transition: all 0.2s ease;
+}
+
+.ftg-compact-ai-btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--neon-amber);
+  color: var(--neon-amber);
 }
 
 .ftg-compact-refresh-btn {
@@ -1274,10 +1281,10 @@ body.ftg-accountability-scroll-lock {
   gap: 6px;
   padding: 0 14px;
   height: 26px;
-  border-radius: 4px;
-  border: none;
-  background: var(--accent);
-  color: #fff;
+  border-radius: 9999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-primary);
   font-family: var(--font-mono);
   font-size: 9px;
   font-weight: 900;
@@ -1285,8 +1292,14 @@ body.ftg-accountability-scroll-lock {
   text-transform: uppercase;
   cursor: pointer;
   touch-action: manipulation;
-  transition: background 0.18s, transform 0.1s;
+  transition: all 0.18s;
   white-space: nowrap;
+}
+
+.ftg-situation-desk__expand-btn:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
 }
 .ftg-situation-desk__expand-btn:hover {
   background: var(--accent-hover);
@@ -2417,16 +2430,16 @@ button, .icon-btn, .icon-btn-refined, .menu-btn {
 }
 
 .hud-action-btn-refined {
-  background: var(--accent);
-  color: #fff;
-  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border);
   height: 32px;
   padding: 0 16px;
   font-family: var(--font-mono);
   font-size: 11px;
-  font-weight: 900;
+  font-weight: 800;
   letter-spacing: 0.05em;
-  border-radius: 4px;
+  border-radius: 9999px;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
@@ -2540,7 +2553,9 @@ button, .icon-btn, .icon-btn-refined, .menu-btn {
 }
 
 .hud-action-btn-refined:hover:not(:disabled) {
-  filter: brightness(1.1);
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
   box-shadow: 0 0 10px var(--accent-light);
 }
 
