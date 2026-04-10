@@ -7,7 +7,8 @@ import { SOURCES, REGION_LABELS, Source } from '@/lib/sources';
 import type { SourceHealth } from '@/lib/fetcher';
 import { SOURCE_TRUST } from '@/lib/fetcher';
 import TopStorylines   from './components/TopStorylines';
-import BreakingTicker  from './components/BreakingTicker';
+import BreakingTicker      from './components/BreakingTicker';
+import AccountabilityTracker from './components/AccountabilityTracker';
 import RapidResponse   from './components/RapidResponse';
 import MacroWatch     from './components/MacroWatch';
 import OilTicker      from './components/OilTicker';
@@ -2206,6 +2207,8 @@ export default function Home() {
 
       {/* ── BREAKING TICKER ────────────────────────────────────────────── */}
       <BreakingTicker items={items} stickyOffset={headerStickyHeight} />
+
+      <AccountabilityTracker />
 
       {/* ── BODY ───────────────────────────────────────────────────────── */}
       <div className="page-layout">

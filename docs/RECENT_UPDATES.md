@@ -74,3 +74,9 @@ All updates were verified during implementation with:
 - lint checks on touched files
 
 No new lint/type errors were introduced in the changed files.
+
+## 7) Levant accountability tracker (v7.1.4)
+
+- Thin **rail** under the breaking ticker with an **expandable bottom sheet** (mobile-friendly: safe-area padding, scroll lock, Escape to close).
+- Curated entries in `lib/accountability-data.ts` with external source links and neutral status labels.
+- Bookmarkable full page at **`/accountability`** (`app/accountability/`).

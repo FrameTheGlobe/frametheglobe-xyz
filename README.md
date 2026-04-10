@@ -1,6 +1,6 @@
 # FrameTheGlobe Geopolitical Intelligence Hub
 
-**Version:** 7.1.0 — *Split-Stack + Mobile Sticky HUD*  
+**Version:** 7.1.4 — *Accountability tracker + split-stack HUD*  
 **Mission:** Real-time news aggregation and intelligence monitoring for the Iran War Theater, South Asia, and the Global Pivot.  
 **Production URL:** [frametheglobe.xyz](https://frametheglobe.xyz)
 

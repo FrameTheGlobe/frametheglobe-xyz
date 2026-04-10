@@ -1057,6 +1057,36 @@ body {
 }
 
 /* ══════════════════════════════════════════════════════
+   ACCOUNTABILITY TRACKER (rail + sheet)
+══════════════════════════════════════════════════════ */
+
+body.ftg-accountability-scroll-lock {
+  overflow: hidden !important;
+}
+
+@media (min-width: 768px) {
+  .ftg-accountability-sheet {
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%);
+    width: min(640px, calc(100vw - 32px)) !important;
+  }
+}
+
+.ftg-accountability-card:hover {
+  background: var(--surface-hover) !important;
+  border-color: var(--border) !important;
+}
+
+.ftg-accountability-quiet-link:hover {
+  color: var(--accent) !important;
+}
+
+.ftg-accountability-expand-btn:active {
+  opacity: 0.92;
+}
+
+/* ══════════════════════════════════════════════════════
    MOBILE UTILITY CLASSES
    (used by page.tsx + components via className)
 ══════════════════════════════════════════════════════ */
