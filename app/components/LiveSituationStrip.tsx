@@ -20,9 +20,7 @@ const REGION_CLASS: Record<LiveSituationMetric['regionCode'], string> = {
 function formatAsOfShort(iso: string): string {
   try {
     return new Date(`${iso}T12:00:00Z`).toLocaleDateString(undefined, {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
+      month: 'short', day: 'numeric', year: 'numeric',
     });
   } catch {
     return iso;
@@ -33,10 +31,12 @@ function MetricCard({
   m,
   dense,
   loading,
+  showCaveat,
 }: {
   m: LiveSituationMetric;
   dense: boolean;
   loading: boolean;
+  showCaveat: boolean;
 }) {
   const showValue = m.valueDisplay != null && m.valueDisplay !== '';
 
@@ -49,145 +49,54 @@ function MetricCard({
       aria-label={`${m.regionLabel}: ${m.metricLabel}. Open ${m.sourceName}.`}
     >
       {/* Region label */}
-      <div
-        className="ftg-live-metric-card__region"
-        style={{
-          fontFamily: mono,
-          fontSize: 9,
-          fontWeight: 800,
-          letterSpacing: '0.1em',
-          textTransform: 'uppercase',
-          color: 'var(--text-muted)',
-          marginBottom: 6,
-        }}
-      >
+      <div className="ftg-live-metric-card__region">
         {m.regionLabel}
       </div>
 
-      {/* Value */}
+      {/* Value — the hero number */}
       <div
         className="ftg-live-metric-card__value"
-        style={{
-          fontFamily: mono,
-          fontSize: dense ? 24 : 30,
-          fontWeight: 900,
-          letterSpacing: '-0.03em',
-          color: 'var(--text-primary)',
-          lineHeight: 1,
-          marginBottom: 4,
-          opacity: loading ? 0.45 : 1,
-          transition: 'opacity 0.3s ease',
-        }}
+        style={{ opacity: loading ? 0.35 : 1, transition: 'opacity 0.4s ease' }}
       >
         {loading ? '···' : showValue ? m.valueDisplay : '—'}
       </div>
 
-      {/* Qualifier */}
+      {/* Qualifier badge (if any) */}
       {m.valueQualifier && !loading && (
-        <div
-          style={{
-            fontFamily: mono,
-            fontSize: 9,
-            fontWeight: 700,
-            textTransform: 'uppercase',
-            letterSpacing: '0.06em',
-            color: 'var(--text-muted)',
-            marginBottom: 4,
-          }}
-        >
+        <div className="ftg-live-metric-card__qualifier">
           {m.valueQualifier}
         </div>
       )}
 
       {/* Metric label */}
-      <div
-        style={{
-          fontFamily: 'var(--font-body)',
-          fontSize: dense ? 12 : 13,
-          fontWeight: 600,
-          color: 'var(--text-secondary)',
-          marginBottom: 6,
-          lineHeight: 1.4,
-        }}
-      >
+      <div className="ftg-live-metric-card__label">
         {m.metricLabel}
       </div>
 
       {/* Since label */}
-      <div
-        style={{
-          fontSize: 11,
-          color: 'var(--text-muted)',
-          lineHeight: 1.4,
-          marginBottom: 10,
-        }}
-      >
+      <div className="ftg-live-metric-card__since">
         {m.sinceLabel}
       </div>
 
-      {/* Source + basis */}
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          gap: 6,
-          marginTop: 'auto',
-        }}
-      >
-        <span
-          style={{
-            fontFamily: mono,
-            fontSize: 8,
-            fontWeight: 800,
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
-            padding: '2px 7px',
-            borderRadius: 4,
-            background: 'var(--accent-light)',
-            color: 'var(--accent)',
-          }}
-        >
+      {/* Source + basis badges */}
+      <div className="ftg-live-metric-card__footer">
+        <span className="ftg-live-metric-card__basis">
           {situationMetricBasisLabel(m.basis)}
         </span>
-        <span
-          style={{
-            fontFamily: mono,
-            fontSize: 9,
-            color: 'var(--accent)',
-            fontWeight: 700,
-          }}
-        >
+        <span className="ftg-live-metric-card__source">
           {m.sourceName} →
         </span>
       </div>
 
-      {/* Caveat (comfortable mode only) */}
-      {!dense && m.caveat ? (
-        <p
-          style={{
-            margin: '10px 0 0',
-            fontSize: 11,
-            lineHeight: 1.45,
-            color: 'var(--text-muted)',
-            borderTop: '1px solid var(--border-light)',
-            paddingTop: 8,
-          }}
-        >
+      {/* Caveat — only in full page mode */}
+      {showCaveat && m.caveat && (
+        <p className="ftg-live-metric-card__caveat">
           {m.caveat}
         </p>
-      ) : null}
+      )}
 
       {/* Sync date */}
-      <div
-        style={{
-          fontFamily: mono,
-          fontSize: 8,
-          color: 'var(--text-muted)',
-          marginTop: dense ? 6 : 8,
-          letterSpacing: '0.04em',
-        }}
-      >
+      <div className="ftg-live-metric-card__sync">
         Editor sync {formatAsOfShort(m.asOf)}
       </div>
     </a>
@@ -197,9 +106,12 @@ function MetricCard({
 export function LiveSituationStrip({
   density,
   layout = 'scroll',
+  panelMode = false,
 }: {
   density: 'compact' | 'comfortable';
   layout?: 'scroll' | 'grid';
+  /** When true, suppresses caveats and the section heading (caller provides its own) */
+  panelMode?: boolean;
 }) {
   const [metrics, setMetrics] = useState<LiveSituationMetric[]>(LIVE_SITUATION_METRICS);
   const [fetching, setFetching] = useState(true);
@@ -215,10 +127,7 @@ export function LiveSituationStrip({
           setMetrics((prev) =>
             prev.map((m) => {
               const live = data.metrics.find((x: LiveSituationMetric) => x.id === m.id);
-              if (live) {
-                return { ...m, ...live };
-              }
-              return m;
+              return live ? { ...m, ...live } : m;
             })
           );
         }
@@ -239,19 +148,25 @@ export function LiveSituationStrip({
       className="ftg-live-situation"
       aria-labelledby="ftg-live-situation-heading"
     >
-      <div className="ftg-live-situation__head">
-        <h3
-          id="ftg-live-situation-heading"
-          className="ftg-live-situation__title"
-        >
-          Live situation
+      {/* Section heading — only rendered when not in panel mode (full page) */}
+      {!panelMode && (
+        <div className="ftg-live-situation__head">
+          <h3 id="ftg-live-situation-heading" className="ftg-live-situation__title">
+            Live situation
+          </h3>
+          {latest ? (
+            <span className="ftg-live-situation__meta">
+              Rows synced {formatAsOfShort(latest)}
+            </span>
+          ) : null}
+        </div>
+      )}
+      {/* Hidden heading for accessibility when panelMode */}
+      {panelMode && (
+        <h3 id="ftg-live-situation-heading" className="sr-only">
+          Live situation metrics
         </h3>
-        {latest ? (
-          <span className="ftg-live-situation__meta">
-            Rows synced {formatAsOfShort(latest)}
-          </span>
-        ) : null}
-      </div>
+      )}
       <div
         className={
           layout === 'grid'
@@ -260,7 +175,13 @@ export function LiveSituationStrip({
         }
       >
         {metrics.map((m) => (
-          <MetricCard key={m.id} m={m} dense={dense} loading={fetching} />
+          <MetricCard
+            key={m.id}
+            m={m}
+            dense={dense}
+            loading={fetching}
+            showCaveat={!panelMode}
+          />
         ))}
       </div>
     </section>

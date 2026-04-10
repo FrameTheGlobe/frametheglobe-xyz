@@ -1198,10 +1198,11 @@ body.ftg-accountability-scroll-lock {
 
 /* ── Wrapper ─────────────────────────────────────────── */
 .ftg-situation-desk {
-  background: var(--surface-muted);
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
 }
 
-/* ── Ticker strip (collapsed, always visible) ────────── */
+/* ── Ticker strip ────────────────────────────────────── */
 .ftg-situation-desk__ticker {
   display: flex;
   align-items: center;
@@ -2455,4 +2456,264 @@ button, .icon-btn, .icon-btn-refined, .menu-btn {
     flex: 1;
     text-align: center;
   }
+}
+
+/* ══════════════════════════════════════════════════════
+   METRIC CARD INNER ELEMENTS (bold redesign CSS classes)
+══════════════════════════════════════════════════════ */
+
+.ftg-live-metric-card__region {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.ftg-live-metric-card__value {
+  font-family: var(--font-mono);
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  color: var(--text-primary);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.ftg-live-metric-card__qualifier {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.ftg-live-metric-card__label {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.4;
+  margin-bottom: 5px;
+}
+
+.ftg-live-metric-card__since {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin-bottom: 10px;
+}
+
+.ftg-live-metric-card__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
+}
+
+.ftg-live-metric-card__basis {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 3px;
+  background: var(--accent-light);
+  color: var(--accent);
+}
+
+.ftg-live-metric-card__source {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.ftg-live-metric-card__caveat {
+  margin: 10px 0 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border-light);
+  padding-top: 8px;
+}
+
+.ftg-live-metric-card__sync {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  margin-top: 8px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ══════════════════════════════════════════════════════
+   FULL PAGE — Situation Desk (/accountability)
+══════════════════════════════════════════════════════ */
+
+.ftg-full-page {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text-primary);
+}
+
+.ftg-full-page__hero {
+  background: var(--accent);
+  border-bottom: 1px solid rgba(0,0,0,0.14);
+}
+
+.ftg-full-page__hero-inner {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 20px 20px 22px;
+}
+
+.ftg-full-page__breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.ftg-full-page__breadcrumb-link {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: rgba(255,255,255,0.6);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.ftg-full-page__breadcrumb-link:hover { color: rgba(255,255,255,0.9); }
+
+.ftg-full-page__breadcrumb-sep {
+  color: rgba(255,255,255,0.35);
+  font-size: 12px;
+}
+
+.ftg-full-page__breadcrumb-current {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.85);
+  text-transform: uppercase;
+}
+
+.ftg-full-page__hero-body {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.ftg-full-page__hero-title {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #fff;
+  margin: 0 0 8px;
+  line-height: 1.1;
+}
+
+.ftg-full-page__hero-sub {
+  font-size: 13px;
+  line-height: 1.55;
+  color: rgba(255,255,255,0.72);
+  margin: 0;
+  max-width: 520px;
+}
+
+.ftg-full-page__hero-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.ftg-full-page__hero-meta-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.5);
+}
+
+.ftg-full-page__hero-meta-value {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+
+.ftg-full-page__body {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 24px 20px calc(48px + env(safe-area-inset-bottom, 0px));
+}
+
+.ftg-full-page__metrics-card {
+  margin-bottom: 30px;
+  padding: 18px 18px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.ftg-full-page__timeline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.ftg-full-page__timeline-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.ftg-full-page__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+@media (max-width: 560px) {
+  .ftg-full-page__hero-inner { padding: 16px 14px 18px; }
+  .ftg-full-page__hero-title { font-size: 17px; }
+  .ftg-full-page__hero-meta { align-items: flex-start; }
+  .ftg-full-page__body { padding: 18px 14px calc(36px + env(safe-area-inset-bottom, 0px)); }
+  .ftg-full-page__timeline-header { flex-direction: column; align-items: flex-start; }
+  .ftg-live-metric-card__value { font-size: 26px; }
 }
