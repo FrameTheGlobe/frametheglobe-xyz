@@ -2266,3 +2266,30 @@ button, .icon-btn, .icon-btn-refined, .menu-btn {
     gap: 16px !important;
   }
 }
+
+/* ==========================================================================
+   ACCOUNTABILITY RESPONSIVE MOBILE TWEAKS
+   ========================================================================== */
+@media (max-width: 560px) {
+  .ftg-accountability-rail-inner {
+    padding: 6px 10px 8px !important;
+  }
+  .ftg-accountability-rail-head {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+  .ftg-accountability-desc {
+    flex: none !important;
+    font-size: 11px !important;
+  }
+  .ftg-accountability-rail-controls {
+    width: 100%;
+    margin-left: 0 !important;
+    justify-content: space-between;
+  }
+  .ftg-accountability-expand-btn {
+    flex: 1;
+    text-align: center;
+  }
+}

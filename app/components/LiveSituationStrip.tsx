@@ -6,6 +6,7 @@ import {
   situationMetricBasisLabel,
   type LiveSituationMetric,
 } from '@/lib/live-situation-metrics';
+import { useState, useEffect } from 'react';
 
 const mono = 'var(--font-mono)';
 
@@ -31,9 +32,11 @@ function formatAsOfShort(iso: string): string {
 function MetricCard({
   m,
   dense,
+  loading,
 }: {
   m: LiveSituationMetric;
   dense: boolean;
+  loading: boolean;
 }) {
   const showValue = m.valueDisplay != null && m.valueDisplay !== '';
 
@@ -45,6 +48,11 @@ function MetricCard({
       className={`ftg-live-metric-card ${REGION_CLASS[m.regionCode]}`}
       aria-label={`${m.regionLabel}: ${m.metricLabel}. Open ${m.sourceName}.`}
     >
+      {loading ? (
+        <div style={{ position: 'absolute', top: 8, right: 8 }}>
+          <span className="loader-dots"></span>
+        </div>
+      ) : null}
       <div
         className="ftg-live-metric-card__region"
         style={{
@@ -69,9 +77,10 @@ function MetricCard({
           color: 'var(--text-primary)',
           lineHeight: 1.1,
           marginBottom: 4,
+          opacity: loading ? 0.5 : 1,
         }}
       >
-        {showValue ? m.valueDisplay : '—'}
+        {loading ? '...' : showValue ? m.valueDisplay : '—'}
       </div>
       <div
         style={{
@@ -172,7 +181,37 @@ export function LiveSituationStrip({
   density: 'compact' | 'comfortable';
   layout?: 'scroll' | 'grid';
 }) {
-  const latest = liveSituationLatestAsOf(LIVE_SITUATION_METRICS);
+  const [metrics, setMetrics] = useState<LiveSituationMetric[]>(LIVE_SITUATION_METRICS);
+  const [fetching, setFetching] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await fetch('/api/live-metrics');
+        if (!res.ok) throw new Error('Failed to fetch live metrics');
+        const data = await res.json();
+        if (mounted && data?.metrics && Array.isArray(data.metrics)) {
+          setMetrics((prev) =>
+            prev.map((m) => {
+              const live = data.metrics.find((x: LiveSituationMetric) => x.id === m.id);
+              if (live) {
+                return { ...m, ...live };
+              }
+              return m;
+            })
+          );
+        }
+      } catch (err) {
+        console.error('[LiveSituationStrip] Fetch error:', err);
+      } finally {
+        if (mounted) setFetching(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  const latest = liveSituationLatestAsOf(metrics);
   const dense = density === 'compact';
 
   return (
@@ -216,8 +255,8 @@ export function LiveSituationStrip({
             : `ftg-live-situation__scroller${dense ? ' ftg-live-situation__scroller--compact' : ' ftg-live-situation__scroller--comfortable'}`
         }
       >
-        {LIVE_SITUATION_METRICS.map((m) => (
-          <MetricCard key={m.id} m={m} dense={dense} />
+        {metrics.map((m) => (
+          <MetricCard key={m.id} m={m} dense={dense} loading={fetching} />
         ))}
       </div>
     </section>

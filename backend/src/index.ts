@@ -30,6 +30,7 @@ import articleBriefRouter    from './routes/article-brief.js';
 import rssRouter             from './routes/rss.js';
 import theaterMetricsRouter  from './routes/theater-metrics.js';
 import liveFeedsRouter       from './routes/live-feeds.js';
+import liveMetricsRouter     from './routes/live-metrics.js';
 
 const app  = express();
 const PORT = process.env.PORT ?? 4000;
@@ -83,6 +84,7 @@ app.use('/api/article-brief',     articleBriefRouter);
 app.use('/api/rss',               rssRouter);
 app.use('/api/theater-metrics',   theaterMetricsRouter);
 app.use('/api/live-feeds',        liveFeedsRouter);
+app.use('/api/live-metrics',      liveMetricsRouter);
 
 // ── 404 fallback ─────────────────────────────────────────────────────────────
 app.use((_req, res) => {

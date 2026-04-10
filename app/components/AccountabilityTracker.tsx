@@ -236,6 +236,7 @@ export default function AccountabilityTracker() {
           }}
         >
           <div
+            className="ftg-accountability-rail-head"
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -257,6 +258,7 @@ export default function AccountabilityTracker() {
               Levant · situation desk
             </span>
             <span
+              className="ftg-accountability-desc"
               style={{
                 flex: '1 1 160px',
                 fontFamily: 'var(--font-body)',
@@ -285,6 +287,7 @@ export default function AccountabilityTracker() {
               )}
             </span>
             <div
+              className="ftg-accountability-rail-controls"
               style={{
                 display: 'flex',
                 alignItems: 'center',
