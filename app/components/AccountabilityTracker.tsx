@@ -10,6 +10,7 @@ import {
   accountabilityLatestDate,
   accountabilityStatusLabel,
 } from '@/lib/accountability-data';
+import { LiveSituationStrip } from '@/app/components/LiveSituationStrip';
 
 const mono = 'var(--font-mono)';
 
@@ -224,105 +225,116 @@ export default function AccountabilityTracker() {
         }}
       >
         <div
+          className="ftg-accountability-rail-inner"
           style={{
             maxWidth: 1200,
             margin: '0 auto',
-            padding: '8px 14px 10px',
+            padding: '8px 14px 12px',
             display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            flexWrap: 'wrap',
+            flexDirection: 'column',
+            gap: 12,
           }}
         >
-          <span
-            style={{
-              fontFamily: mono,
-              fontSize: 10,
-              fontWeight: 800,
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              color: 'var(--accent)',
-              flexShrink: 0,
-            }}
-          >
-            Levant · accountability
-          </span>
-          <span
-            style={{
-              flex: '1 1 160px',
-              fontFamily: 'var(--font-body)',
-              fontSize: 12,
-              lineHeight: 1.4,
-              color: 'var(--text-secondary)',
-              minWidth: 0,
-            }}
-          >
-            Citable timeline: ceasefires, UN/OCHA, courts, aid — tap to expand
-            filters & sources.
-            {latest && (
-              <span
-                style={{
-                  display: 'block',
-                  fontFamily: mono,
-                  fontSize: 9,
-                  color: 'var(--text-muted)',
-                  marginTop: 2,
-                  letterSpacing: '0.04em',
-                }}
-              >
-                Newest entry dated {latest} · {ACCOUNTABILITY_EVENTS.length}{' '}
-                items (curated)
-              </span>
-            )}
-          </span>
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 8,
-              marginLeft: 'auto',
-              flexShrink: 0,
+              gap: 10,
+              flexWrap: 'wrap',
             }}
           >
-            <Link
-              href="/accountability"
-              className="ftg-accountability-quiet-link"
-              style={{
-                fontFamily: mono,
-                fontSize: 10,
-                fontWeight: 700,
-                color: 'var(--text-muted)',
-                textDecoration: 'none',
-                padding: '8px 6px',
-              }}
-            >
-              Full page
-            </Link>
-            <button
-              type="button"
-              className="ftg-accountability-expand-btn"
-              onClick={openSheet}
-              aria-expanded={open}
-              aria-controls="ftg-accountability-sheet"
+            <span
               style={{
                 fontFamily: mono,
                 fontSize: 10,
                 fontWeight: 800,
-                letterSpacing: '0.08em',
+                letterSpacing: '0.1em',
                 textTransform: 'uppercase',
-                padding: '10px 14px',
-                borderRadius: 4,
-                border: '1px solid var(--accent)',
-                background: 'var(--accent)',
-                color: '#fff',
-                cursor: 'pointer',
-                minHeight: 44,
-                touchAction: 'manipulation',
+                color: 'var(--accent)',
+                flexShrink: 0,
               }}
             >
-              Expand ▾
-            </button>
+              Levant · situation desk
+            </span>
+            <span
+              style={{
+                flex: '1 1 160px',
+                fontFamily: 'var(--font-body)',
+                fontSize: 12,
+                lineHeight: 1.4,
+                color: 'var(--text-secondary)',
+                minWidth: 0,
+              }}
+            >
+              Live editorial figures + citable timeline (UN, courts, aid).
+              Expand for filters and full source list.
+              {latest && (
+                <span
+                  style={{
+                    display: 'block',
+                    fontFamily: mono,
+                    fontSize: 9,
+                    color: 'var(--text-muted)',
+                    marginTop: 2,
+                    letterSpacing: '0.04em',
+                  }}
+                >
+                  Newest timeline entry {latest} · {ACCOUNTABILITY_EVENTS.length}{' '}
+                  links
+                </span>
+              )}
+            </span>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                marginLeft: 'auto',
+                flexShrink: 0,
+              }}
+            >
+              <Link
+                href="/accountability"
+                className="ftg-accountability-quiet-link"
+                style={{
+                  fontFamily: mono,
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: 'var(--text-muted)',
+                  textDecoration: 'none',
+                  padding: '8px 6px',
+                }}
+              >
+                Full page
+              </Link>
+              <button
+                type="button"
+                className="ftg-accountability-expand-btn"
+                onClick={openSheet}
+                aria-expanded={open}
+                aria-controls="ftg-accountability-sheet"
+                style={{
+                  fontFamily: mono,
+                  fontSize: 10,
+                  fontWeight: 800,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  padding: '10px 14px',
+                  borderRadius: 4,
+                  border: '1px solid var(--accent)',
+                  background: 'var(--accent)',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  minHeight: 44,
+                  touchAction: 'manipulation',
+                }}
+              >
+                Expand ▾
+              </button>
+            </div>
           </div>
+
+          <LiveSituationStrip density="compact" layout="scroll" />
         </div>
       </div>
 
@@ -403,7 +415,7 @@ export default function AccountabilityTracker() {
                     margin: 0,
                   }}
                 >
-                  Accountability & ceasefire sources
+                  Situation desk
                 </h2>
                 <p
                   style={{
@@ -413,9 +425,9 @@ export default function AccountabilityTracker() {
                     lineHeight: 1.45,
                   }}
                 >
-                  Curated links to multilateral, court, and humanitarian sources.
-                  FrameTheGlobe does not adjudicate claims — read each primary
-                  source.
+                  Editorial live figures (source-cited) plus a curated timeline
+                  of formal documents and humanitarian hubs — verify every number
+                  at the primary link.
                 </p>
               </div>
               <button
@@ -441,6 +453,18 @@ export default function AccountabilityTracker() {
                 ✕
               </button>
             </div>
+
+            <div
+              style={{
+                padding: '0 16px 14px',
+                flexShrink: 0,
+                borderBottom: '1px solid var(--border-light)',
+                background: 'var(--surface-muted)',
+              }}
+            >
+              <LiveSituationStrip density="comfortable" layout="scroll" />
+            </div>
+
             <div
               className="ftg-accountability-filter-row"
               style={{
@@ -495,6 +519,19 @@ export default function AccountabilityTracker() {
                 padding: '12px 14px calc(14px + env(safe-area-inset-bottom, 0px))',
               }}
             >
+              <p
+                style={{
+                  fontFamily: mono,
+                  fontSize: 10,
+                  fontWeight: 800,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  color: 'var(--text-muted)',
+                  margin: '0 0 10px',
+                }}
+              >
+                Source timeline
+              </p>
               <AccountabilityEventCards events={sorted} />
               <div
                 style={{

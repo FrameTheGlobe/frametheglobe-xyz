@@ -1212,6 +1212,103 @@ body.ftg-accountability-scroll-lock {
   opacity: 0.92;
 }
 
+.ftg-live-situation__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.ftg-live-situation__title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.ftg-live-situation__meta {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+.ftg-live-situation__blurb code {
+  font-family: var(--font-mono);
+  background: var(--surface-muted);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 0.88em;
+}
+
+.ftg-live-situation__scroller {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 6px;
+  scrollbar-width: thin;
+}
+
+.ftg-live-situation__scroller--compact .ftg-live-metric-card {
+  min-width: 152px;
+  max-width: 200px;
+}
+
+.ftg-live-situation__scroller--comfortable .ftg-live-metric-card {
+  min-width: 228px;
+  max-width: 300px;
+}
+
+.ftg-live-situation__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.ftg-live-metric-card {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  background: var(--surface);
+  padding: 10px 12px;
+  text-decoration: none;
+  color: inherit;
+  border-left: 4px solid var(--border);
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.ftg-live-metric-card:hover {
+  background: var(--surface-hover);
+  border-color: var(--border);
+}
+
+.ftg-live-metric--gaza {
+  border-left-color: #0d9488;
+}
+
+.ftg-live-metric--lebanon {
+  border-left-color: #7c3aed;
+}
+
+.ftg-live-metric--wb {
+  border-left-color: #c2410c;
+}
+
+.ftg-live-metric--regional {
+  border-left-color: var(--accent);
+}
+
 /* ══════════════════════════════════════════════════════
    MOBILE UTILITY CLASSES
    (used by page.tsx + components via className)

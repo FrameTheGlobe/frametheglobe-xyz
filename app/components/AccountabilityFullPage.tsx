@@ -8,6 +8,7 @@ import {
   type AccountabilityFilterId,
 } from '@/lib/accountability-data';
 import { AccountabilityEventCards } from '@/app/components/AccountabilityTracker';
+import { LiveSituationStrip } from '@/app/components/LiveSituationStrip';
 
 const mono = 'var(--font-mono)';
 
@@ -80,7 +81,7 @@ export default function AccountabilityFullPage() {
             margin: '0 0 8px',
           }}
         >
-          Levant accountability tracker
+          Levant situation desk
         </h1>
         <p
           style={{
@@ -91,10 +92,36 @@ export default function AccountabilityFullPage() {
             maxWidth: 62 * 13,
           }}
         >
-          Bookmarkable list of citable sources: UN, courts, humanitarian
-          updates, and NGO hubs. Status labels describe document types, not
-          legal outcomes.
+          Live editorial figures (cite every number in{' '}
+          <code style={{ fontFamily: mono, fontSize: 12 }}>live-situation-metrics.ts</code>
+          ) plus a bookmarkable timeline of UN, court, and humanitarian sources.
         </p>
+
+        <div
+          style={{
+            marginBottom: 22,
+            padding: '14px 16px',
+            borderRadius: 8,
+            border: '1px solid var(--border-light)',
+            background: 'var(--surface)',
+          }}
+        >
+          <LiveSituationStrip density="comfortable" layout="grid" />
+        </div>
+
+        <h2
+          style={{
+            fontFamily: mono,
+            fontSize: 12,
+            fontWeight: 800,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: 'var(--text-muted)',
+            margin: '0 0 12px',
+          }}
+        >
+          Source timeline
+        </h2>
         <div
           style={{
             display: 'flex',

@@ -80,3 +80,31 @@ No new lint/type errors were introduced in the changed files.
 - Thin **rail** under the breaking ticker with an **expandable bottom sheet** (mobile-friendly: safe-area padding, scroll lock, Escape to close).
 - Curated entries in `lib/accountability-data.ts` with external source links and neutral status labels.
 - Bookmarkable full page at **`/accountability`** (`app/accountability/`).
+
+## 8) Situation desk UX pass + live metrics direction (in progress)
+
+This is a paused in-progress snapshot committed locally for continuation:
+
+- Added `app/components/LiveSituationStrip.tsx`:
+  - reusable metric cards for Gaza / Lebanon / West Bank rows
+  - compact horizontal rail mode and comfortable expanded mode
+  - explicit source-first UX and per-row `asOf` visibility
+- Added `lib/live-situation-metrics.ts`:
+  - editorial metric schema (`valueDisplay`, `basis`, `asOf`, `sourceUrl`, caveat)
+  - guardrail comments to avoid shipping uncited / invented totals
+  - helper labels and latest-sync helpers
+- Updated `app/components/AccountabilityTracker.tsx`:
+  - rail now includes a "live situation" block + existing timeline expansion
+  - sheet now shows live metrics section before the source timeline
+- Updated `app/components/AccountabilityFullPage.tsx`:
+  - full page now includes live situation grid before timeline filters/list
+- Updated `app/accountability/layout.tsx` metadata to "Levant situation desk"
+- Styling additions in `app/globals.css`:
+  - `ftg-live-situation*` and `ftg-live-metric*` classes
+  - region color accents and mobile-safe horizontal scroll behavior
+
+### Next planned step (not yet implemented)
+
+- Add backend-fed `GET /api/situation-metrics` on Railway + thin Next proxy route,
+  then switch `LiveSituationStrip` from static imports to fetched JSON with
+  static fallback.
