@@ -113,17 +113,9 @@ export default function AccountabilityFullPage() {
           <AccountabilityEventCards events={sorted} />
 
           {/* Methodology */}
-          <div
-            style={{
-              marginTop: 24,
-              padding: '14px 16px',
-              borderRadius: 8,
-              border: '1px dashed var(--border)',
-              background: 'var(--surface-muted)',
-            }}
-          >
-            <p style={{ margin: 0, fontSize: 12, lineHeight: 1.55, color: 'var(--text-muted)' }}>
-              <strong style={{ color: 'var(--text-secondary)' }}>Methodology</strong> — Entries are
+          <div className="ftg-full-page__methodology">
+            <p className="ftg-full-page__methodology-text">
+              <strong>Methodology</strong> — Entries are
               manually curated with external links. Status labels describe the document type or
               forum, not a legal conclusion.
             </p>
