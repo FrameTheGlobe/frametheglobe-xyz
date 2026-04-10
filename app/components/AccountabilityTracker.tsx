@@ -249,7 +249,8 @@ export default function AccountabilityTracker() {
             className="ftg-accountability-sheet"
             style={{
               position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 1210,
-              maxHeight: 'min(92vh, 900px)', background: 'var(--bg)',
+              height: 'min(88vh, 860px)',
+              background: 'var(--bg)',
               borderTopLeftRadius: 14, borderTopRightRadius: 14,
               boxShadow: '0 -12px 48px rgba(0,0,0,0.28)',
               display: 'flex', flexDirection: 'column', overflow: 'hidden',
