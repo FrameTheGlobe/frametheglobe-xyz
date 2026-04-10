@@ -17,8 +17,6 @@ import DailyBriefing, { BriefCluster } from './components/DailyBriefing';
 import CrossSourceComparison, { CompItem } from './components/CrossSourceComparison';
 import IntelTimeline, { IntelStatus } from './components/IntelTimeline';
 import CompactHeader  from './components/CompactHeader';
-import LiveFeeds      from './components/LiveFeeds';
-import AIIntelPanel   from './components/AIIntelPanel';
 import MissileIntel   from './components/MissileIntel';
 import FlashBrief            from './components/FlashBrief';
 import TickerAnalysisDrawer  from './components/TickerAnalysisDrawer';
@@ -544,7 +542,6 @@ type SidebarPanelProps = {
   onNoSources: () => void;
   sourceHealth: SourceHealth[];
   sourceCountMap: Record<string, number>;
-  failedSources: Set<string>;
   pinnedItems: FeedItem[];
   onTogglePin: (item: FeedItem) => void;
   keyForItem: (item: FeedItem) => string;
@@ -634,6 +631,7 @@ function SidebarTheaterPulse({ items, clusters }: { items: FeedItem[]; clusters:
     } catch { /* keep last snapshot */ }
   }, []);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void loadMarketPoly(); }, [loadMarketPoly]);
   useVisibilityPolling(loadMarketPoly, PULSE_MARKET_POLY_MS);
 
@@ -684,14 +682,7 @@ function SidebarTheaterPulse({ items, clusters }: { items: FeedItem[]; clusters:
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: pulseColor, display: 'inline-block', flexShrink: 0 }} />
-          <span style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: 11,
-            fontWeight: 900,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            color: 'var(--accent)',
-          }}>
+          <span className="ftg-ui-header-label" style={{ color: 'var(--accent)' }}>
             Theater Escalation Pulse
           </span>
         </div>
@@ -709,17 +700,17 @@ function SidebarTheaterPulse({ items, clusters }: { items: FeedItem[]; clusters:
 
       <div style={{ padding: 10, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
         <div style={{ border: '1px solid var(--border-light)', borderRadius: 4, padding: '6px 7px', background: 'var(--surface-muted)' }}>
-          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>BREAKING</div>
+          <div className="ftg-ui-header-label ftg-ui-header-label--sm" style={{ color: 'var(--text-muted)' }}>BREAKING</div>
           <div style={{ fontSize: 16, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--text-primary)' }}>{breakingCount}</div>
           <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>&lt;15m</div>
         </div>
         <div style={{ border: '1px solid var(--border-light)', borderRadius: 4, padding: '6px 7px', background: 'var(--surface-muted)' }}>
-          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>KINETIC</div>
+          <div className="ftg-ui-header-label ftg-ui-header-label--sm" style={{ color: 'var(--text-muted)' }}>KINETIC</div>
           <div style={{ fontSize: 16, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--text-primary)' }}>{kinetic6h}</div>
           <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>6h</div>
         </div>
         <div style={{ border: '1px solid var(--border-light)', borderRadius: 4, padding: '6px 7px', background: 'var(--surface-muted)' }}>
-          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>HORMUZ</div>
+          <div className="ftg-ui-header-label ftg-ui-header-label--sm" style={{ color: 'var(--text-muted)' }}>HORMUZ</div>
           <div style={{ fontSize: 16, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--text-primary)' }}>{hormuz6h}</div>
           <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>6h</div>
         </div>
@@ -727,19 +718,19 @@ function SidebarTheaterPulse({ items, clusters }: { items: FeedItem[]; clusters:
 
       <div style={{ padding: '0 10px 10px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
         <div style={{ border: '1px solid var(--border-light)', borderRadius: 4, padding: '6px 7px', background: 'var(--surface-muted)' }}>
-          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>NUCLEAR</div>
+          <div className="ftg-ui-header-label ftg-ui-header-label--sm" style={{ color: 'var(--text-muted)' }}>NUCLEAR</div>
           <div style={{ fontSize: 16, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--text-primary)' }}>{nuclear6h}</div>
           <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>6h wires</div>
         </div>
         <div style={{ border: '1px solid var(--border-light)', borderRadius: 4, padding: '6px 7px', background: 'var(--surface-muted)' }}>
-          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>BRENT − WTI</div>
+          <div className="ftg-ui-header-label ftg-ui-header-label--sm" style={{ color: 'var(--text-muted)' }}>BRENT - WTI</div>
           <div style={{ fontSize: 14, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>{spreadStr}</div>
           <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', lineHeight: 1.35 }}>
             {oil == null ? 'Loading…' : `Δ Br ${oil.brentPct >= 0 ? '+' : ''}${oil.brentPct.toFixed(1)}% · WTI ${oil.wtiPct >= 0 ? '+' : ''}${oil.wtiPct.toFixed(1)}%`}
           </div>
         </div>
         <div style={{ border: '1px solid var(--border-light)', borderRadius: 4, padding: '6px 7px', background: 'var(--surface-muted)' }}>
-          <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>POLY MAX</div>
+          <div className="ftg-ui-header-label ftg-ui-header-label--sm" style={{ color: 'var(--text-muted)' }}>POLY MAX</div>
           <div style={{ fontSize: 14, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--text-primary)' }}>{polyStr}</div>
           <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', lineHeight: 1.35, wordBreak: 'break-word' }} title={polySub}>
             {polySub}
@@ -753,7 +744,7 @@ function SidebarTheaterPulse({ items, clusters }: { items: FeedItem[]; clusters:
           borderTop: '1px solid var(--border-light)',
           background: 'rgba(0,112,243,0.04)',
         }}>
-          <div style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', fontWeight: 800, marginBottom: 4, letterSpacing: '0.05em', lineHeight: 1.4 }}>
+          <div className="ftg-ui-header-label ftg-ui-header-label--sm" style={{ color: 'var(--text-muted)', marginBottom: 4, lineHeight: 1.4 }}>
             LEAD STORYLINE · V{Math.round(lead.score * 10)}{missileLead ? ' · ⚡MISSILE' : ''}{corroboration > 0 ? ` · ${corroboration}×CORR` : ''} · {leadSources} SRC
           </div>
           <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.45 }}>
@@ -777,7 +768,7 @@ function SidebarTheaterPulse({ items, clusters }: { items: FeedItem[]; clusters:
 function SidebarPanel({
   search, onSearch, searchRef,
   activeSources, onToggleSource, onAllSources, onNoSources,
-  sourceCountMap, failedSources, sourceHealth,
+  sourceCountMap, sourceHealth,
   pinnedItems, onTogglePin, keyForItem,
   clusters, items
 }: SidebarPanelProps) {
@@ -786,9 +777,7 @@ function SidebarPanel({
 
   const failedHealth  = sourceHealth.filter(h => !h.ok);
   const isAllHealthy  = sourceHealth.length > 0 && failedHealth.length === 0;
-  const total         = sourceHealth.length || SOURCES.length;
-
-  const TabNav = () => (
+  const tabNav = (
     <div style={{
       display: 'flex', gap: 2, marginBottom: 18, 
       background: 'var(--surface-muted)', padding: 3, borderRadius: 6,
@@ -797,7 +786,7 @@ function SidebarPanel({
     }}>
       {(['network', 'intel', 'assets'] as const).map(tab => {
         const active = sidebarTab === tab;
-        const labels: Record<string, string> = { network: '🌐 NET', intel: '📂 INTEL', assets: '📊 INDICATORS' };
+        const labels: Record<string, string> = { network: 'NET', intel: 'INTEL', assets: 'INDICATORS' };
         return (
           <button
             key={tab}
@@ -809,11 +798,14 @@ function SidebarPanel({
               background: active ? 'var(--accent)' : 'transparent',
               color: active ? '#fff' : 'var(--text-secondary)',
               transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
             onMouseEnter={e => !active && (e.currentTarget.style.background = 'var(--surface-hover)')}
             onMouseLeave={e => !active && (e.currentTarget.style.background = 'transparent')}
           >
-            {labels[tab]}
+            <span className="ftg-ui-header-label ftg-ui-header-label--sm ftg-sidebar-tab-label" style={{ color: 'inherit' }}>
+              {labels[tab]}
+            </span>
           </button>
         );
       })}
@@ -822,7 +814,7 @@ function SidebarPanel({
 
   return (
     <div style={{ fontFamily: 'var(--font-mono)', minHeight: '100%' }}>
-      <TabNav />
+      {tabNav}
 
       {sidebarTab === 'network' && (
         <div style={{ animation: 'fadeInScale 0.2s ease forwards' }}>
@@ -921,7 +913,7 @@ function SidebarPanel({
           <div style={{ fontSize: 11, letterSpacing: '0.05em', color: 'var(--accent)', textTransform: 'uppercase', fontWeight: 900, marginBottom: 16, marginTop: 20, borderBottom: '1px solid var(--accent-light)', paddingBottom: 6 }}>
              THEATER_INTEL_FOLDERS
           </div>
-          {clusters.slice(0, 6).map((cluster, i) => (
+          {clusters.slice(0, 6).map((cluster) => (
             <div key={cluster.id} style={{ marginBottom: 14, padding: '14px', border: '1px solid var(--border-light)', borderRadius: 6, background: 'var(--surface)', position: 'relative' }}>
                <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 4, background: 'var(--accent)' }} />
                <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 8, lineHeight: 1.25 }}>{cluster.title}</div>
@@ -1292,22 +1284,25 @@ export default function Home() {
   const [search, setSearch]             = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [sidebarOpen, setSidebarOpen]   = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const theaterRef = useRef<HTMLElement>(null);
+  const widgetsRef = useRef<HTMLElement>(null);
+  const filtersRef = useRef<HTMLDivElement>(null);
+  const alertsRef = useRef<HTMLDivElement>(null);
 
   // ── AI features state ──────────────────────────────────────────────────────
   const [tickerDrawerData, setTickerDrawerData] = useState<TickerDrawerData | null>(null);
   const [aiModalOpen,      setAiModalOpen]      = useState(false);
 
-  // Lock body scroll when the mobile sidebar drawer is open
+  // Lock body scroll when mobile overlays are open
   useEffect(() => {
-    document.body.style.overflow = sidebarOpen ? 'hidden' : '';
+    document.body.style.overflow = (sidebarOpen || mobileNavOpen) ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
-  }, [sidebarOpen]);
+  }, [sidebarOpen, mobileNavOpen]);
   const [theme, setTheme]               = useState<Theme>('light');
   const [liveStatus, setLiveStatus]     = useState<'connecting' | 'live' | 'polling'>('connecting');
   const [focusedIdx, setFocusedIdx]     = useState<number>(-1);
   const searchRef                        = useRef<HTMLInputElement>(null);
-  const headerRef                        = useRef<HTMLElement>(null);
-  const [headerStickyHeight, setHeaderStickyHeight] = useState(64);
   // Track when data was last successfully fetched so the visibility handler
   // can skip a re-fetch if the data is still reasonably fresh (< 10 min).
   const lastFetchedAtRef                 = useRef<number>(0);
@@ -1339,26 +1334,6 @@ export default function Home() {
     // Bump the time tick every 60s so timeAgo labels refresh
     const tickTimer = setInterval(() => setTimeTick((n: number) => n + 1), 60_000);
     return () => { clearInterval(t); clearInterval(tickTimer); };
-  }, []);
-
-  // Keep breaking ticker offset aligned with actual sticky header height.
-  useEffect(() => {
-    const el = headerRef.current;
-    if (!el) return;
-
-    const updateHeight = () => {
-      const next = Math.ceil(el.getBoundingClientRect().height);
-      if (next > 0) setHeaderStickyHeight(next);
-    };
-
-    updateHeight();
-    const ro = new ResizeObserver(updateHeight);
-    ro.observe(el);
-    window.addEventListener('resize', updateHeight, { passive: true });
-    return () => {
-      ro.disconnect();
-      window.removeEventListener('resize', updateHeight);
-    };
   }, []);
 
   // ── Debounce search ───────────────────────────────────────────────────────
@@ -1557,7 +1532,7 @@ export default function Home() {
     try {
       localStorage.setItem(LS_KEY, JSON.stringify({ items, health, savedAt: Date.now() }));
     } catch { /* quota exceeded or incognito */ }
-  }, []);
+  }, [LS_KEY]);
 
   // ── Data fetching (manual / fallback) ────────────────────────────────────
   const fetchNews = useCallback(async () => {
@@ -1591,7 +1566,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [saveToLocalStorage]);
 
   // ── SSE live feed (replaces polling) ─────────────────────────────────────
   useEffect(() => {
@@ -1735,7 +1710,7 @@ export default function Home() {
       window.removeEventListener('online', handleOnline);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [fetchNews]);
+  }, [fetchNews, LS_MAX_AGE, saveToLocalStorage]);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   // Wrapped in useCallback so the stable references prevent unnecessary
@@ -1758,6 +1733,8 @@ export default function Home() {
 
   // ── INTEL TIMELINE DATA (GDELT + CRITICAL) ─────────────────────────
   const intelEvents = useMemo(() => {
+    // Read tick so memo refreshes once/minute for relative-time labels.
+    void _timeTick;
     // ── CONFIG ────────────────────────────────────────────────────────
     const CRITICAL_KEYWORDS = ['strike', 'nuclear', 'explosion', 'intercept', 'attack', 'missile', 'ballistic', 'casualties', 'dead', 'war', 'invasion'];
     const STRATEGIC_KEYWORDS = ['pipeline', 'sanctions', 'treaty', 'oil price', 'production cut', 'uranium', 'iaea', 'veto', 'blockade'];
@@ -1893,6 +1870,27 @@ export default function Home() {
     try { window.localStorage.setItem('ftg_briefing_dismissed', new Date().toDateString()); } catch { /* ignore */ }
   }, []);
 
+  const jumpTo = useCallback((ref: { current: HTMLElement | HTMLDivElement | null }) => {
+    if (ref.current) {
+      ref.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    setMobileNavOpen(false);
+  }, []);
+
+  const openSearchPanel = useCallback(() => {
+    setMobileNavOpen(false);
+    setSidebarOpen(true);
+    setTimeout(() => searchRef.current?.focus(), 140);
+  }, []);
+
+  const openAlertsPanel = useCallback(() => {
+    setMobileNavOpen(false);
+    setSidebarOpen(true);
+    setTimeout(() => {
+      alertsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 140);
+  }, []);
+
   const filteredBySource = useMemo(() => {
     // Pass 1: URL / exact-key dedup
     const seen = new Set<string>();
@@ -2021,16 +2019,6 @@ export default function Home() {
     }, {}),
     [items]
   );
-
-  const failedSources = useMemo(() => {
-    const ids = new Set<string>();
-    if (sourceHealth.length > 0) {
-      sourceHealth.forEach(h => { if (!h.ok) ids.add(h.id); });
-    } else {
-      SOURCES.forEach(s => { if (!sourceCountMap[s.id]) ids.add(s.id); });
-    }
-    return ids;
-  }, [sourceHealth, sourceCountMap]);
 
   const lensCountMap = useMemo(() => {
     const map = {} as Record<LensId, number>;
@@ -2171,7 +2159,7 @@ export default function Home() {
       openDrawer:  (data) => setTickerDrawerData(data),
       closeDrawer: ()     => setTickerDrawerData(null),
     }}>
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', position: 'relative' }}>
+    <div className="ftg-adaptive-density" style={{ minHeight: '100vh', background: 'var(--bg)', position: 'relative' }}>
       {/* Tactical visual layer */}
       <div className="scanline-overlay" />
 
@@ -2182,31 +2170,31 @@ export default function Home() {
         aria-hidden
       />
 
-      {/* ── ELITE MISSION HUD HEADER ────────────────────────────────────────── */}
-      <header ref={headerRef} className="command-header-hud" style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-        background: 'var(--bg)',
-        backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid var(--border)',
-        boxShadow: 'var(--shadow-md)',
-      }}>
-        <CompactHeader
-          hasMounted={hasMounted}
-          loading={loading}
-          missionTime={missionTime}
-          theme={theme}
-          storyCount={items.length}
-          sourceCount={SOURCES.length}
-          onThemeToggle={() => setTheme(ts => ts === 'light' ? 'dark' : 'light')}
-          onRefresh={() => fetchNews()}
-          onBriefing={() => setAiModalOpen(true)}
-        />
-      </header>
+      {/* ── FIXED SITE HEADER: white bar + solid blue news ticker (sticky together) ─ */}
+      <div className="ftg-site-header-stack">
+        <header className="command-header-hud" style={{
+          background: 'var(--bg)',
+          backdropFilter: 'blur(12px)',
+          borderBottom: '1px solid var(--border)',
+          boxShadow: 'var(--shadow-md)',
+        }}>
+          <CompactHeader
+            hasMounted={hasMounted}
+            loading={loading}
+            missionTime={missionTime}
+            theme={theme}
+            storyCount={items.length}
+            sourceCount={SOURCES.length}
+            onThemeToggle={() => setTheme(ts => ts === 'light' ? 'dark' : 'light')}
+            onRefresh={() => fetchNews()}
+            onBriefing={() => setAiModalOpen(true)}
+          />
+        </header>
 
-      {/* ── BREAKING TICKER ────────────────────────────────────────────── */}
-      <BreakingTicker items={items} stickyOffset={headerStickyHeight} />
+        <div className="ftg-news-ticker-bar" aria-label="Live headlines ticker">
+          <BreakingTicker items={items} />
+        </div>
+      </div>
 
       <AccountabilityTracker />
 
@@ -2235,7 +2223,6 @@ export default function Home() {
               onAllSources={selectAllSources}
               onNoSources={selectNoSources}
               sourceCountMap={sourceCountMap}
-              failedSources={failedSources}
               sourceHealth={sourceHealth}
               pinnedItems={pinnedItems}
               onTogglePin={togglePin}
@@ -2245,7 +2232,7 @@ export default function Home() {
             />
 
             {/* ── Alert Profiles ─────────────────────────────────────────── */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 12, borderTop: '1px solid var(--border-light)' }}>
+            <div ref={alertsRef} style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 12, borderTop: '1px solid var(--border-light)' }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.08em', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
                 ⚡ Alert Profiles
               </div>
@@ -2280,18 +2267,20 @@ export default function Home() {
         {/* Main feed */}
         <main className="ftg-main">
           {/* ── Iran War Theater ─────────────────────────────────── */}
-          <IranWarSection 
-            items={items} 
-            sourceCountMap={sourceCountMap} 
-            brief={<IntelTimeline events={intelEvents} />}
-            pinnedKeys={pinnedKeys}
-            onTogglePin={togglePin}
-            keyForItem={keyForItem}
-          />
+          <section ref={theaterRef} className="ftg-focus-block">
+            <IranWarSection 
+              items={items} 
+              sourceCountMap={sourceCountMap} 
+              brief={<IntelTimeline events={intelEvents} />}
+              pinnedKeys={pinnedKeys}
+              onTogglePin={togglePin}
+              keyForItem={keyForItem}
+            />
+          </section>
 
           {/* ── Widgets row (TopStorylines, RapidResponse, Macro, Oil) ── */}
-          <div className="ftg-widgets-section">
-            {!loading && items.length > 0 && (
+          <section ref={widgetsRef} className="ftg-widgets-section">
+            {!loading && items.length > 0 ? (
               <div className="widgets-grid" style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
@@ -2307,8 +2296,23 @@ export default function Home() {
                 <MacroWatch items={items} limit={4} />
                 <OilTicker items={items} />
               </div>
+            ) : (
+              <div className="widgets-grid" style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                gap: 12,
+                marginBottom: 14
+              }}>
+                {Array.from({ length: 4 }).map((_, idx) => (
+                  <div
+                    key={`widget-skeleton-${idx}`}
+                    className="skeleton"
+                    style={{ height: 150, borderRadius: 6, border: '1px solid var(--border-light)' }}
+                  />
+                ))}
+              </div>
             )}
-          </div>
+          </section>
 
           <RegionStatsStrip items={visibleItems} />
 
@@ -2321,7 +2325,7 @@ export default function Home() {
           )}
 
           {/* ── FILTER + VIEW CONTROLS ─────────────────────────────────────── */}
-          <div style={{ marginBottom: 10, display: 'flex', flexDirection: 'column', gap: 7 }}>
+          <div ref={filtersRef} style={{ marginBottom: 10, display: 'flex', flexDirection: 'column', gap: 7 }}>
 
             {/* Top row: lenses + view/sort controls */}
             <div className="ftg-filter-top-row">
@@ -2620,10 +2624,26 @@ export default function Home() {
               color: 'var(--text-muted)',
               letterSpacing: '0.05em',
             }}>
-              {search
+              <div style={{ marginBottom: 10 }}>
+                {search
                 ? `No stories match "${search}" — try a broader term.`
                 : 'No stories found. Try a different lens or refresh.'
-              }
+                }
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => fetchNews()}
+                  style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '6px 10px', borderRadius: 4, border: '1px solid var(--accent)', background: 'var(--accent-light)', color: 'var(--accent)', cursor: 'pointer' }}
+                >
+                  Retry Feed
+                </button>
+                <button
+                  onClick={() => { setActiveLenses(new Set()); setActiveRegions(new Set()); setSearch(''); }}
+                  style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '6px 10px', borderRadius: 4, border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-secondary)', cursor: 'pointer' }}
+                >
+                  Clear Filters
+                </button>
+              </div>
             </div>
 
           /* ── STREAM view ──────────────────────────────────────────── */
@@ -3304,6 +3324,28 @@ export default function Home() {
           </div>
         </aside>
       </div>
+
+      {/* ── MOBILE COMMAND BAR ───────────────────────────────────────────── */}
+      <div className="ftg-mobile-command">
+        <button onClick={openSearchPanel}>Search</button>
+        <button onClick={() => jumpTo(filtersRef)}>Filters</button>
+        <button onClick={openAlertsPanel}>Alerts</button>
+        <button onClick={() => setMobileNavOpen(true)}>Focus</button>
+      </div>
+
+      {/* ── MOBILE FOCUS SHEET ───────────────────────────────────────────── */}
+      {mobileNavOpen && (
+        <>
+          <button className="ftg-mobile-sheet-overlay" aria-label="Close focus menu" onClick={() => setMobileNavOpen(false)} />
+          <div className="ftg-mobile-sheet" role="dialog" aria-modal="true" aria-label="Quick focus menu">
+            <div className="ftg-mobile-sheet-title">Quick Focus</div>
+            <button onClick={() => jumpTo(theaterRef)}>Iran Theater</button>
+            <button onClick={() => jumpTo(widgetsRef)}>Widgets</button>
+            <button onClick={() => jumpTo(filtersRef)}>Feed Controls</button>
+            <button onClick={() => setMobileNavOpen(false)}>Close</button>
+          </div>
+        </>
+      )}
 
       {/* ── FOOTER ─────────────────────────────────────────────────────── */}
       <footer className="ftg-footer" style={{

@@ -162,7 +162,7 @@ export default function OilPriceChart() {
             Oil Price History
           </span>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)' }}>
-            // WTI · Brent · Nat Gas · USO
+            WTI · Brent · Nat Gas · USO
           </span>
         </div>
 

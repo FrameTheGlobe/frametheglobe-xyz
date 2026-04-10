@@ -308,7 +308,7 @@ export default function AIIntelPanel({ items }: Props) {
           </span>
           {data && (
             <span style={{ fontFamily:'var(--font-mono)', fontSize:10, color:'var(--text-muted)' }}>
-              // {data.totalStoriesAnalysed} stories analysed
+              {`${data.totalStoriesAnalysed} stories analysed`}
             </span>
           )}
         </div>

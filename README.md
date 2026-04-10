@@ -46,10 +46,14 @@ Hostinger deployments require a "Standalone" strategy to prevent the server from
     3.  **Deployment Script**: `hostinger-post-pull.sh` is the source of truth. It wipes the old `.next` folder, installs production deps, builds, and signals a restart.
 *   **The Restart Mechanism**: We use `touch tmp/restart.txt`. This tells Hostinger's Phusion Passenger bridge to gracefully reload the application without a full server reboot.
 
-### 3. Netlify (The Edge Path)
+### 3. Netlify (Optional Edge Path)
 Configured via `netlify.toml` with the `@netlify/plugin-nextjs`.
 *   **Setup**: Connect GitHub and Netlify will auto-detect the configuration.
 *   **Environment**: Uses Node 22 for modern performance.
+
+### Split-Stack Source of Truth
+The current production architecture is Vercel frontend + Railway backend.
+Refer to `TECHNICAL_SPEC.md` for full split-stack details and endpoint routing.
 
 ---
 

@@ -301,6 +301,83 @@ body {
   opacity: 0.55;
 }
 
+/* White HUD + solid blue news ticker: one sticky unit (above full-page scanline) */
+.ftg-site-header-stack {
+  position: sticky;
+  top: 0;
+  z-index: 1100;
+  width: 100%;
+}
+
+.ftg-news-ticker-bar {
+  background: var(--brand-blue);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.dark .ftg-news-ticker-bar {
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+.ftg-breaking-ticker {
+  min-height: 28px;
+  /* Label + track padding stay aligned (covers “Live Wire” width) */
+  --ftg-ticker-label-w: 9rem;
+}
+
+/* Opaque panel — same blue as bar; masks crawl (no alpha background) */
+.ftg-breaking-ticker__label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 14px 0 16px;
+  min-width: var(--ftg-ticker-label-w);
+  box-sizing: border-box;
+  background: var(--brand-blue);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: #fff;
+  text-transform: uppercase;
+  z-index: 3;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 4px 0 14px rgba(0, 0, 0, 0.28);
+}
+
+.ftg-breaking-ticker__track {
+  display: inline-flex;
+  align-items: center;
+  padding-left: var(--ftg-ticker-label-w);
+}
+
+/* Shared compact title style for dashboard/widget headers */
+.ftg-ui-header-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ftg-ui-header-label--sm {
+  font-size: 9px;
+  letter-spacing: 0.05em;
+}
+
+/* Sidebar tab labels stay one line without icons */
+.ftg-sidebar-tab-label {
+  max-width: 100%;
+  display: inline-block;
+  text-align: center;
+}
+
 .ftg-compact-header {
   width: 100%;
   display: grid;
@@ -517,6 +594,34 @@ body {
   gap: 6px;
 }
 
+/* Primary header actions — desktop defaults; mobile scales up in breakpoints below */
+.ftg-compact-ai-btn {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 5px 11px;
+  min-height: 32px;
+  background: linear-gradient(135deg, #6d28d9, #9b59b6);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  touch-action: manipulation;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.ftg-compact-refresh-btn {
+  height: 32px;
+  font-size: 11px;
+  padding: 0 14px;
+}
+
 .ftg-compact-right .icon-link-ghost {
   width: 24px;
   height: 24px;
@@ -588,9 +693,9 @@ body {
     grid-template-areas:
       'left right'
       'ticker ticker';
-    gap: 6px 10px;
-    min-height: 50px;
-    padding: 6px 10px 8px;
+    gap: 8px 10px;
+    min-height: 56px;
+    padding: 8px 12px 10px;
   }
 
   .ftg-compact-left { grid-area: left; }
@@ -598,14 +703,14 @@ body {
   .ftg-compact-ticker-wrap { grid-area: ticker; }
 
   .ftg-compact-brand {
-    font-size: 19px;
+    font-size: 24px;
     letter-spacing: -0.01em;
   }
 
   .ftg-beta-badge {
-    font-size: 8px;
-    padding: 1px 3px;
-    margin-left: 5px;
+    font-size: 9px;
+    padding: 2px 5px;
+    margin-left: 6px;
   }
 
   .ftg-compact-live-text,
@@ -623,7 +728,7 @@ body {
   }
 
   .ftg-compact-right {
-    gap: 6px;
+    gap: 8px;
   }
 
   .ftg-compact-time-wrap {
@@ -635,7 +740,7 @@ body {
   }
 
   .ftg-compact-actions {
-    gap: 4px;
+    gap: 8px;
   }
 
   .ftg-compact-social {
@@ -643,19 +748,33 @@ body {
   }
 
   .ftg-compact-right .icon-link-ghost {
-    width: 22px;
-    height: 22px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: 10px;
   }
 
   .ftg-compact-right .icon-link-ghost svg {
-    width: 12px;
-    height: 12px;
+    width: 20px;
+    height: 20px;
   }
 
-  .ftg-compact-actions .hud-action-btn-refined {
-    height: 24px !important;
-    padding: 0 8px !important;
-    font-size: 9px !important;
+  .ftg-compact-actions .hud-action-btn-refined.ftg-compact-refresh-btn {
+    min-height: 44px;
+    height: auto !important;
+    padding: 0 14px !important;
+    font-size: 12px !important;
+    border-radius: 10px;
+  }
+
+  .ftg-compact-ai-btn {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0 12px;
+    font-size: 20px;
+    letter-spacing: 0;
+    border-radius: 10px;
   }
 
   /* AI Briefing button — hide text label at 820px, keep icon */
@@ -683,28 +802,32 @@ body {
 @media (max-width: 640px) {
   .ftg-compact-header {
     grid-template-columns: minmax(0, 1fr) auto;
-    gap: 6px 8px;
-    padding: 6px 8px 8px;
+    gap: 8px 10px;
+    padding: 8px 10px 10px;
   }
 
   .ftg-compact-brand {
-    font-size: 17px;
+    font-size: 22px;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
   .ftg-beta-badge {
-    display: none;
+    font-size: 8px;
+    padding: 2px 5px;
+    margin-left: 5px;
   }
 
   .ftg-compact-right .icon-link-ghost {
-    width: 20px;
-    height: 20px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
   }
 
-  .ftg-compact-actions .hud-action-btn-refined {
-    padding: 0 7px !important;
-    font-size: 8px !important;
+  .ftg-compact-actions .hud-action-btn-refined.ftg-compact-refresh-btn {
+    padding: 0 12px !important;
+    font-size: 11px !important;
   }
 }
 
@@ -714,12 +837,12 @@ body {
     grid-template-areas:
       'left right'
       'ticker ticker';
-    gap: 5px 6px;
-    padding: 5px 6px 7px;
+    gap: 6px 8px;
+    padding: 8px 8px 9px;
   }
 
   .ftg-compact-brand {
-    font-size: 16px;
+    font-size: 20px;
     line-height: 0.95;
     max-width: 100%;
   }
@@ -728,28 +851,31 @@ body {
   .ftg-compact-right .ftg-compact-divider,
   .ftg-compact-right .ftg-compact-time-wrap,
   .ftg-compact-right .ftg-compact-social,
-  .ftg-compact-right .ftg-compact-actions button[title="Generate AI Analyst Briefing"] {
+  .ftg-compact-right .ftg-compact-actions .ftg-compact-ai-btn {
     display: none !important;
   }
 
   .ftg-compact-right {
-    gap: 4px;
+    gap: 6px;
   }
 
   .ftg-compact-actions {
-    gap: 3px;
+    gap: 6px;
   }
 
   .ftg-compact-right .icon-link-ghost {
-    width: 20px;
-    height: 20px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
   }
 
-  .ftg-compact-actions .hud-action-btn-refined {
-    height: 22px !important;
-    padding: 0 6px !important;
-    font-size: 8px !important;
-    min-width: 58px;
+  .ftg-compact-actions .hud-action-btn-refined.ftg-compact-refresh-btn {
+    min-height: 44px;
+    height: auto !important;
+    padding: 0 12px !important;
+    font-size: 11px !important;
+    min-width: 72px;
   }
 }
 
@@ -1483,7 +1609,7 @@ button, a, [role="button"], input, select, label {
 
 /* Minimum 44×44px tap targets for all interactive elements */
 button, [role="button"] {
-  min-height: 36px;
+  min-height: 44px;
 }
 
 /* Prevent long-press text selection on touch */
@@ -1917,6 +2043,111 @@ button, .icon-btn, .icon-btn-refined, .menu-btn {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* Adaptive density without changing desktop information layout */
+@media (max-width: 820px) {
+  .icon-btn-refined,
+  .hud-action-btn-refined {
+    min-height: 44px;
+  }
+
+  .ftg-adaptive-density .article-card {
+    border-radius: 6px;
+  }
+  .ftg-adaptive-density .ftg-article-title {
+    font-size: 20px !important;
+    line-height: 1.28 !important;
+  }
+  .ftg-adaptive-density .ftg-region-strip button,
+  .ftg-adaptive-density .ftg-filter-pill {
+    min-height: 44px;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+  }
+}
+
+/* Mobile command bar + focus sheet */
+.ftg-mobile-command {
+  display: none;
+}
+
+@media (max-width: 820px) {
+  .ftg-mobile-command {
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    bottom: max(10px, env(safe-area-inset-bottom));
+    z-index: 360;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    padding: 6px;
+    background: color-mix(in srgb, var(--header-bg) 94%, transparent);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow-md);
+    backdrop-filter: blur(10px);
+  }
+
+  .ftg-mobile-command button {
+    min-height: 44px;
+    border: 1px solid var(--border-light);
+    border-radius: 7px;
+    background: var(--surface);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .ftg-mobile-sheet-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 370;
+    border: none;
+    background: rgba(0, 0, 0, 0.4);
+  }
+
+  .ftg-mobile-sheet {
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    bottom: max(64px, calc(64px + env(safe-area-inset-bottom)));
+    z-index: 380;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    box-shadow: var(--shadow-md);
+  }
+
+  .ftg-mobile-sheet-title {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 2px 2px 6px;
+  }
+
+  .ftg-mobile-sheet button {
+    min-height: 44px;
+    border-radius: 7px;
+    border: 1px solid var(--border-light);
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    text-align: left;
+    padding: 0 12px;
+  }
 }
 
 .hud-action-btn-refined:hover:not(:disabled) {

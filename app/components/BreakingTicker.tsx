@@ -1,11 +1,9 @@
 'use client';
 
 /**
- * BreakingTicker — scrolling strip of articles published < 30 minutes ago.
- * Rendered only when there are breaking items; otherwise returns null.
- *
- * Wrapped in React.memo with a custom comparator: only re-renders when the
- * set of recent article titles actually changes, not on every parent update.
+ * BreakingTicker — scrolling headline strip (breaking → live wire → standby).
+ * Background comes from the parent `.ftg-news-ticker-bar` (solid brand blue).
+ * Memo comparator limits re-renders to ticker-window item changes.
  */
 
 import { memo, useMemo } from 'react';
@@ -20,91 +18,130 @@ type FeedItem = {
 
 interface Props {
   items: FeedItem[];
-  stickyOffset?: number;
 }
 
-const WINDOW_MS = 30 * 60 * 1000; // 30 minutes
+const BREAKING_WINDOW_MS = 30 * 60 * 1000; // 30 minutes
+const LIVE_WIRE_WINDOW_MS = 6 * 60 * 60 * 1000; // fallback window
 
-function BreakingTicker({ items, stickyOffset = 0 }: Props) {
-  // Date.now() inside useMemo is intentional: it runs once per items change,
-  // not on every render, keeping the timestamp stable within a render pass.
+function BreakingTicker({ items }: Props) {
   // eslint-disable-next-line react-hooks/purity, react-hooks/exhaustive-deps
   const now = useMemo(() => Date.now(), [items]);
 
   const breaking = items.filter(
-    i => now - new Date(i.pubDate).getTime() < WINDOW_MS
+    (i) => now - new Date(i.pubDate).getTime() < BREAKING_WINDOW_MS
   );
 
-  if (breaking.length === 0) return null;
+  const fallback = items
+    .filter((i) => now - new Date(i.pubDate).getTime() < LIVE_WIRE_WINDOW_MS)
+    .sort(
+      (a, b) =>
+        new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime()
+    )
+    .slice(0, 16);
 
-  // Duplicate the list so the scroll loops seamlessly
-  const doubled = [...breaking, ...breaking];
+  const feed = breaking.length > 0 ? breaking : fallback;
+  const mode: 'breaking' | 'live' | 'idle' =
+    breaking.length > 0 ? 'breaking' : feed.length > 0 ? 'live' : 'idle';
+
+  const idleFeed: FeedItem[] = [
+    {
+      title: 'Monitoring global wires — awaiting fresh Iran-theater updates.',
+      link: '',
+      pubDate: new Date(now).toISOString(),
+      sourceName: 'FrameTheGlobe',
+      region: 'global',
+    },
+    {
+      title: 'Live stream connected — polling and SSE channels are active.',
+      link: '',
+      pubDate: new Date(now).toISOString(),
+      sourceName: 'System',
+      region: 'global',
+    },
+    {
+      title: 'Tip: use Filters and Alerts to surface your priority signals.',
+      link: '',
+      pubDate: new Date(now).toISOString(),
+      sourceName: 'Operator',
+      region: 'global',
+    },
+  ];
+  const tickerFeed = feed.length > 0 ? feed : idleFeed;
+  const doubled = [...tickerFeed, ...tickerFeed];
 
   return (
-    <div className="ftg-breaking-ticker" style={{
-      background:   'var(--accent)',
-      overflow:     'hidden',
-      whiteSpace:   'nowrap',
-      borderBottom: '1px solid rgba(0, 0, 0, 0.1)',
-      position:     'sticky',
-      top:          stickyOffset,
-      zIndex:       95,
-    }}>
-      {/* BREAKING label */}
-      <span className="ftg-breaking-ticker-label" style={{
-        position:       'absolute',
-        left:           0,
-        top:            0,
-        bottom:         0,
-        display:        'flex',
-        alignItems:     'center',
-        padding:        '0 16px',
-        background:     'var(--accent-hover)',
-        fontFamily:     'var(--font-mono)',
-        fontSize:       11,
-        fontWeight:     800,
-        letterSpacing:  '0.14em',
-        color:          '#fff',
-        textTransform:  'uppercase',
-        zIndex:         2,
-        borderRight:    '1px solid rgba(255,255,255,0.1)',
-        boxShadow:      '4px 0 10px rgba(0,0,0,0.15)'
-      }}>
-        Breaking
+    <div
+      className="ftg-breaking-ticker"
+      style={{
+        background: 'transparent',
+        overflow: 'hidden',
+        whiteSpace: 'nowrap',
+        borderBottom: 'none',
+        position: 'relative',
+        zIndex: 1,
+      }}
+    >
+      <span className="ftg-breaking-ticker__label">
+        {mode === 'breaking'
+          ? 'Breaking'
+          : mode === 'live'
+            ? 'Live Wire'
+            : 'Standby'}
       </span>
 
-      {/* Scrolling track */}
-      <div className="ftg-breaking-ticker-track" style={{
-        display:        'inline-flex',
-        alignItems:     'center',
-        animation:      `ticker-scroll ${Math.max(20, breaking.length * 8)}s linear infinite`,
-        paddingLeft:    '90px', // clear the label
-      }}>
+      <div
+        className="ftg-breaking-ticker__track"
+        style={{
+          animation: `ticker-scroll ${Math.max(20, tickerFeed.length * 8)}s linear infinite`,
+        }}
+      >
         {doubled.map((item, idx) => (
-          <span key={idx} style={{ display: 'inline-flex', alignItems: 'center' }}>
-            <a
-              className="ftg-ticker-link"
-              href={item.link || undefined}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                fontFamily:    'var(--font-body)',
-                fontSize:      14,
-                fontWeight:    500,
-                color:         'rgba(255,255,255,0.95)',
-                textDecoration:'none',
-                padding:       '8px 0',
-                transition:    'color 0.1s',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.95)')}
-            >
-              <span className="ftg-ticker-source" style={{ fontWeight: 700, marginRight: 6, color: 'rgba(255,255,255,0.7)', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                {item.sourceName}
+          <span
+            key={idx}
+            style={{ display: 'inline-flex', alignItems: 'center' }}
+          >
+            {item.link ? (
+              <a
+                href={item.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ftg-breaking-ticker__link"
+                style={{
+                  fontFamily: 'var(--font-body)',
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: 'rgba(255,255,255,0.95)',
+                  textDecoration: 'none',
+                  padding: '8px 0',
+                  transition: 'color 0.1s',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#fff')}
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.color = 'rgba(255,255,255,0.95)')
+                }
+              >
+                <span className="ftg-breaking-ticker__source">
+                  {item.sourceName}
+                </span>
+                {item.title}
+              </a>
+            ) : (
+              <span
+                style={{
+                  fontFamily: 'var(--font-body)',
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: 'rgba(255,255,255,0.92)',
+                  padding: '8px 0',
+                }}
+              >
+                <span className="ftg-breaking-ticker__source">
+                  {item.sourceName}
+                </span>
+                {item.title}
               </span>
-              {item.title}
-            </a>
-            <span className="ftg-ticker-sep" style={{ margin: '0 30px', color: 'rgba(255,255,255,0.25)', fontSize: 11 }}>◆</span>
+            )}
+            <span className="ftg-breaking-ticker__sep">◆</span>
           </span>
         ))}
       </div>
@@ -114,47 +151,59 @@ function BreakingTicker({ items, stickyOffset = 0 }: Props) {
           0%   { transform: translateX(0); }
           100% { transform: translateX(-50%); }
         }
-
+        .ftg-breaking-ticker__source {
+          font-weight: 700;
+          margin-right: 6px;
+          color: rgba(255,255,255,0.7);
+          font-family: var(--font-mono);
+          font-size: 11px;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+        }
+        .ftg-breaking-ticker__sep {
+          margin: 0 30px;
+          color: rgba(255,255,255,0.25);
+          font-size: 11px;
+        }
         @media (max-width: 820px) {
-          .ftg-breaking-ticker-label {
-            padding: 0 10px !important;
+          .ftg-breaking-ticker {
+            --ftg-ticker-label-w: 7.25rem;
+          }
+          .ftg-breaking-ticker__label {
+            padding: 0 10px 0 12px !important;
             font-size: 10px !important;
             letter-spacing: 0.1em !important;
           }
-          .ftg-breaking-ticker-track {
-            padding-left: 72px !important;
-          }
-          .ftg-ticker-link {
+          .ftg-breaking-ticker__link {
             font-size: 12px !important;
             padding: 7px 0 !important;
           }
-          .ftg-ticker-source,
-          .ftg-ticker-sep {
+          .ftg-breaking-ticker__source,
+          .ftg-breaking-ticker__sep {
             font-size: 10px !important;
           }
-          .ftg-ticker-sep {
+          .ftg-breaking-ticker__sep {
             margin: 0 20px !important;
           }
         }
-
         @media (max-width: 375px) {
-          .ftg-breaking-ticker-label {
-            padding: 0 8px !important;
+          .ftg-breaking-ticker {
+            --ftg-ticker-label-w: 6.25rem;
+          }
+          .ftg-breaking-ticker__label {
+            padding: 0 8px 0 10px !important;
             font-size: 9px !important;
             letter-spacing: 0.08em !important;
           }
-          .ftg-breaking-ticker-track {
-            padding-left: 62px !important;
-          }
-          .ftg-ticker-link {
+          .ftg-breaking-ticker__link {
             font-size: 11px !important;
             padding: 6px 0 !important;
           }
-          .ftg-ticker-source,
-          .ftg-ticker-sep {
+          .ftg-breaking-ticker__source,
+          .ftg-breaking-ticker__sep {
             font-size: 9px !important;
           }
-          .ftg-ticker-sep {
+          .ftg-breaking-ticker__sep {
             margin: 0 14px !important;
           }
         }
@@ -163,19 +212,19 @@ function BreakingTicker({ items, stickyOffset = 0 }: Props) {
   );
 }
 
-// Only re-render when the breaking news window changes:
-// compare the titles + pubDates of items that are < 30 min old.
 function breakingItemsEqual(prev: Props, next: Props): boolean {
   const now = Date.now();
-  const isBreaking = (i: FeedItem) => now - new Date(i.pubDate).getTime() < WINDOW_MS;
+  const inTickerWindow = (i: FeedItem) =>
+    now - new Date(i.pubDate).getTime() < LIVE_WIRE_WINDOW_MS;
 
-  const prevBreaking = prev.items.filter(isBreaking);
-  const nextBreaking = next.items.filter(isBreaking);
+  const prevTicker = prev.items.filter(inTickerWindow);
+  const nextTicker = next.items.filter(inTickerWindow);
 
-  if (prevBreaking.length !== nextBreaking.length) return false;
-  return prevBreaking.every((item, i) =>
-    item.title === nextBreaking[i].title &&
-    item.pubDate === nextBreaking[i].pubDate
+  if (prevTicker.length !== nextTicker.length) return false;
+  return prevTicker.every(
+    (item, i) =>
+      item.title === nextTicker[i].title &&
+      item.pubDate === nextTicker[i].pubDate
   );
 }
 
