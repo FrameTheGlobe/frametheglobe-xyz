@@ -6,6 +6,7 @@ import {
   ACCOUNTABILITY_EVENTS,
   ACCOUNTABILITY_FILTER_IDS,
   type AccountabilityFilterId,
+  accountabilityLatestDate,
 } from '@/lib/accountability-data';
 import { AccountabilityEventCards } from '@/app/components/AccountabilityTracker';
 import { LiveSituationStrip } from '@/app/components/LiveSituationStrip';
@@ -15,7 +16,7 @@ const mono = 'var(--font-mono)';
 const FILTER_LABELS: Record<AccountabilityFilterId, string> = {
   all: 'All',
   ceasefire: 'Ceasefire',
-  ihl: 'IHL / law of war',
+  ihl: 'IHL / Law of War',
   un_multilateral: 'UN',
   courts: 'Courts',
   humanitarian: 'Aid',
@@ -23,6 +24,11 @@ const FILTER_LABELS: Record<AccountabilityFilterId, string> = {
 
 export default function AccountabilityFullPage() {
   const [filter, setFilter] = useState<AccountabilityFilterId>('all');
+
+  const latest = useMemo(
+    () => accountabilityLatestDate(ACCOUNTABILITY_EVENTS),
+    []
+  );
 
   const sorted = useMemo(() => {
     const filtered =
@@ -51,114 +57,188 @@ export default function AccountabilityFullPage() {
         minHeight: '100vh',
         background: 'var(--bg)',
         color: 'var(--text-primary)',
-        padding: '20px 16px calc(28px + env(safe-area-inset-bottom, 0px))',
       }}
     >
-      <div style={{ maxWidth: 720, margin: '0 auto' }}>
-        <Link
-          href="/"
-          style={{
-            fontFamily: mono,
-            fontSize: 11,
-            fontWeight: 800,
-            letterSpacing: '0.06em',
-            color: 'var(--accent)',
-            textDecoration: 'none',
-            display: 'inline-block',
-            marginBottom: 18,
-          }}
-        >
-          ← Home
-        </Link>
-        <h1
-          style={{
-            fontFamily: mono,
-            fontSize: 18,
-            fontWeight: 800,
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
-            color: 'var(--accent)',
-            margin: '0 0 8px',
-          }}
-        >
-          Levant situation desk
-        </h1>
+      {/* ── Page header bar ────────────────────────────────────────────── */}
+      <div
+        className="widget-hd"
+        style={{
+          padding: '14px 20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          flexWrap: 'wrap',
+          position: 'sticky',
+          top: 0,
+          zIndex: 80,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <Link
+            href="/"
+            style={{
+              fontFamily: mono,
+              fontSize: 10,
+              fontWeight: 800,
+              letterSpacing: '0.06em',
+              color: 'var(--text-muted)',
+              textDecoration: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            ← FrameTheGlobe
+          </Link>
+          <span style={{ color: 'var(--border)', fontSize: 12 }}>/</span>
+          <span
+            className="widget-hd-title"
+            style={{
+              fontFamily: mono,
+              color: 'var(--accent)',
+            }}
+          >
+            Levant · Situation Desk
+          </span>
+        </div>
+        {latest && (
+          <span
+            style={{
+              fontFamily: mono,
+              fontSize: 9,
+              fontWeight: 700,
+              color: 'var(--text-muted)',
+              letterSpacing: '0.04em',
+            }}
+          >
+            Newest entry {latest} · {ACCOUNTABILITY_EVENTS.length} links
+          </span>
+        )}
+      </div>
+
+      <div
+        style={{
+          maxWidth: 860,
+          margin: '0 auto',
+          padding: '24px 16px calc(40px + env(safe-area-inset-bottom, 0px))',
+        }}
+      >
+        {/* ── Intro ──────────────────────────────────────────────────── */}
         <p
           style={{
             fontSize: 14,
-            lineHeight: 1.55,
+            lineHeight: 1.6,
             color: 'var(--text-secondary)',
-            margin: '0 0 18px',
-            maxWidth: 62 * 13,
+            margin: '0 0 20px',
+            maxWidth: 600,
           }}
         >
-          Live editorial figures (cite every number in{' '}
-          <code style={{ fontFamily: mono, fontSize: 12 }}>live-situation-metrics.ts</code>
-          ) plus a bookmarkable timeline of UN, court, and humanitarian sources.
+          Live editorial figures and a citable source timeline — UN documents,
+          court filings, and humanitarian updates. Verify every number at the
+          primary link.
         </p>
 
+        {/* ── Live metrics grid ──────────────────────────────────────── */}
         <div
           style={{
-            marginBottom: 22,
-            padding: '14px 16px',
-            borderRadius: 8,
+            marginBottom: 28,
+            padding: '18px 18px 14px',
+            borderRadius: 10,
             border: '1px solid var(--border-light)',
             background: 'var(--surface)',
+            boxShadow: 'var(--shadow-sm)',
           }}
         >
           <LiveSituationStrip density="comfortable" layout="grid" />
         </div>
 
-        <h2
-          style={{
-            fontFamily: mono,
-            fontSize: 12,
-            fontWeight: 800,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            color: 'var(--text-muted)',
-            margin: '0 0 12px',
-          }}
-        >
-          Source timeline
-        </h2>
+        {/* ── Source timeline ────────────────────────────────────────── */}
         <div
           style={{
             display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
             flexWrap: 'wrap',
-            gap: 8,
-            marginBottom: 18,
+            marginBottom: 14,
           }}
         >
-          {ACCOUNTABILITY_FILTER_IDS.map((id) => {
-            const active = filter === id;
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setFilter(id)}
-                style={{
-                  fontFamily: mono,
-                  fontSize: 10,
-                  fontWeight: 800,
-                  letterSpacing: '0.05em',
-                  textTransform: 'uppercase',
-                  padding: '10px 14px',
-                  minHeight: 44,
-                  borderRadius: 999,
-                  border: `1px solid ${active ? 'var(--accent)' : 'var(--border-light)'}`,
-                  background: active ? 'var(--accent)' : 'var(--surface)',
-                  color: active ? '#fff' : 'var(--text-secondary)',
-                  cursor: 'pointer',
-                  touchAction: 'manipulation',
-                }}
-              >
-                {FILTER_LABELS[id]}
-              </button>
-            );
-          })}
+          <h2
+            style={{
+              fontFamily: mono,
+              fontSize: 11,
+              fontWeight: 800,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: 'var(--text-muted)',
+              margin: 0,
+            }}
+          >
+            Source timeline
+          </h2>
+
+          {/* Filter pills */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {ACCOUNTABILITY_FILTER_IDS.map((id) => {
+              const active = filter === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setFilter(id)}
+                  style={{
+                    fontFamily: mono,
+                    fontSize: 10,
+                    fontWeight: 800,
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    padding: '7px 12px',
+                    minHeight: 36,
+                    borderRadius: 999,
+                    border: `1px solid ${active ? 'var(--accent)' : 'var(--border-light)'}`,
+                    background: active ? 'var(--accent)' : 'var(--surface)',
+                    color: active ? '#fff' : 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    touchAction: 'manipulation',
+                    transition: 'background 0.15s, border-color 0.15s, color 0.15s',
+                  }}
+                >
+                  {FILTER_LABELS[id]}
+                </button>
+              );
+            })}
+          </div>
         </div>
+
         <AccountabilityEventCards events={sorted} />
+
+        {/* ── Methodology note ──────────────────────────────────────── */}
+        <div
+          style={{
+            marginTop: 24,
+            padding: '14px 16px',
+            borderRadius: 8,
+            border: '1px dashed var(--border)',
+            background: 'var(--surface-muted)',
+          }}
+        >
+          <p
+            style={{
+              margin: 0,
+              fontSize: 12,
+              lineHeight: 1.55,
+              color: 'var(--text-muted)',
+            }}
+          >
+            <strong style={{ color: 'var(--text-secondary)' }}>
+              Methodology
+            </strong>{' '}
+            — Entries are manually curated with external links. Status labels
+            describe the document type or forum, not a legal conclusion. Suggest
+            additions via your editorial process.
+          </p>
+        </div>
       </div>
     </div>
   );

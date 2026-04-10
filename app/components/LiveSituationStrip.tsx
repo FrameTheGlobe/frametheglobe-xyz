@@ -48,68 +48,84 @@ function MetricCard({
       className={`ftg-live-metric-card ${REGION_CLASS[m.regionCode]}`}
       aria-label={`${m.regionLabel}: ${m.metricLabel}. Open ${m.sourceName}.`}
     >
-      {loading ? (
-        <div style={{ position: 'absolute', top: 8, right: 8 }}>
-          <span className="loader-dots"></span>
-        </div>
-      ) : null}
+      {/* Region label */}
       <div
         className="ftg-live-metric-card__region"
         style={{
           fontFamily: mono,
-          fontSize: dense ? 9 : 10,
+          fontSize: 9,
           fontWeight: 800,
-          letterSpacing: '0.08em',
+          letterSpacing: '0.1em',
           textTransform: 'uppercase',
           color: 'var(--text-muted)',
-          marginBottom: 4,
+          marginBottom: 6,
         }}
       >
         {m.regionLabel}
       </div>
+
+      {/* Value */}
       <div
         className="ftg-live-metric-card__value"
         style={{
           fontFamily: mono,
-          fontSize: dense ? 20 : 24,
-          fontWeight: 800,
-          letterSpacing: '-0.02em',
+          fontSize: dense ? 24 : 30,
+          fontWeight: 900,
+          letterSpacing: '-0.03em',
           color: 'var(--text-primary)',
-          lineHeight: 1.1,
+          lineHeight: 1,
           marginBottom: 4,
-          opacity: loading ? 0.5 : 1,
+          opacity: loading ? 0.45 : 1,
+          transition: 'opacity 0.3s ease',
         }}
       >
-        {loading ? '...' : showValue ? m.valueDisplay : '—'}
+        {loading ? '···' : showValue ? m.valueDisplay : '—'}
       </div>
+
+      {/* Qualifier */}
+      {m.valueQualifier && !loading && (
+        <div
+          style={{
+            fontFamily: mono,
+            fontSize: 9,
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.06em',
+            color: 'var(--text-muted)',
+            marginBottom: 4,
+          }}
+        >
+          {m.valueQualifier}
+        </div>
+      )}
+
+      {/* Metric label */}
       <div
         style={{
-          fontFamily: mono,
-          fontSize: dense ? 9 : 10,
-          fontWeight: 700,
+          fontFamily: 'var(--font-body)',
+          fontSize: dense ? 12 : 13,
+          fontWeight: 600,
           color: 'var(--text-secondary)',
           marginBottom: 6,
-          lineHeight: 1.35,
+          lineHeight: 1.4,
         }}
       >
         {m.metricLabel}
-        {m.valueQualifier ? (
-          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>
-            {' '}
-            · {m.valueQualifier}
-          </span>
-        ) : null}
       </div>
+
+      {/* Since label */}
       <div
         style={{
-          fontSize: dense ? 10 : 11,
+          fontSize: 11,
           color: 'var(--text-muted)',
           lineHeight: 1.4,
-          marginBottom: 8,
+          marginBottom: 10,
         }}
       >
         {m.sinceLabel}
       </div>
+
+      {/* Source + basis */}
       <div
         style={{
           display: 'flex',
@@ -145,6 +161,8 @@ function MetricCard({
           {m.sourceName} →
         </span>
       </div>
+
+      {/* Caveat (comfortable mode only) */}
       {!dense && m.caveat ? (
         <p
           style={{
@@ -159,6 +177,8 @@ function MetricCard({
           {m.caveat}
         </p>
       ) : null}
+
+      {/* Sync date */}
       <div
         style={{
           fontFamily: mono,
@@ -232,22 +252,6 @@ export function LiveSituationStrip({
           </span>
         ) : null}
       </div>
-      <p
-        className="ftg-live-situation__blurb"
-        style={{
-          margin: '0 0 10px',
-          fontSize: dense ? 10 : 11,
-          lineHeight: 1.45,
-          color: 'var(--text-secondary)',
-        }}
-      >
-        Editorial counters —{' '}
-        <strong style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
-          add verified figures
-        </strong>{' '}
-        in <code style={{ fontSize: '0.9em' }}>lib/live-situation-metrics.ts</code>
-        . Until then, each card links to the primary source.
-      </p>
       <div
         className={
           layout === 'grid'

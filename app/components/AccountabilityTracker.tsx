@@ -11,6 +11,7 @@ import {
   accountabilityStatusLabel,
 } from '@/lib/accountability-data';
 import { LiveSituationStrip } from '@/app/components/LiveSituationStrip';
+import { LIVE_SITUATION_METRICS } from '@/lib/live-situation-metrics';
 
 const mono = 'var(--font-mono)';
 
@@ -150,8 +151,18 @@ export function AccountabilityEventCards({
   );
 }
 
+/** Build a compact marquee string from live metrics */
+function buildMarqueeText(): string {
+  return LIVE_SITUATION_METRICS.map((m) => {
+    const val = m.valueDisplay ?? '—';
+    const qualifier = m.valueQualifier ? ` ${m.valueQualifier}` : '';
+    return `${m.regionLabel.toUpperCase()}  ${val}${qualifier}  ${m.metricLabel}`;
+  }).join('   ·   ');
+}
+
 export default function AccountabilityTracker() {
-  const [open, setOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [filter, setFilter] = useState<AccountabilityFilterId>('all');
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const lastFocusRef = useRef<HTMLElement | null>(null);
@@ -184,66 +195,51 @@ export default function AccountabilityTracker() {
 
   const openSheet = useCallback(() => {
     lastFocusRef.current = document.activeElement as HTMLElement;
-    setOpen(true);
+    setSheetOpen(true);
   }, []);
 
   const closeSheet = useCallback(() => {
-    setOpen(false);
+    setSheetOpen(false);
     queueMicrotask(() => lastFocusRef.current?.focus?.());
   }, []);
 
   useEffect(() => {
-    if (!open) return;
+    if (!sheetOpen) return;
     document.body.classList.add('ftg-accountability-scroll-lock');
     return () => {
       document.body.classList.remove('ftg-accountability-scroll-lock');
     };
-  }, [open]);
+  }, [sheetOpen]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!sheetOpen) return;
     const t = requestAnimationFrame(() => closeBtnRef.current?.focus());
     return () => cancelAnimationFrame(t);
-  }, [open]);
+  }, [sheetOpen]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!sheetOpen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') closeSheet();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [open, closeSheet]);
+  }, [sheetOpen, closeSheet]);
+
+  const marqueeText = useMemo(() => buildMarqueeText(), []);
 
   return (
     <>
+      {/* ── Situation Desk wrapper ─────────────────────────────────────────── */}
       <div
-        className="ftg-accountability-rail"
-        style={{
-          borderBottom: '1px solid var(--border)',
-          background: 'var(--surface-muted)',
-        }}
+        className="ftg-situation-desk"
+        style={{ borderBottom: '1px solid var(--border)' }}
       >
-        <div
-          className="ftg-accountability-rail-inner"
-          style={{
-            maxWidth: 1200,
-            margin: '0 auto',
-            padding: '8px 14px 12px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 12,
-          }}
-        >
-          <div
-            className="ftg-accountability-rail-head"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              flexWrap: 'wrap',
-            }}
-          >
+        {/* ── Ticker strip (always visible) ─────────────────────────────── */}
+        <div className="ftg-situation-desk__ticker">
+          {/* Left: live dot + label */}
+          <div className="ftg-situation-desk__ticker-left">
+            <span className="live-dot" style={{ width: 7, height: 7 }} />
             <span
               style={{
                 fontFamily: mono,
@@ -252,96 +248,90 @@ export default function AccountabilityTracker() {
                 letterSpacing: '0.1em',
                 textTransform: 'uppercase',
                 color: 'var(--accent)',
-                flexShrink: 0,
+                whiteSpace: 'nowrap',
               }}
             >
-              Levant · situation desk
+              Levant&nbsp;·&nbsp;Situation&nbsp;Desk
             </span>
-            <span
-              className="ftg-accountability-desc"
-              style={{
-                flex: '1 1 160px',
-                fontFamily: 'var(--font-body)',
-                fontSize: 12,
-                lineHeight: 1.4,
-                color: 'var(--text-secondary)',
-                minWidth: 0,
-              }}
-            >
-              Live editorial figures + citable timeline (UN, courts, aid).
-              Expand for filters and full source list.
-              {latest && (
-                <span
-                  style={{
-                    display: 'block',
-                    fontFamily: mono,
-                    fontSize: 9,
-                    color: 'var(--text-muted)',
-                    marginTop: 2,
-                    letterSpacing: '0.04em',
-                  }}
-                >
-                  Newest timeline entry {latest} · {ACCOUNTABILITY_EVENTS.length}{' '}
-                  links
-                </span>
-              )}
+          </div>
+
+          {/* Center: scrolling marquee */}
+          <div className="ftg-situation-desk__marquee-track" aria-hidden>
+            <span className="ftg-situation-desk__marquee">
+              {marqueeText}&nbsp;&nbsp;&nbsp;·&nbsp;&nbsp;&nbsp;{marqueeText}
             </span>
-            <div
-              className="ftg-accountability-rail-controls"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                marginLeft: 'auto',
-                flexShrink: 0,
-              }}
-            >
-              <Link
-                href="/accountability"
-                className="ftg-accountability-quiet-link"
-                style={{
-                  fontFamily: mono,
-                  fontSize: 10,
-                  fontWeight: 700,
-                  color: 'var(--text-muted)',
-                  textDecoration: 'none',
-                  padding: '8px 6px',
-                }}
-              >
-                Full page
-              </Link>
-              <button
-                type="button"
-                className="ftg-accountability-expand-btn"
-                onClick={openSheet}
-                aria-expanded={open}
-                aria-controls="ftg-accountability-sheet"
+          </div>
+
+          {/* Right: expand/collapse chevron */}
+          <button
+            type="button"
+            className="ftg-situation-desk__chevron"
+            onClick={() => setCollapsed((c) => !c)}
+            aria-expanded={!collapsed}
+            aria-label={collapsed ? 'Expand situation desk' : 'Collapse situation desk'}
+          >
+            {collapsed ? '▾' : '▴'}
+          </button>
+        </div>
+
+        {/* ── Expandable panel ──────────────────────────────────────────── */}
+        <div
+          className={`ftg-situation-desk__panel${collapsed ? '' : ' ftg-situation-desk__panel--open'}`}
+        >
+          <div className="ftg-situation-desk__panel-inner">
+            {/* Section label */}
+            <div className="ftg-situation-desk__panel-head">
+              <span
                 style={{
                   fontFamily: mono,
                   fontSize: 10,
                   fontWeight: 800,
-                  letterSpacing: '0.08em',
+                  letterSpacing: '0.1em',
                   textTransform: 'uppercase',
-                  padding: '10px 14px',
-                  borderRadius: 4,
-                  border: '1px solid var(--accent)',
-                  background: 'var(--accent)',
-                  color: '#fff',
-                  cursor: 'pointer',
-                  minHeight: 44,
-                  touchAction: 'manipulation',
+                  color: 'var(--text-muted)',
                 }}
               >
-                Expand ▾
+                Live situation
+              </span>
+              {latest && (
+                <span
+                  style={{
+                    fontFamily: mono,
+                    fontSize: 9,
+                    color: 'var(--text-muted)',
+                    letterSpacing: '0.04em',
+                  }}
+                >
+                  Newest entry {latest} · {ACCOUNTABILITY_EVENTS.length} links
+                </span>
+              )}
+            </div>
+
+            {/* Metric grid */}
+            <LiveSituationStrip density="comfortable" layout="grid" />
+
+            {/* Footer actions */}
+            <div className="ftg-situation-desk__footer">
+              <Link
+                href="/accountability"
+                className="ftg-situation-desk__footer-link"
+              >
+                Full page →
+              </Link>
+              <button
+                type="button"
+                className="ftg-situation-desk__timeline-btn"
+                onClick={openSheet}
+              >
+                Source timeline ▾
               </button>
             </div>
           </div>
-
-          <LiveSituationStrip density="compact" layout="scroll" />
         </div>
       </div>
 
-      {open && (
+      {/* ── Bottom sheet (source timeline) ─────────────────────────────────── */}
+      {sheetOpen && (
         <>
           <div
             className="ftg-accountability-backdrop"
@@ -376,8 +366,8 @@ export default function AccountabilityTracker() {
               overflow: 'hidden',
             }}
           >
+            {/* Drag handle */}
             <div
-              className="ftg-accountability-sheet-handle"
               style={{
                 padding: '10px 0 4px',
                 display: 'flex',
@@ -391,9 +381,12 @@ export default function AccountabilityTracker() {
                   height: 4,
                   borderRadius: 999,
                   background: 'var(--border)',
+                  display: 'block',
                 }}
               />
             </div>
+
+            {/* Sheet header */}
             <div
               style={{
                 display: 'flex',
@@ -405,7 +398,7 @@ export default function AccountabilityTracker() {
                 flexShrink: 0,
               }}
             >
-              <div style={{ minWidth: 0 }}>
+              <div>
                 <h2
                   id="ftg-accountability-sheet-title"
                   style={{
@@ -428,16 +421,15 @@ export default function AccountabilityTracker() {
                     lineHeight: 1.45,
                   }}
                 >
-                  Editorial live figures (source-cited) plus a curated timeline
-                  of formal documents and humanitarian hubs — verify every number
-                  at the primary link.
+                  Formal documents, UN updates, and humanitarian hubs —
+                  verify every number at the primary link.
                 </p>
               </div>
               <button
                 ref={closeBtnRef}
                 type="button"
                 onClick={closeSheet}
-                aria-label="Close accountability panel"
+                aria-label="Close source timeline"
                 style={{
                   flexShrink: 0,
                   minWidth: 44,
@@ -457,17 +449,7 @@ export default function AccountabilityTracker() {
               </button>
             </div>
 
-            <div
-              style={{
-                padding: '0 16px 14px',
-                flexShrink: 0,
-                borderBottom: '1px solid var(--border-light)',
-                background: 'var(--surface-muted)',
-              }}
-            >
-              <LiveSituationStrip density="comfortable" layout="scroll" />
-            </div>
-
+            {/* Filter pills */}
             <div
               className="ftg-accountability-filter-row"
               style={{
@@ -478,13 +460,7 @@ export default function AccountabilityTracker() {
                 WebkitOverflowScrolling: 'touch',
               }}
             >
-              <div
-                style={{
-                  display: 'inline-flex',
-                  gap: 6,
-                  paddingBottom: 2,
-                }}
-              >
+              <div style={{ display: 'inline-flex', gap: 6, paddingBottom: 2 }}>
                 {ACCOUNTABILITY_FILTER_IDS.map((id) => {
                   const active = filter === id;
                   return (
@@ -515,6 +491,8 @@ export default function AccountabilityTracker() {
                 })}
               </div>
             </div>
+
+            {/* Event list */}
             <div
               style={{
                 flex: 1,
@@ -558,7 +536,7 @@ export default function AccountabilityTracker() {
                   </strong>{' '}
                   — Entries are manually curated with external links. Status
                   labels describe the type of document or forum, not a legal
-                  conclusion. Suggest additions via your editorial process.
+                  conclusion.
                 </p>
                 <Link
                   href="/accountability"
