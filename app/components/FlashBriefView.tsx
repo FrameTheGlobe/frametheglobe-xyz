@@ -48,20 +48,20 @@ export default function FlashBriefView({
           </div>
         ) : (
           breakingItems.map((item, idx) => (
-            <div key={item.link || idx} style={itemCardStyle}>
+            <div key={`${item.sourceId}-${idx}`} style={itemCardStyle}>
               <div style={itemAccentLine} />
               <div style={itemContentStyle}>
                 <div style={itemMetaStyle}>
-                  <span style={sourceBadgeStyle}>{item.sourceName || item.sourceId}</span>
-                  <span style={timeStyle}>{getRelativeTime(item.pubDate)}</span>
+                  <span style={sourceBadgeStyle}>{item.sourceName || item.sourceId || 'Unknown Source'}</span>
+                  <span style={timeStyle}>{item.pubDate ? getRelativeTime(item.pubDate) : 'Live'}</span>
                 </div>
                 <a
-                  href={item.link}
-                  target="_blank"
+                  href={item.link || '#'}
+                  target={item.link ? "_blank" : "_self"}
                   rel="noopener noreferrer"
                   style={itemTitleStyle}
                 >
-                  {item.title}
+                  {item.title || 'Untitled Update'}
                 </a>
               </div>
             </div>

@@ -2399,6 +2399,11 @@ export default function Home() {
             onThemeToggle={() => setTheme(ts => ts === 'light' ? 'dark' : 'light')}
             onRefresh={() => fetchNews()}
             onBriefing={() => setAiModalOpen(true)}
+            viewMode={appViewMode}
+            onViewModeChange={(mode) => {
+              setAppViewMode(mode);
+              localStorage.setItem('ftg_view_mode', mode);
+            }}
           />
         </header>
 

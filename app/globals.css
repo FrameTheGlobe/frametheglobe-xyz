@@ -381,7 +381,7 @@ body {
 .ftg-compact-header {
   width: 100%;
   display: grid;
-  grid-template-columns: auto minmax(280px, 1fr) auto;
+  grid-template-columns: auto auto minmax(280px, 1fr) auto;
   align-items: center;
   gap: 12px;
   min-height: 52px;
@@ -662,7 +662,7 @@ body {
 
 @media (max-width: 1180px) {
   .ftg-compact-header {
-    grid-template-columns: auto minmax(160px, 1fr) auto;
+    grid-template-columns: auto auto minmax(160px, 1fr) auto;
     gap: 10px;
     padding: 6px 10px;
   }
@@ -699,6 +699,7 @@ body {
     grid-template-columns: 1fr auto;
     grid-template-areas:
       'left right'
+      'toggle toggle'
       'ticker ticker';
     gap: 8px 10px;
     min-height: 56px;
@@ -708,6 +709,13 @@ body {
   .ftg-compact-left { grid-area: left; }
   .ftg-compact-right { grid-area: right; }
   .ftg-compact-ticker-wrap { grid-area: ticker; }
+  
+  .ftg-compact-toggle { 
+    grid-area: toggle; 
+    justify-self: stretch;
+    display: flex;
+  }
+  .ftg-compact-toggle button { flex: 1; justify-content: center; }
 
   .ftg-compact-brand {
     font-size: 24px;

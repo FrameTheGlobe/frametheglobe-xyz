@@ -12,6 +12,8 @@ interface CompactHeaderProps {
   onThemeToggle:  () => void;
   onRefresh:      () => void;
   onBriefing:     () => void;
+  viewMode?:      'command' | 'flash';
+  onViewModeChange?: (mode: 'command' | 'flash') => void;
 }
 
 export default function CompactHeader({ 
@@ -24,6 +26,8 @@ export default function CompactHeader({
   onThemeToggle, 
   onRefresh,
   onBriefing,
+  viewMode = 'command',
+  onViewModeChange,
 }: CompactHeaderProps) {
   return (
     <div className="ftg-compact-header">
@@ -36,7 +40,7 @@ export default function CompactHeader({
           <span className="ftg-beta-badge">BETA</span>
         </h1>
         <span className="ftg-compact-meta">
-          v8.0.1 · {storyCount.toLocaleString()} stories · {sourceCount} sources
+          v8.0.3 · {storyCount.toLocaleString()} stories · {sourceCount} sources
         </span>
         <div className="ftg-compact-live">
           <span
@@ -52,6 +56,58 @@ export default function CompactHeader({
           </span>
         </div>
       </div>
+
+      {onViewModeChange && (
+        <div className="ftg-compact-toggle" style={{
+          display: 'flex',
+          gap: 4,
+          background: 'var(--surface-muted)',
+          padding: 3,
+          borderRadius: 6,
+          border: '1px solid var(--border-light)',
+          justifySelf: 'center',
+          alignSelf: 'center',
+        }}>
+          <button
+            onClick={() => onViewModeChange('flash')}
+            title="Switch to Flash View"
+            style={{
+              padding: '6px 12px',
+              border: 'none',
+              borderRadius: 4,
+              cursor: 'pointer',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 10,
+              fontWeight: 800,
+              letterSpacing: '0.03em',
+              background: viewMode === 'flash' ? 'var(--accent)' : 'transparent',
+              color: viewMode === 'flash' ? '#fff' : 'var(--text-secondary)',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            ⚡ FLASH
+          </button>
+          <button
+            onClick={() => onViewModeChange('command')}
+            title="Switch to Command Center"
+            style={{
+              padding: '6px 12px',
+              border: 'none',
+              borderRadius: 4,
+              cursor: 'pointer',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 10,
+              fontWeight: 800,
+              letterSpacing: '0.03em',
+              background: viewMode === 'command' ? 'var(--accent)' : 'transparent',
+              color: viewMode === 'command' ? '#fff' : 'var(--text-secondary)',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            ● COMMAND
+          </button>
+        </div>
+      )}
 
       <div className="ftg-compact-ticker-wrap">
         <MarketTicker />
