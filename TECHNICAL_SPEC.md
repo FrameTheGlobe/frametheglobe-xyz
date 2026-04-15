@@ -1,6 +1,6 @@
 # FrameTheGlobe — Technical Architecture & System Manifesto
 
-**Version:** 7.1.4 — *Accountability tracker + split-stack HUD*
+**Version:** 8.0.1 — *Accountability tracker + split-stack HUD*
 **Mission:** Low-latency, high-density tactical oversight of global geopolitical events with a specialised focus on the Iran War Theater.
 **Infrastructure:** Vercel (frontend) + Railway (backend) — split-stack architecture as of March 2026.
 
