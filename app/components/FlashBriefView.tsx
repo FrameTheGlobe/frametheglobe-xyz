@@ -26,11 +26,10 @@ export default function FlashBriefView({
 
   return (
     <div className="flash-brief-container" style={containerStyle}>
-      {/* Header */}
       <div style={headerStyle}>
         <div style={eyebrowStyle}>
-          <span className="live-dot" style={liveDotStyle} />
-          ⚡ FLASH BRIEF — LAST 30 MINUTES
+          <span style={liveDotStyle} />
+          FLASH BRIEF — LAST 30 MINUTES
         </div>
         <h1 style={titleStyle}>Critical Intelligence</h1>
         <p style={subtitleStyle}>
@@ -40,7 +39,6 @@ export default function FlashBriefView({
         </p>
       </div>
 
-      {/* News Stream */}
       <div style={streamStyle}>
         {breakingItems.length === 0 ? (
           <div style={emptyStateStyle}>
@@ -50,59 +48,36 @@ export default function FlashBriefView({
           </div>
         ) : (
           breakingItems.map((item, idx) => (
-            <FlashNewsItem key={item.link} item={item} index={idx} />
+            <div key={item.link || idx} style={itemCardStyle}>
+              <div style={itemAccentLine} />
+              <div style={itemContentStyle}>
+                <div style={itemMetaStyle}>
+                  <span style={sourceBadgeStyle}>{item.sourceName || item.source}</span>
+                  <span style={timeStyle}>{getRelativeTime(item.pubDate)}</span>
+                </div>
+                <a
+                  href={item.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={itemTitleStyle}
+                >
+                  {item.title}
+                </a>
+              </div>
+            </div>
           ))
         )}
       </div>
 
-      {/* Floating Oil Widget */}
       <div style={oilWidgetStyle}>
         <div style={oilHeaderStyle}>LIVE MARKETS</div>
         <div style={oilGridStyle}>
-          <OilMiniCard
-            label="WTI CRUDE"
-            price={wtiPrice}
-            history={wtiHistory}
-          />
-          <OilMiniCard
-            label="BRENT"
-            price={brentPrice}
-            history={brentHistory}
-          />
+          <OilMiniCard label="WTI CRUDE" price={wtiPrice} history={wtiHistory} />
+          <OilMiniCard label="BRENT" price={brentPrice} history={brentHistory} />
         </div>
         <div style={oilFooterStyle}>
           Updated {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </div>
-      </div>
-    </div>
-  );
-}
-
-function FlashNewsItem({ item, index }: { item: FeedItem; index: number }) {
-  const relativeTime = getRelativeTime(item.pubDate);
-
-  return (
-    <div
-      className="hud-frame-integrated"
-      style={{
-        ...itemCardStyle,
-        animationDelay: `${index * 50}ms`,
-      }}
-    >
-      <div style={itemAccentLine} />
-      <div style={itemContentStyle}>
-        <div style={itemMetaStyle}>
-          <span style={sourceBadgeStyle}>{item.sourceName}</span>
-          <span style={timeStyle}>{relativeTime}</span>
-        </div>
-        <a
-          href={item.link}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={itemTitleStyle}
-        >
-          {item.title}
-        </a>
       </div>
     </div>
   );
@@ -135,8 +110,6 @@ function OilMiniCard({
   );
 }
 
-// ── Styles ───────────────────────────────────────────────────────────────────
-
 const containerStyle: React.CSSProperties = {
   maxWidth: 720,
   margin: '0 auto',
@@ -165,8 +138,7 @@ const liveDotStyle: React.CSSProperties = {
   width: 8,
   height: 8,
   borderRadius: '50%',
-  background: 'var(--neon-green, #27ae60)',
-  animation: 'pulse 2s ease-in-out infinite',
+  background: '#27ae60',
 };
 
 const titleStyle: React.CSSProperties = {
@@ -195,8 +167,6 @@ const itemCardStyle: React.CSSProperties = {
   borderRadius: 6,
   border: '1px solid var(--border)',
   overflow: 'hidden',
-  animation: 'fadeInScale 0.3s ease forwards',
-  opacity: 0,
 };
 
 const itemAccentLine: React.CSSProperties = {
@@ -209,7 +179,7 @@ const itemAccentLine: React.CSSProperties = {
 };
 
 const itemContentStyle: React.CSSProperties = {
-  padding: '16px 20px',
+  padding: '16px 20px 16px 23px',
 };
 
 const itemMetaStyle: React.CSSProperties = {
@@ -224,7 +194,7 @@ const sourceBadgeStyle: React.CSSProperties = {
   fontWeight: 800,
   letterSpacing: '0.05em',
   color: 'var(--accent)',
-  background: 'var(--accent-light)',
+  background: 'var(--accent-light, rgba(30, 64, 175, 0.1))',
   padding: '3px 8px',
   borderRadius: 3,
   textTransform: 'uppercase',
@@ -247,8 +217,9 @@ const itemTitleStyle: React.CSSProperties = {
 const emptyStateStyle: React.CSSProperties = {
   textAlign: 'center',
   padding: '60px 20px',
-  border: '1px dashed var(--border-light)',
+  border: '1px dashed var(--border)',
   borderRadius: 6,
+  background: 'var(--surface)',
 };
 
 const emptyIconStyle: React.CSSProperties = {
@@ -291,7 +262,7 @@ const oilHeaderStyle: React.CSSProperties = {
   letterSpacing: '0.1em',
   color: 'var(--accent)',
   marginBottom: 12,
-  borderBottom: '1px solid var(--border-light)',
+  borderBottom: '1px solid var(--border)',
   paddingBottom: 8,
 };
 
