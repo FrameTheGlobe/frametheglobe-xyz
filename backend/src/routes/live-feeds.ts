@@ -56,7 +56,7 @@ const DEFAULT_FEEDS: FeedConfig[] = [
   { id: 'aljazeera', name: 'Al Jazeera English', channelId: 'UCNye-wNBqNL5ZzHSJj3l8Bg' },
   { id: 'skynews', name: 'Sky News', channelId: 'UCoMdktPbSTixAyNGwb-UYkQ' },
   { id: 'dwnews', name: 'DW News', channelId: 'UCknLrEdhRCp1aegoMqRaCZg' },
-  { id: 'france24', name: 'France 24 English', channelId: 'UCEgdi0XIXXZ-qJOFPf4JSKw' },
+  { id: 'bbcnews', name: 'BBC News', channelId: 'UC16niRr50-MSBwiO3YDb3RA' },
 ];
 
 function safeJsonParse<T>(raw: string | undefined): T | null {
