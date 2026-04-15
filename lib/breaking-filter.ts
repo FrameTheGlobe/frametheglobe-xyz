@@ -35,6 +35,25 @@ export function filterBreakingNews(items: FeedItem[]): FeedItem[] {
 }
 
 /**
+ * Filter feed items for a broader "rolling" feed for Flash View (last 12 hours)
+ */
+export function filterRollingFeed(items: FeedItem[]): FeedItem[] {
+  const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000;
+  const now = Date.now();
+  
+  return items
+    .filter(item => {
+      const pubTime = new Date(item.pubDate || now).getTime();
+      return (now - pubTime) < TWELVE_HOURS_MS;
+    })
+    .sort((a, b) => {
+      const dateA = new Date(a.pubDate || 0).getTime();
+      const dateB = new Date(b.pubDate || 0).getTime();
+      return dateB - dateA;
+    });
+}
+
+/**
  * Format relative time for breaking news
  */
 export function getRelativeTime(pubDate: string): string {
@@ -44,5 +63,7 @@ export function getRelativeTime(pubDate: string): string {
   if (minutes < 1) return 'Just now';
   if (minutes === 1) return '1 min ago';
   if (minutes < 60) return `${minutes} mins ago`;
-  return 'Over 1 hour ago';
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hr${hours !== 1 ? 's' : ''} ago`;
+  return 'Over 24 hours ago';
 }

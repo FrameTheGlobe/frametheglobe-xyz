@@ -1,59 +1,84 @@
 'use client';
 
-import { useMemo } from 'react';
-import { filterBreakingNews, getRelativeTime } from '@/lib/breaking-filter';
+import { useMemo, useState, useEffect, useCallback } from 'react';
+import { filterRollingFeed, getRelativeTime } from '@/lib/breaking-filter';
 import Sparkline from '@/app/components/Sparkline';
 import type { FeedItem } from '@/lib/fetcher';
 
+interface MarketData {
+  symbol: string;
+  name: string;
+  price: number;
+  change: number;
+  changePercent: number;
+  history?: number[];
+}
+
 interface FlashBriefViewProps {
   items: FeedItem[];
-  wtiPrice: number;
-  wtiHistory: number[];
-  brentPrice: number;
-  brentHistory: number[];
-  lastUpdated: Date;
 }
 
 export default function FlashBriefView({
   items,
-  wtiPrice = 72.5,
-  wtiHistory = [70, 71, 72, 71.5, 72.5],
-  brentPrice = 76.8,
-  brentHistory = [74, 75, 76, 76.2, 76.8],
-  lastUpdated = new Date(),
 }: FlashBriefViewProps) {
-  const breakingItems = useMemo(() => filterBreakingNews(items), [items]);
+  const [markets, setMarkets] = useState<MarketData[]>([]);
+  const [loadingMarkets, setLoadingMarkets] = useState(true);
+  
+  const rollingItems = useMemo(() => filterRollingFeed(items), [items]);
+
+  const fetchMarkets = useCallback(async () => {
+    try {
+      const res = await fetch('/api/market');
+      if (res.ok) {
+        const data = await res.json();
+        setMarkets(data);
+      }
+    } catch (err) {
+      console.error('Flash view failed to fetch markets:', err);
+    } finally {
+      setLoadingMarkets(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchMarkets();
+    const interval = setInterval(fetchMarkets, 60000);
+    return () => clearInterval(interval);
+  }, [fetchMarkets]);
+
+  // Find specifically WTI and Brent from the dynamic market data
+  const wti = markets.find(m => m.symbol.includes('WTI')) || markets.find(m => m.name.toLowerCase().includes('wti'));
+  const brent = markets.find(m => m.symbol.includes('BRENT')) || markets.find(m => m.name.toLowerCase().includes('brent'));
 
   return (
     <div className="flash-brief-container" style={containerStyle}>
       <div style={headerStyle}>
         <div style={eyebrowStyle}>
-          <span style={liveDotStyle} />
-          FLASH BRIEF — LAST 30 MINUTES
+          <span className="live-dot" />
+          FLASH INTEL — REALTIME ROLLING FEED
         </div>
-        <h1 style={titleStyle}>Critical Intelligence</h1>
+        <h1 style={titleStyle}>Critical Briefing</h1>
         <p style={subtitleStyle}>
-          {breakingItems.length === 0
-            ? 'No critical alerts detected'
-            : `${breakingItems.length} breaking item${breakingItems.length !== 1 ? 's' : ''}`}
+          {rollingItems.length === 0
+            ? 'Monitoring global feeds...'
+            : `${rollingItems.length} reports in the last 12 hours`}
         </p>
       </div>
 
-      <div style={streamStyle}>
-        {breakingItems.length === 0 ? (
+      <div className="flash-brief-stream" style={streamStyle}>
+        {rollingItems.length === 0 ? (
           <div style={emptyStateStyle}>
             <div style={emptyIconStyle}>⊘</div>
-            <div style={emptyTitleStyle}>NO CRITICAL ALERTS</div>
-            <div style={emptySubtitleStyle}>Last 30 minutes</div>
+            <div style={emptyTitleStyle}>INITIALIZING STREAM</div>
+            <div style={emptySubtitleStyle}>Scanning global intelligence networks...</div>
           </div>
         ) : (
-          breakingItems.map((item, idx) => (
-            <div key={`${item.sourceId}-${idx}`} style={itemCardStyle}>
+            <div key={`${item.sourceId}-${idx}`} className="flash-item-card" style={itemCardStyle}>
               <div style={itemAccentLine} />
               <div style={itemContentStyle}>
                 <div style={itemMetaStyle}>
-                  <span style={sourceBadgeStyle}>{item.sourceName || item.sourceId || 'Unknown Source'}</span>
-                  <span style={timeStyle}>{item.pubDate ? getRelativeTime(item.pubDate) : 'Live'}</span>
+                  <span style={sourceBadgeStyle}>{item.sourceName || item.sourceId || 'INTEL_NODE'}</span>
+                  <span style={timeStyle}>{item.pubDate ? getRelativeTime(item.pubDate) : 'JUST NOW'}</span>
                 </div>
                 <a
                   href={item.link || '#'}
@@ -61,7 +86,7 @@ export default function FlashBriefView({
                   rel="noopener noreferrer"
                   style={itemTitleStyle}
                 >
-                  {item.title || 'Untitled Update'}
+                  {item.title || 'Inbound Signal...'}
                 </a>
               </div>
             </div>
@@ -69,14 +94,54 @@ export default function FlashBriefView({
         )}
       </div>
 
-      <div style={oilWidgetStyle}>
-        <div style={oilHeaderStyle}>LIVE MARKETS</div>
-        <div style={oilGridStyle}>
-          <OilMiniCard label="WTI CRUDE" price={wtiPrice} history={wtiHistory} />
-          <OilMiniCard label="BRENT" price={brentPrice} history={brentHistory} />
-        </div>
-        <div style={oilFooterStyle}>
-          Updated {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+      <style jsx>{`
+        .flash-item-card:hover {
+          transform: translateY(-2px);
+          border-color: var(--accent) !important;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
+        }
+        @media (max-width: 640px) {
+          .flash-market-bar-wrap {
+            bottom: 16px !important;
+            width: calc(100% - 16px) !important;
+          }
+          .flash-market-bar-inner {
+            padding: 8px 16px !important;
+          }
+          .flash-market-clock {
+            display: none !important;
+          }
+        }
+      `}</style>
+
+      {/* REPOSITIONED: Centered Sticky Bottom Bar for Markets */}
+      <div className="flash-market-bar-wrap" style={marketBarWrapStyle}>
+        <div style={marketBarInnerStyle}>
+          <div style={marketLabelStyle}>LIVE CRUDE</div>
+          
+          <div style={marketGridStyle}>
+            {loadingMarkets ? (
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.1em' }}>SYNCING COMMODITIES...</div>
+            ) : (
+              <>
+                <OilMiniCard 
+                  label="WTI" 
+                  price={wti?.price || 72.50} 
+                  changePercent={wti?.changePercent || 0}
+                />
+                <div style={marketSeparatorStyle} />
+                <OilMiniCard 
+                  label="BRENT" 
+                  price={brent?.price || 76.80} 
+                  changePercent={brent?.changePercent || 0}
+                />
+              </>
+            )}
+          </div>
+          
+          <div style={marketClockStyle}>
+            {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })} UTC
+          </div>
         </div>
       </div>
     </div>
@@ -86,87 +151,86 @@ export default function FlashBriefView({
 function OilMiniCard({
   label,
   price,
-  history,
+  changePercent,
 }: {
   label: string;
   price: number;
-  history: number[];
+  changePercent: number;
 }) {
-  const change = history.length > 1 ? price - history[history.length - 2] : 0;
-  const changePercent = history.length > 1 ? (change / history[history.length - 2]) * 100 : 0;
-  const isUp = change >= 0;
+  const isUp = changePercent >= 0;
 
   return (
     <div style={miniCardStyle}>
-      <div style={miniLabelStyle}>{label}</div>
-      <div style={miniPriceStyle}>${price.toFixed(2)}</div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ ...miniChangeStyle, color: isUp ? '#27ae60' : '#e74c3c' }}>
-          {isUp ? '+' : ''}{changePercent.toFixed(2)}%
-        </span>
-        <Sparkline data={history} width={40} height={20} />
-      </div>
+      <span style={miniLabelStyle}>{label}</span>
+      <span style={miniPriceStyle}>${price.toFixed(2)}</span>
+      <span style={{ ...miniChangeStyle, color: isUp ? '#10b981' : '#ef4444' }}>
+        {isUp ? '+' : ''}{changePercent.toFixed(2)}%
+      </span>
     </div>
   );
 }
 
 const containerStyle: React.CSSProperties = {
-  maxWidth: 720,
+  maxWidth: 800,
   margin: '0 auto',
-  padding: '24px 16px 120px',
+  padding: '32px 16px 140px',
   fontFamily: 'var(--font-mono)',
 };
 
 const headerStyle: React.CSSProperties = {
   textAlign: 'center',
-  marginBottom: 32,
+  marginBottom: 40,
 };
 
 const eyebrowStyle: React.CSSProperties = {
-  fontSize: 11,
-  fontWeight: 800,
-  letterSpacing: '0.1em',
+  fontSize: 10,
+  fontWeight: 900,
+  letterSpacing: '0.15em',
   color: 'var(--accent)',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  gap: 8,
-  marginBottom: 12,
+  gap: 10,
+  marginBottom: 16,
 };
 
 const liveDotStyle: React.CSSProperties = {
-  width: 8,
-  height: 8,
+  width: 6,
+  height: 6,
   borderRadius: '50%',
-  background: '#27ae60',
+  background: '#10b981',
+  boxShadow: '0 0 10px #10b981',
 };
 
 const titleStyle: React.CSSProperties = {
-  fontSize: 28,
-  fontWeight: 700,
+  fontSize: 32,
+  fontWeight: 800,
   color: 'var(--text-primary)',
-  margin: '0 0 8px',
-  fontFamily: 'var(--font-lora)',
+  margin: '0 0 10px',
+  letterSpacing: '-0.02em',
 };
 
 const subtitleStyle: React.CSSProperties = {
-  fontSize: 13,
+  fontSize: 14,
   color: 'var(--text-muted)',
   margin: 0,
+  letterSpacing: '0.02em',
 };
 
 const streamStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
-  gap: 12,
+  gap: 16,
 };
 
 const itemCardStyle: React.CSSProperties = {
   position: 'relative',
-  background: 'var(--surface)',
-  borderRadius: 6,
+  background: 'var(--bg)',
+  borderRadius: 8,
   border: '1px solid var(--border)',
   overflow: 'hidden',
+  boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+  transition: 'transform 0.2s ease, border-color 0.2s ease',
 };
 
 const itemAccentLine: React.CSSProperties = {
@@ -174,131 +238,147 @@ const itemAccentLine: React.CSSProperties = {
   left: 0,
   top: 0,
   bottom: 0,
-  width: 3,
+  width: 4,
   background: 'var(--accent)',
 };
 
 const itemContentStyle: React.CSSProperties = {
-  padding: '16px 20px 16px 23px',
+  padding: '20px 24px',
 };
 
 const itemMetaStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
-  gap: 12,
-  marginBottom: 8,
+  gap: 14,
+  marginBottom: 10,
 };
 
 const sourceBadgeStyle: React.CSSProperties = {
-  fontSize: 9,
-  fontWeight: 800,
-  letterSpacing: '0.05em',
+  fontSize: 10,
+  fontWeight: 900,
+  letterSpacing: '0.08em',
   color: 'var(--accent)',
-  background: 'var(--accent-light, rgba(30, 64, 175, 0.1))',
-  padding: '3px 8px',
-  borderRadius: 3,
+  background: 'var(--accent-light)',
+  padding: '4px 10px',
+  borderRadius: 4,
   textTransform: 'uppercase',
 };
 
 const timeStyle: React.CSSProperties = {
   fontSize: 11,
   color: 'var(--text-muted)',
+  fontWeight: 600,
 };
 
 const itemTitleStyle: React.CSSProperties = {
-  fontSize: 15,
-  fontWeight: 600,
+  fontSize: 17,
+  fontWeight: 700,
   color: 'var(--text-primary)',
   textDecoration: 'none',
-  lineHeight: 1.4,
+  lineHeight: 1.5,
   display: 'block',
 };
 
 const emptyStateStyle: React.CSSProperties = {
   textAlign: 'center',
-  padding: '60px 20px',
+  padding: '80px 24px',
   border: '1px dashed var(--border)',
-  borderRadius: 6,
-  background: 'var(--surface)',
+  borderRadius: 12,
+  background: 'var(--surface-muted)',
 };
 
 const emptyIconStyle: React.CSSProperties = {
   fontSize: 48,
   color: 'var(--text-muted)',
-  marginBottom: 16,
-  opacity: 0.5,
+  marginBottom: 20,
+  opacity: 0.3,
 };
 
 const emptyTitleStyle: React.CSSProperties = {
-  fontSize: 14,
-  fontWeight: 700,
-  color: 'var(--text-muted)',
-  letterSpacing: '0.1em',
-  marginBottom: 4,
+  fontSize: 15,
+  fontWeight: 800,
+  color: 'var(--text-primary)',
+  letterSpacing: '0.12em',
+  marginBottom: 8,
 };
 
 const emptySubtitleStyle: React.CSSProperties = {
-  fontSize: 12,
+  fontSize: 13,
   color: 'var(--text-muted)',
-  opacity: 0.7,
 };
 
-const oilWidgetStyle: React.CSSProperties = {
+const marketBarWrapStyle: React.CSSProperties = {
   position: 'fixed',
-  bottom: 16,
-  right: 16,
-  background: 'var(--surface)',
-  border: '1px solid var(--border)',
-  borderRadius: 8,
-  padding: 16,
-  boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-  minWidth: 240,
-  zIndex: 100,
+  bottom: 32,
+  left: '50%',
+  transform: 'translateX(-50%)',
+  width: 'calc(100% - 32px)',
+  maxWidth: 600,
+  zIndex: 1000,
 };
 
-const oilHeaderStyle: React.CSSProperties = {
+const marketBarInnerStyle: React.CSSProperties = {
+  background: 'rgba(var(--bg-rgb), 0.9)',
+  backdropFilter: 'blur(20px)',
+  border: '1px solid var(--border)',
+  borderRadius: 16,
+  padding: '12px 24px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
+};
+
+const marketLabelStyle: React.CSSProperties = {
   fontSize: 10,
-  fontWeight: 800,
+  fontWeight: 900,
   letterSpacing: '0.1em',
   color: 'var(--accent)',
-  marginBottom: 12,
-  borderBottom: '1px solid var(--border)',
-  paddingBottom: 8,
+  textTransform: 'uppercase',
 };
 
-const oilGridStyle: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: '1fr 1fr',
-  gap: 16,
+const marketGridStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 20,
 };
 
-const oilFooterStyle: React.CSSProperties = {
-  fontSize: 9,
-  color: 'var(--text-muted)',
-  marginTop: 12,
-  textAlign: 'right',
+const marketSeparatorStyle: React.CSSProperties = {
+  width: 1,
+  height: 20,
+  background: 'var(--border)',
+};
+
+const marketClockStyle: React.CSSProperties = {
+  fontSize: 11,
+  fontWeight: 800,
+  color: 'var(--text-primary)',
+  background: 'var(--surface-muted)',
+  padding: '4px 8px',
+  borderRadius: 6,
+  minWidth: 90,
+  textAlign: 'center',
 };
 
 const miniCardStyle: React.CSSProperties = {
   display: 'flex',
-  flexDirection: 'column',
-  gap: 4,
+  alignItems: 'baseline',
+  gap: 8,
 };
 
 const miniLabelStyle: React.CSSProperties = {
-  fontSize: 9,
-  fontWeight: 800,
-  letterSpacing: '0.05em',
+  fontSize: 10,
+  fontWeight: 900,
   color: 'var(--text-muted)',
 };
 
 const miniPriceStyle: React.CSSProperties = {
-  fontSize: 18,
+  fontSize: 16,
   fontWeight: 900,
   color: 'var(--text-primary)',
 };
 
 const miniChangeStyle: React.CSSProperties = {
-  fontSize: 10,
-  fontWeight: 700,
+  fontSize: 11,
+  fontWeight: 800,
 };

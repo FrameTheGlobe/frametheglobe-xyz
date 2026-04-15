@@ -2418,11 +2418,6 @@ export default function Home() {
       {appViewMode === 'flash' ? (
         <FlashBriefView
           items={items}
-          wtiPrice={72.5}
-          wtiHistory={[70, 71, 72, 71.5, 72.5]}
-          brentPrice={76.8}
-          brentHistory={[74, 75, 76, 76.2, 76.8]}
-          lastUpdated={new Date()}
         />
       ) : (
         <div className="page-layout">
