@@ -103,8 +103,32 @@ This is a paused in-progress snapshot committed locally for continuation:
   - `ftg-live-situation*` and `ftg-live-metric*` classes
   - region color accents and mobile-safe horizontal scroll behavior
 
-### Next planned step (not yet implemented)
-
 - Add backend-fed `GET /api/situation-metrics` on Railway + thin Next proxy route,
   then switch `LiveSituationStrip` from static imports to fetched JSON with
   static fallback.
+
+## 9) Dynamic HUD v8.0.x (Compact Header + Flash Brief overhaul)
+
+Major UX/UI synchronization to version 8.0.5+.
+
+### Unified Navigation Header
+- **CompactHeader (v8.0.1)**: Unified the site branding and primary controls.
+- **Persistent Toggle**: Integrated a mode switch between "FLASH" and "COMMAND".
+- **Mobile Grid**: Re-engineered the header CSS grid to stack vertically on mobile (Brand/Actions/Toggle/Ticker hierarchy).
+- **Hardened Mobile UX**: Brand labels and metadata auto-hide on narrow viewports to preserve space for tactical actions.
+
+### Realtime 12-hour Rolling Feed (v8.0.4)
+- **FlashBriefView**: Redesigned the "Flash" view as a continuous vertical scroll rather than a static snippet list.
+- **Window Expansion**: Broadened the intelligent filter from 30 minutes to a **12-hour window**, ensuring a meaningful story volume for the simplified view.
+- **High-Readability Stream**: Removed layout noise (widgets/sidebars) in favor of the intelligence signal.
+
+### Live Market Hub (v8.0.5)
+- **Dynamic Oil Data**: The Flash view now performs private polling of `/api/market` to extract real-time WTI and Brent crude values.
+- **Bottom Navigation Hub**: Relocated market data from a corner widget to a **centered, glassmorphic bar** at the bottom of the viewport.
+- **Visual Feedback**: Added pulsing live-dots and sync-status text to confirm data freshness.
+
+### Accountability Tracker Maintenance
+- Ensured the `AccountabilityTracker` rail remains visible and accessible across both Flash and Command views for consistent visibility into Levant situation metrics.
+
+---
+*All v8.0.x updates were verified against the production build environment and optimized for mobile-first thumb reach.*

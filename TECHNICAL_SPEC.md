@@ -84,6 +84,11 @@ app/
   contexts/
     AIAnalysisContext.tsx   ← React context for AI ticker drawer
   components/               ← All React UI components
+    CompactHeader.tsx       ← Unified site header (v8.0.1+)
+    FlashBriefView.tsx      ← Rolling 12h stream view (v8.0.4+)
+    BreakingTicker.tsx      ← Sticky blue realtime ticker
+    AccountabilityTracker.tsx ← Levant desk sheet
+    ...all other widgets
   api/
     market/route.ts         ← 2-line proxy → Railway
     news/route.ts           ← 2-line proxy → Railway
@@ -698,8 +703,6 @@ The frontend's `BACKEND_URL=http://localhost:4000` (in `.env.local`) makes all p
 - Touch targets: `minHeight: 44px`, `touch-action: manipulation` on all interactive elements
 - Sidebar: overlay mode on mobile with `body.overflow: hidden` while open
 
-### Key CSS Variables
-
 ```css
 --widget-hd-bg: rgba(255,255,255,0.04);    /* widget header background */
 --widget-hd-border: rgba(255,255,255,0.1); /* widget header bottom border */
@@ -707,6 +710,13 @@ The frontend's `BACKEND_URL=http://localhost:4000` (in `.env.local`) makes all p
 --text-secondary: #94a3b8;                 /* secondary labels */
 --text-muted: #64748b;                     /* muted/timestamp text */
 ```
+
+### Dual-View Interface (v8.0.x)
+
+- **Command Center**: The primary tactical density view with all widgets (boards, timelines, map controls). Optimized for multi-monitor workstations.
+- **Flash Brief**: A simplified, mobile-first rolling feed showing a 12-hour history of critical intelligence in a high-readability vertical stream. 
+- **Sticky Bottom Hub (Flash View)**: A centered, glassmorphic navigation bar at the bottom of the Flash view providing real-time WTI/Brent crude data sync and a mission clock.
+- **View Persistence**: Users can toggle between "Flash" and "Command" via the header; the preferred mode is persisted in `localStorage` (`ftg_view_mode`).
 
 ---
 

@@ -1,6 +1,6 @@
 # FrameTheGlobe Geopolitical Intelligence Hub
 
-**Version:** 7.1.4 — *Accountability tracker + split-stack HUD*  
+**Version:** 8.0.5 — *Dynamic HUD + Flash Overhaul (v8.x)*  
 **Mission:** Real-time news aggregation and intelligence monitoring for the Iran War Theater, South Asia, and the Global Pivot.  
 **Production URL:** [frametheglobe.xyz](https://frametheglobe.xyz)
 
@@ -69,6 +69,10 @@ Refer to `TECHNICAL_SPEC.md` for full split-stack details and endpoint routing.
 - Readability pass shipped for both left and right nav columns.
 - Mobile header overlap fixes shipped for 320-375px devices.
 - Header + breaking ticker are sticky during scroll with dynamic ticker offset.
+- **Dynamic HUD v8.x Overhaul**:
+  - Unified CompactHeader with Flash/Command toggle.
+  - Flash view redesigned as a 12h realtime rolling intelligence stream.
+  - Centered glassmorphic bottom bar for dynamic WTI/Brent crude data.
 
 For full implementation details, see [`docs/RECENT_UPDATES.md`](docs/RECENT_UPDATES.md).
 
