@@ -20,6 +20,7 @@ import IntelTimeline, { IntelStatus } from './components/IntelTimeline';
 import CompactHeader  from './components/CompactHeader';
 import MissileIntel   from './components/MissileIntel';
 import FlashBrief            from './components/FlashBrief';
+import FlashBriefView        from './components/FlashBriefView';
 import TickerAnalysisDrawer  from './components/TickerAnalysisDrawer';
 import AnalystBriefingModal  from './components/AnalystBriefingModal';
 import ClusterDetailModal    from './components/ClusterDetailModal';
@@ -34,6 +35,9 @@ import type { TickerDrawerData } from './contexts/AIAnalysisContext';
 
 // MapView uses Leaflet (browser-only) — load with no SSR
 const MapView = dynamic(() => import('./components/MapView'), { ssr: false });
+
+// ── View Mode Type ───────────────────────────────────────────────────────────
+type AppViewMode = 'command' | 'flash';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type FeedItem = {
@@ -1400,6 +1404,15 @@ export default function Home() {
   const [aiModalOpen,      setAiModalOpen]      = useState(false);
   const [toastMessage,    setToastMessage]      = useState<string | null>(null);
 
+  // ── View mode state ────────────────────────────────────────────────────────
+  const [appViewMode, setAppViewMode] = useState<AppViewMode>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('ftg_view_mode') as AppViewMode;
+      return saved === 'flash' ? 'flash' : 'command';
+    }
+    return 'command';
+  });
+
   // Lock body scroll when mobile overlays are open
   useEffect(() => {
     document.body.style.overflow = (sidebarOpen || mobileNavOpen) ? 'hidden' : '';
@@ -2386,6 +2399,11 @@ export default function Home() {
             onThemeToggle={() => setTheme(ts => ts === 'light' ? 'dark' : 'light')}
             onRefresh={() => fetchNews()}
             onBriefing={() => setAiModalOpen(true)}
+            viewMode={appViewMode}
+            onViewModeChange={(mode) => {
+              setAppViewMode(mode);
+              localStorage.setItem('ftg_view_mode', mode);
+            }}
           />
         </header>
 
@@ -2397,7 +2415,17 @@ export default function Home() {
       <AccountabilityTracker />
 
       {/* ── BODY ───────────────────────────────────────────────────────── */}
-      <div className="page-layout">
+      {appViewMode === 'flash' ? (
+        <FlashBriefView
+          items={items}
+          wtiPrice={72.5}
+          wtiHistory={[70, 71, 72, 71.5, 72.5]}
+          brentPrice={76.8}
+          brentHistory={[74, 75, 76, 76.2, 76.8]}
+          lastUpdated={new Date()}
+        />
+      ) : (
+        <div className="page-layout">
 
         {/* Sidebar */}
         <aside className={`sidebar-col ftg-nav-readable${sidebarOpen ? ' open' : ''}`}>
@@ -3527,6 +3555,7 @@ export default function Home() {
           </div>
         </aside>
       </div>
+      )}
 
       {/* ── MOBILE COMMAND BAR ───────────────────────────────────────────── */}
       <div className="ftg-mobile-command">
