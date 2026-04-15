@@ -826,31 +826,56 @@ function SidebarPanel({
   const isAllHealthy  = sourceHealth.length > 0 && failedHealth.length === 0;
   const tabNav = (
     <div style={{
-      display: 'flex', gap: 2, marginBottom: 8,
-      background: 'var(--surface-muted)', padding: 3, borderRadius: 6,
+      display: 'grid',
+      gridTemplateColumns: 'repeat(4, 1fr)',
+      gap: 2,
+      marginBottom: 8,
+      background: 'var(--surface-muted)',
+      padding: 3,
+      borderRadius: 6,
       border: '1px solid var(--border-light)',
       boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)'
     }}>
       {(['network', 'intel', 'assets', 'entities', 'predictive', 'anomalies', 'workspaces', 'layouts'] as const).map(tab => {
         const active = sidebarTab === tab;
-        const labels: Record<string, string> = { network: 'NET', intel: 'INTEL', assets: 'INDICATORS', entities: 'ENTITIES', predictive: 'PREDICT', anomalies: 'ANOMALY', workspaces: 'WORKSPACE', layouts: 'LAYOUT' };
+        const labels: Record<string, string> = {
+          network: 'NET',
+          intel: 'INTEL',
+          assets: 'MARKETS',
+          entities: 'ENTS',
+          predictive: 'PRED',
+          anomalies: 'WARN',
+          workspaces: 'SAVE',
+          layouts: 'VIEW'
+        };
         return (
           <button
             key={tab}
             onClick={() => setSidebarTab(tab)}
             style={{
-              flex: 1, padding: '9px 0', border: 'none', borderRadius: 4,
-              cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 11,
-              fontWeight: 800, letterSpacing: '0.05em',
+              padding: '6px 2px',
+              border: 'none',
+              borderRadius: 4,
+              cursor: 'pointer',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 9,
+              fontWeight: 800,
+              letterSpacing: '0.03em',
               background: active ? 'var(--accent)' : 'transparent',
               color: active ? '#fff' : 'var(--text-secondary)',
               transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              whiteSpace: 'nowrap',
+              minWidth: 0,
+              overflow: 'hidden',
             }}
             onMouseEnter={e => !active && (e.currentTarget.style.background = 'var(--surface-hover)')}
             onMouseLeave={e => !active && (e.currentTarget.style.background = 'transparent')}
+            title={tab.toUpperCase()}
           >
-            <span className="ftg-ui-header-label ftg-ui-header-label--sm ftg-sidebar-tab-label" style={{ color: 'inherit' }}>
+            <span style={{ color: 'inherit', fontSize: 9 }}>
               {labels[tab]}
             </span>
           </button>
