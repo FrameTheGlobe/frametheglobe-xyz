@@ -174,8 +174,10 @@ function OilMiniCard({
 const containerStyle: React.CSSProperties = {
   maxWidth: 800,
   margin: '0 auto',
-  padding: '32px 16px 140px',
+  padding: '32px 16px 160px',
   fontFamily: 'var(--font-mono)',
+  minHeight: 'calc(100vh - 80px)',
+  background: 'radial-gradient(circle at 50% 0%, var(--surface-hover) 0%, var(--bg) 70%)',
 };
 
 const headerStyle: React.CSSProperties = {
@@ -272,12 +274,14 @@ const timeStyle: React.CSSProperties = {
 };
 
 const itemTitleStyle: React.CSSProperties = {
-  fontSize: 17,
-  fontWeight: 700,
+  fontSize: 18,
+  fontWeight: 600,
   color: 'var(--text-primary)',
   textDecoration: 'none',
-  lineHeight: 1.5,
+  lineHeight: 1.45,
   display: 'block',
+  fontFamily: 'var(--font-display)',
+  letterSpacing: '-0.01em',
 };
 
 const emptyStateStyle: React.CSSProperties = {
@@ -319,15 +323,15 @@ const marketBarWrapStyle: React.CSSProperties = {
 };
 
 const marketBarInnerStyle: React.CSSProperties = {
-  background: 'rgba(var(--bg-rgb), 0.9)',
-  backdropFilter: 'blur(20px)',
-  border: '1px solid var(--border)',
-  borderRadius: 16,
-  padding: '12px 24px',
+  background: 'rgba(var(--bg-rgb), 0.7)',
+  backdropFilter: 'blur(32px) saturate(180%)',
+  border: '1px solid rgba(var(--accent-rgb), 0.15)',
+  borderRadius: 24,
+  padding: '14px 28px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
-  boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
+  boxShadow: '0 8px 32px rgba(0,0,0,0.12), inset 0 0 0 1px rgba(255,255,255,0.05)',
 };
 
 const marketLabelStyle: React.CSSProperties = {

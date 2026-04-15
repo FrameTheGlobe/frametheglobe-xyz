@@ -19,9 +19,9 @@
   --accent-light:   rgba(30, 64, 175, 0.08);
   --accent-hover:   #1d4ed8;
   --brand-blue:     #1e40af;
-  --header-bg:      rgba(255, 255, 255, 0.95);
-  --header-border:  #1e40af;
   --header-text:    #0f172a;
+  --bg-rgb:         255, 255, 255;
+  --accent-rgb:     30, 64, 175;
 
   --text-secondary: #334155;  /* improved from #475569 */
   --text-muted:     #64748b;  /* improved from #94a3b8 */
@@ -96,9 +96,10 @@
   --pin-active:  #e84a2f;
   --shadow-sm:   0 2px 8px rgba(0, 0, 0, 0.3);
   --shadow-md:   0 6px 16px rgba(0, 0, 0, 0.4);
-  --header-bg:      rgba(10, 10, 11, 0.98);
   --header-border:  rgba(37, 99, 235, 0.3);
   --header-height:  80px;
+  --bg-rgb:         10, 10, 11;
+  --accent-rgb:     37, 99, 235;
   --neon-red:       #ef4444;
   --neon-amber:     #3b82f6;
   --neon-green:     #10b981;
