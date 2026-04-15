@@ -52,7 +52,7 @@ export default function FlashBriefView({
               <div style={itemAccentLine} />
               <div style={itemContentStyle}>
                 <div style={itemMetaStyle}>
-                  <span style={sourceBadgeStyle}>{item.sourceName || item.source}</span>
+                  <span style={sourceBadgeStyle}>{item.sourceName || item.sourceId}</span>
                   <span style={timeStyle}>{getRelativeTime(item.pubDate)}</span>
                 </div>
                 <a
