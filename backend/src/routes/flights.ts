@@ -5,6 +5,7 @@
 
 import { Router, Request, Response } from 'express';
 import { fetchFlights, getFlightsCache, isFlightCacheStale } from '../lib/flights.js';
+import { updatePaths } from '../lib/flight-paths.js';
 
 const router = Router();
 
@@ -17,6 +18,9 @@ router.get('/', async (req: Request, res: Response) => {
 
   let aircraft = payload.aircraft;
   if (strategicOnly) aircraft = aircraft.filter(a => a.isStrategic);
+
+  // Update flight path tracking
+  updatePaths(payload.aircraft);
 
   res.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=30')
      .set('X-Flight-Source', payload.source)

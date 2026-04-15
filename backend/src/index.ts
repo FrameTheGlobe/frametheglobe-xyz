@@ -31,6 +31,11 @@ import rssRouter             from './routes/rss.js';
 import theaterMetricsRouter  from './routes/theater-metrics.js';
 import liveFeedsRouter       from './routes/live-feeds.js';
 import liveMetricsRouter     from './routes/live-metrics.js';
+import marketImpactRouter    from './routes/market-impact.js';
+import polymarketHistoryRouter from './routes/polymarket-history.js';
+import shareRouter           from './routes/share.js';
+import entitiesRouter        from './routes/entities.js';
+import flightPathsRouter     from './routes/flight-paths.js';
 
 const app  = express();
 const PORT = process.env.PORT ?? 4000;
@@ -85,6 +90,11 @@ app.use('/api/rss',               rssRouter);
 app.use('/api/theater-metrics',   theaterMetricsRouter);
 app.use('/api/live-feeds',        liveFeedsRouter);
 app.use('/api/live-metrics',      liveMetricsRouter);
+app.use('/api/market-impact',     marketImpactRouter);
+app.use('/api/polymarket-history', polymarketHistoryRouter);
+app.use('/api/share',             shareRouter);
+app.use('/api/entities',          entitiesRouter);
+app.use('/api/flight-paths',      flightPathsRouter);
 
 // ── 404 fallback ─────────────────────────────────────────────────────────────
 app.use((_req, res) => {

@@ -12,6 +12,8 @@ import 'leaflet/dist/leaflet.css';
 import { useEffect, useRef, useMemo, useState, useCallback } from 'react';
 import type { Aircraft } from '@/lib/flights';
 import { headingToCompass, altToFL, SQUAWK_LABELS } from '@/lib/flights';
+import type { AircraftPath } from '@/lib/flight-paths';
+import { fetchFlightPaths, getPathColor } from '@/lib/flight-paths';
 
 // ── Leaflet type aliases (L is loaded dynamically in useEffect) ───────────────
 type LType      = typeof import('leaflet');
@@ -405,6 +407,8 @@ export default function MapView({ items }: MapViewProps) {
   const [flights,        setFlights]        = useState<Aircraft[]>([]);
   const [flightStatus,   setFlightStatus]   = useState<'idle'|'loading'|'ok'|'error'>('idle');
   const [flightUpdated,  setFlightUpdated]  = useState<string | null>(null);
+  const [flightPaths,    setFlightPaths]    = useState<AircraftPath[]>([]);
+  const [pathsOn,        setPathsOn]        = useState(true); // Flight paths toggle
   const flightTimerRef  = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // ── Legend collapsed state (useful on small screens) ──────────────────────
@@ -421,15 +425,19 @@ export default function MapView({ items }: MapViewProps) {
     [flights]
   );
 
-  // ── Fetch flights from our server endpoint ────────────────────────────────
+  // ── Fetch flights and paths from our server endpoint ─────────────────────
   const loadFlights = useCallback(async () => {
     setFlightStatus('loading');
     try {
-      const res  = await fetch('/api/flights');
-      const data = await res.json() as {
+      const [flightsRes, pathsRes] = await Promise.all([
+        fetch('/api/flights'),
+        fetchFlightPaths({ strategicOnly: false }),
+      ]);
+      const data = await flightsRes.json() as {
         aircraft: Aircraft[]; fetchedAt: string; source: string;
       };
       setFlights(data.aircraft ?? []);
+      setFlightPaths(pathsRes.paths ?? []);
       setFlightUpdated(data.fetchedAt ?? null);
       setFlightStatus('ok');
     } catch {
@@ -516,18 +524,18 @@ export default function MapView({ items }: MapViewProps) {
     });
   }, [items]);
 
-  // ── Re-paint flight layer when flights change ─────────────────────────────
+  // ── Re-paint flight layer when flights or paths change ────────────────────
   useEffect(() => {
     if (!mapReadyRef.current || !mapRef.current) return;
     void loadLeaflet().then(L => {
       if (!mapRef.current) return;
       if (flightsOn) {
-        paintFlights(L, mapRef.current, flights);
+        paintFlights(L, mapRef.current, flights, pathsOn ? flightPaths : []);
       } else {
         clearFlightLayer(mapRef.current);
       }
     });
-  }, [flights, flightsOn]);
+  }, [flights, flightPaths, flightsOn, pathsOn]);
 
   // ── Cleanup on unmount ────────────────────────────────────────────────────
   useEffect(() => {
@@ -586,6 +594,32 @@ export default function MapView({ items }: MapViewProps) {
               : `${flights.length} aircraft${strategicCount > 0 ? ` · ⚡${strategicCount} strategic` : ''}`
             : 'Live Flights'}
         </button>
+
+        {/* Paths toggle (only when flights on) */}
+        {flightsOn && (
+          <button
+            onClick={() => setPathsOn(v => !v)}
+            style={{
+              fontFamily:     'IBM Plex Mono, monospace',
+              fontSize:       10,
+              letterSpacing:  '0.06em',
+              padding:        '5px 10px',
+              borderRadius:   3,
+              border:         `1px solid ${pathsOn ? '#3b82f6' : 'rgba(255,255,255,0.18)'}`,
+              background:     pathsOn ? 'rgba(59,130,246,0.18)' : 'rgba(13,12,10,0.82)',
+              color:          pathsOn ? '#3b82f6' : 'rgba(255,255,255,0.6)',
+              cursor:         'pointer',
+              backdropFilter: 'blur(6px)',
+              display:        'flex',
+              alignItems:     'center',
+              gap:            6,
+              transition:     'all 0.15s',
+            }}
+          >
+            <span style={{ fontSize: 14 }}>〰</span>
+            {pathsOn ? 'Paths On' : 'Paths Off'}
+          </button>
+        )}
 
         {/* Flight status / last updated */}
         {flightsOn && flightStatus === 'ok' && flightUpdated && (
@@ -716,6 +750,29 @@ export default function MapView({ items }: MapViewProps) {
                   <span style={{ fontSize: 10, color: AIRCRAFT_DEFAULT_COLOR }}>▲</span>
                   <span>Other</span>
                 </div>
+
+                {/* Flight paths legend */}
+                {pathsOn && flightPaths.length > 0 && (
+                  <>
+                    <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: 8, marginBottom: 2 }}>Flight Paths</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ width: 16, height: 3, background: '#8b5cf6', borderRadius: 1 }} />
+                      <span style={{ fontSize: 9 }}>High altitude (FL350+)</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ width: 16, height: 3, background: '#3b82f6', borderRadius: 1 }} />
+                      <span style={{ fontSize: 9 }}>Medium-high (FL250+)</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ width: 16, height: 3, background: '#10b981', borderRadius: 1 }} />
+                      <span style={{ fontSize: 9 }}>Medium (FL150+)</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ width: 16, height: 3, background: STRATEGIC_COLOR, borderRadius: 1 }} />
+                      <span style={{ fontSize: 9 }}>Strategic track</span>
+                    </div>
+                  </>
+                )}
               </>
             )}
           </div>
@@ -799,15 +856,81 @@ function esc(str: string): string {
 
 // ── Flight layer painting ─────────────────────────────────────────────────────
 const FLIGHT_LAYER_KEY = '__ftg_flights__';
+const PATH_LAYER_KEY = '__ftg_flight_paths__';
 
-function paintFlights(L: LType, map: LeafletMap, aircraft: Aircraft[]) {
-  // Ensure layer group exists
+function paintFlights(L: LType, map: LeafletMap, aircraft: Aircraft[], paths: AircraftPath[] = []) {
+  // Ensure layer groups exist
   if (!map[FLIGHT_LAYER_KEY]) {
     map[FLIGHT_LAYER_KEY] = L.layerGroup().addTo(map);
   }
+  if (!map[PATH_LAYER_KEY]) {
+    map[PATH_LAYER_KEY] = L.layerGroup().addTo(map);
+  }
   const group = map[FLIGHT_LAYER_KEY]!;
-  group.clearLayers();
+  const pathGroup = map[PATH_LAYER_KEY]!;
 
+  // Clear existing layers
+  group.clearLayers();
+  pathGroup.clearLayers();
+
+  // ── Draw flight paths first (so they appear behind aircraft) ────────────────
+  const pathByHex = new Map(paths.map(p => [p.hex, p]));
+
+  paths.forEach(path => {
+    if (path.positions.length < 2) return;
+
+    const coords = path.positions.map(p => [p.lat, p.lon] as [number, number]);
+    const color = path.isStrategic ? STRATEGIC_COLOR : 'rgba(255,255,255,0.35)';
+    const weight = path.isStrategic ? 3 : 2;
+
+    // Draw the path polyline
+    const polyline = L.polyline(coords, {
+      color,
+      weight,
+      opacity: 0.7,
+      dashArray: path.isStrategic ? undefined : '4 4',
+      lineCap: 'round',
+      lineJoin: 'round',
+    });
+
+    // Add altitude-based coloring segments for strategic aircraft
+    if (path.isStrategic && path.positions.length > 2) {
+      for (let i = 0; i < path.positions.length - 1; i++) {
+        const p1 = path.positions[i];
+        const p2 = path.positions[i + 1];
+        const avgAlt = (p1.altFt + p2.altFt) / 2;
+        const segmentColor = getPathColor(avgAlt);
+
+        const segment = L.polyline([[p1.lat, p1.lon], [p2.lat, p2.lon]], {
+          color: segmentColor,
+          weight: 3,
+          opacity: 0.6,
+          lineCap: 'round',
+        });
+        pathGroup.addLayer(segment);
+      }
+    } else {
+      pathGroup.addLayer(polyline);
+    }
+
+    // Add start/end markers
+    const start = path.positions[0];
+    const end = path.positions[path.positions.length - 1];
+
+    // Small circle at path start
+    const startMarker = L.circleMarker([start.lat, start.lon], {
+      radius: 4,
+      fillColor: '#10b981',
+      color: '#fff',
+      weight: 1,
+      opacity: 1,
+      fillOpacity: 0.9,
+    });
+    startMarker.bindPopup(`<div style="font-size:11px"><b>${esc(path.callsign)}</b><br/>Started: ${new Date(start.timestamp).toLocaleTimeString()}</div>`, { className: 'ftg-leaflet-popup' });
+    pathGroup.addLayer(startMarker);
+  });
+
+  // ── Draw aircraft markers ─────────────────────────────────────────────────
   aircraft.forEach(a => {
     if (typeof a.lat !== 'number' || typeof a.lon !== 'number') return;
     if (a.lat === 0 && a.lon === 0) return;
@@ -840,6 +963,12 @@ function paintFlights(L: LType, map: LeafletMap, aircraft: Aircraft[]) {
       ? `<div style="color:${STRATEGIC_COLOR};font-weight:600;margin-bottom:4px">⚡ ${esc(a.strategicHint || 'Strategic')}</div>`
       : '';
 
+    // Get path info if available
+    const path = pathByHex.get(a.hex);
+    const pathInfo = path && path.positions.length > 2
+      ? `<div style="font-size:10px;color:var(--text-muted);margin-top:4px">📍 Track: ${path.positions.length} points · ${((path.positions.length * 5) / 60).toFixed(1)}h history</div>`
+      : '';
+
     const popupHTML = `
       <div class="ftg-popup">
         ${strategic}
@@ -851,6 +980,7 @@ function paintFlights(L: LType, map: LeafletMap, aircraft: Aircraft[]) {
           <span>Hdg: ${hdgStr}</span><br/>
           <span>Squawk: ${sqkStr}</span>
         </div>
+        ${pathInfo}
         <a class="ftg-popup-link"
            href="https://globe.adsbexchange.com/?icao=${esc(a.hex)}"
            target="_blank" rel="noopener noreferrer">Track on ADS-B Exchange →</a>
@@ -865,5 +995,8 @@ function paintFlights(L: LType, map: LeafletMap, aircraft: Aircraft[]) {
 function clearFlightLayer(map: LeafletMap) {
   if (map[FLIGHT_LAYER_KEY]) {
     map[FLIGHT_LAYER_KEY].clearLayers();
+  }
+  if (map[PATH_LAYER_KEY]) {
+    map[PATH_LAYER_KEY].clearLayers();
   }
 }

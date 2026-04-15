@@ -9,6 +9,7 @@ import {
   accountabilityLatestDate,
 } from '@/lib/accountability-data';
 import { AccountabilityEventCards } from '@/app/components/AccountabilityTracker';
+import AccountabilityTimelineCalendar from '@/app/components/AccountabilityTimelineCalendar';
 import { LiveSituationStrip } from '@/app/components/LiveSituationStrip';
 
 const mono = 'var(--font-mono)';
@@ -24,6 +25,7 @@ const FILTER_LABELS: Record<AccountabilityFilterId, string> = {
 
 export default function AccountabilityFullPage() {
   const [filter, setFilter] = useState<AccountabilityFilterId>('all');
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
 
   const latest = useMemo(() => accountabilityLatestDate(ACCOUNTABILITY_EVENTS), []);
 
@@ -92,6 +94,42 @@ export default function AccountabilityFullPage() {
           <div className="ftg-full-page__timeline-header">
             <h2 className="ftg-full-page__timeline-title">Source Timeline</h2>
 
+            {/* View toggle */}
+            <div style={{ display: 'flex', gap: 4, marginLeft: 'auto', marginRight: 16 }}>
+              <button
+                type="button"
+                onClick={() => setViewMode('list')}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: 4,
+                  border: '1px solid var(--border-light)',
+                  background: viewMode === 'list' ? 'var(--accent)' : 'var(--surface)',
+                  color: viewMode === 'list' ? '#fff' : 'var(--text-secondary)',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                List
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('calendar')}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: 4,
+                  border: '1px solid var(--border-light)',
+                  background: viewMode === 'calendar' ? 'var(--accent)' : 'var(--surface)',
+                  color: viewMode === 'calendar' ? '#fff' : 'var(--text-secondary)',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                Calendar
+              </button>
+            </div>
+
             {/* Filter pills */}
             <div className="ftg-full-page__filters">
               {ACCOUNTABILITY_FILTER_IDS.map((id) => {
@@ -110,7 +148,15 @@ export default function AccountabilityFullPage() {
             </div>
           </div>
 
-          <AccountabilityEventCards events={sorted} />
+          {viewMode === 'list' ? (
+            <AccountabilityEventCards events={sorted} />
+          ) : (
+            <AccountabilityTimelineCalendar
+              events={ACCOUNTABILITY_EVENTS}
+              filter={filter}
+              onEventClick={(ev) => window.open(ev.url, '_blank')}
+            />
+          )}
 
           {/* Methodology */}
           <div className="ftg-full-page__methodology">

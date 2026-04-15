@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import dynamic from 'next/dynamic';
+import { useSearchParams } from 'next/navigation';
 import { useVisibilityPolling } from '@/lib/use-visibility-polling';
 import { SOURCES, REGION_LABELS, Source } from '@/lib/sources';
 import type { SourceHealth } from '@/lib/fetcher';
@@ -21,6 +22,13 @@ import MissileIntel   from './components/MissileIntel';
 import FlashBrief            from './components/FlashBrief';
 import TickerAnalysisDrawer  from './components/TickerAnalysisDrawer';
 import AnalystBriefingModal  from './components/AnalystBriefingModal';
+import ClusterDetailModal    from './components/ClusterDetailModal';
+import Toast                 from './components/Toast';
+import EntityPanel           from './components/EntityPanel';
+import PredictivePanel       from './components/PredictivePanel';
+import WorkspacePanel        from './components/WorkspacePanel';
+import AnomalyPanel          from './components/AnomalyPanel';
+import DashboardLayoutPanel  from './components/DashboardLayoutPanel';
 import { AIAnalysisContext } from './contexts/AIAnalysisContext';
 import type { TickerDrawerData } from './contexts/AIAnalysisContext';
 
@@ -120,6 +128,16 @@ type Theme = 'light' | 'dark';
 type ViewMode = 'list' | 'clusters' | 'map';
 type SortMode = 'date-desc' | 'date-asc' | 'source';
 
+// Market impact data for a cluster
+type MarketImpact = {
+  symbol: string;
+  name: string;
+  price: number;
+  change: number;
+  changePercent: number;
+  currency: string;
+};
+
 // A storyline cluster
 type Cluster = {
   id: string;
@@ -136,6 +154,8 @@ type Cluster = {
   linkedSymbols?: string[];
   missileCount?: number;
   hasMissileSignal?: boolean;
+  marketImpact?: MarketImpact[]; // Detailed market impact data
+  brentWtiSpread?: number; // Brent-WTI spread delta
 };
 
 // ── Lens definitions ──────────────────────────────────────────────────────────
@@ -390,6 +410,28 @@ function getAgeBadge(dateStr: string): 'breaking' | 'new' | null {
 }
 
 // ── Market linkage utilities ───────────────────────────────────────────────────────
+async function fetchMarketImpactForCluster(cluster: Cluster): Promise<{ marketImpact: MarketImpact[]; brentWtiSpread: number }> {
+  try {
+    // Get the cluster's newest item timestamp
+    const newestTime = new Date(cluster.items[0]?.pubDate || 0).toISOString();
+    
+    // Fetch market impact data for the cluster's timestamp
+    const res = await fetch(`/api/market-impact?timestamp=${encodeURIComponent(newestTime)}&windowHours=24`);
+    if (!res.ok) throw new Error('Failed to fetch market impact');
+    const data: MarketImpact[] = await res.json();
+    
+    // Calculate Brent-WTI spread
+    const brent = data.find(d => d.symbol === 'BZ=F');
+    const wti = data.find(d => d.symbol === 'CL=F');
+    const brentWtiSpread = brent && wti ? brent.price - wti.price : 0;
+    
+    return { marketImpact: data, brentWtiSpread };
+  } catch (err) {
+    console.error('[fetchMarketImpactForCluster]', err);
+    return { marketImpact: [], brentWtiSpread: 0 };
+  }
+}
+
 function computeMarketSignal(cluster: Cluster, marketData: Array<{ symbol: string; name: string; changePercent: number }>): {
   hasMarketSignal: boolean;
   marketImpactHint?: string;
@@ -541,12 +583,14 @@ type SidebarPanelProps = {
   onAllSources: () => void;
   onNoSources: () => void;
   sourceHealth: SourceHealth[];
+  onClusterDetail?: (cluster: Cluster) => void;
   sourceCountMap: Record<string, number>;
   pinnedItems: FeedItem[];
   onTogglePin: (item: FeedItem) => void;
   keyForItem: (item: FeedItem) => string;
   clusters: Cluster[];
   items: FeedItem[];
+  onShare?: () => void;
 };
 
 /** Kinetic / escalation signals analysts scan first — same feed, no extra API. */
@@ -768,25 +812,28 @@ function SidebarTheaterPulse({ items, clusters }: { items: FeedItem[]; clusters:
 function SidebarPanel({
   search, onSearch, searchRef,
   activeSources, onToggleSource, onAllSources, onNoSources,
-  sourceCountMap, sourceHealth,
+  sourceHealth,
+  sourceCountMap,
   pinnedItems, onTogglePin, keyForItem,
-  clusters, items
+  clusters, items,
+  onClusterDetail,
+  onShare
 }: SidebarPanelProps) {
   const [healthOpen, setHealthOpen] = useState(false);
-  const [sidebarTab, setSidebarTab] = useState<'network' | 'intel' | 'assets'>('network');
+  const [sidebarTab, setSidebarTab] = useState<'network' | 'intel' | 'assets' | 'entities' | 'predictive' | 'anomalies' | 'workspaces' | 'layouts'>('network');
 
   const failedHealth  = sourceHealth.filter(h => !h.ok);
   const isAllHealthy  = sourceHealth.length > 0 && failedHealth.length === 0;
   const tabNav = (
     <div style={{
-      display: 'flex', gap: 2, marginBottom: 18, 
+      display: 'flex', gap: 2, marginBottom: 8,
       background: 'var(--surface-muted)', padding: 3, borderRadius: 6,
       border: '1px solid var(--border-light)',
       boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)'
     }}>
-      {(['network', 'intel', 'assets'] as const).map(tab => {
+      {(['network', 'intel', 'assets', 'entities', 'predictive', 'anomalies', 'workspaces', 'layouts'] as const).map(tab => {
         const active = sidebarTab === tab;
-        const labels: Record<string, string> = { network: 'NET', intel: 'INTEL', assets: 'INDICATORS' };
+        const labels: Record<string, string> = { network: 'NET', intel: 'INTEL', assets: 'INDICATORS', entities: 'ENTITIES', predictive: 'PREDICT', anomalies: 'ANOMALY', workspaces: 'WORKSPACE', layouts: 'LAYOUT' };
         return (
           <button
             key={tab}
@@ -815,6 +862,32 @@ function SidebarPanel({
   return (
     <div style={{ fontFamily: 'var(--font-mono)', minHeight: '100%' }}>
       {tabNav}
+      
+      {onShare && (
+        <button
+          onClick={onShare}
+          style={{
+            width: '100%',
+            padding: '8px 12px',
+            marginBottom: 12,
+            background: 'var(--accent)',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 6,
+            cursor: 'pointer',
+            fontFamily: 'var(--font-mono)',
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: '0.05em',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+          }}
+        >
+          🔗 Share Current View
+        </button>
+      )}
 
       {sidebarTab === 'network' && (
         <div style={{ animation: 'fadeInScale 0.2s ease forwards' }}>
@@ -906,6 +979,14 @@ function SidebarPanel({
         </div>
       )}
 
+      {sidebarTab === 'entities' && (
+        <div style={{ animation: 'fadeInScale 0.2s ease forwards' }}>
+          <EntityPanel
+            articles={items}
+          />
+        </div>
+      )}
+
       {sidebarTab === 'intel' && (
         <div style={{ animation: 'fadeInScale 0.2s ease forwards' }}>
           <MissileIntel items={items} limit={8} />
@@ -914,12 +995,24 @@ function SidebarPanel({
              THEATER_INTEL_FOLDERS
           </div>
           {clusters.slice(0, 6).map((cluster) => (
-            <div key={cluster.id} style={{ marginBottom: 14, padding: '14px', border: '1px solid var(--border-light)', borderRadius: 6, background: 'var(--surface)', position: 'relative' }}>
+            <div
+              key={cluster.id}
+              style={{ marginBottom: 14, padding: '14px', border: '1px solid var(--border-light)', borderRadius: 6, background: 'var(--surface)', position: 'relative', cursor: 'pointer' }}
+              onClick={() => onClusterDetail && onClusterDetail(cluster)}
+            >
                <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 4, background: 'var(--accent)' }} />
                <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 8, lineHeight: 1.25 }}>{cluster.title}</div>
                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                   <div style={{ fontSize: 10, letterSpacing: '0.03em', color: 'var(--accent)', fontWeight: 800, background: 'var(--accent-light)', padding: '3px 8px', borderRadius: 3 }}>{Math.round(cluster.score * 10)} VITALITY</div>
                   <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 700 }}>{cluster.items.length} ACTIVE_REPORTS</div>
+                  {onClusterDetail && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onClusterDetail(cluster); }}
+                      style={{ fontSize: 9, color: 'var(--accent)', background: 'var(--accent-light)', padding: '2px 6px', borderRadius: 3, border: '1px solid var(--accent)', cursor: 'pointer' }}
+                    >
+                      View sources
+                    </button>
+                  )}
                </div>
             </div>
           ))}
@@ -965,6 +1058,39 @@ function SidebarPanel({
                 <span style={{ color: 'var(--accent)', fontWeight: 800 }}>[RED_SEA_TR]</span> RISK_ELEVATED
              </div>
           </div>
+        </div>
+      )}
+
+      {sidebarTab === 'predictive' && (
+        <div style={{ animation: 'fadeInScale 0.2s ease forwards' }}>
+          <PredictivePanel items={items} />
+        </div>
+      )}
+
+      {sidebarTab === 'anomalies' && (
+        <div style={{ animation: 'fadeInScale 0.2s ease forwards' }}>
+          <AnomalyPanel items={items} />
+        </div>
+      )}
+
+      {sidebarTab === 'workspaces' && (
+        <div style={{ animation: 'fadeInScale 0.2s ease forwards' }}>
+          <WorkspacePanel
+            activeLenses={activeSources}
+            activeSources={activeSources}
+            activeRegions={activeSources}
+            onLoadWorkspace={(workspace) => {
+              // Apply workspace filters
+              onAllSources();
+              workspace.sources.forEach(s => onToggleSource(s));
+            }}
+          />
+        </div>
+      )}
+
+      {sidebarTab === 'layouts' && (
+        <div style={{ animation: 'fadeInScale 0.2s ease forwards' }}>
+          <DashboardLayoutPanel />
         </div>
       )}
     </div>
@@ -1261,6 +1387,7 @@ function getSignificanceBadge(item: FeedItem): { label: string; color: string; b
 // MAIN PAGE
 // ══════════════════════════════════════════════════════════════════════════════
 export default function Home() {
+  const searchParams = useSearchParams();
   const [items, setItems]               = useState<FeedItem[]>([]);
   const [loading, setLoading]           = useState(true);
   // Controls the loading screen visibility independently so we can show
@@ -1272,6 +1399,7 @@ export default function Home() {
   const [marketData, setMarketData]     = useState<Array<{ symbol: string; name: string; changePercent: number }>>([]);
   const [alertProfiles, setAlertProfiles] = useState<AlertProfile[]>([]);
   const [activeAlertProfile, setActiveAlertProfile] = useState<string | null>(null);
+  const [clusterDetail, setClusterDetail] = useState<Cluster | null>(null);
 
   const [activeSources, setActiveSources] = useState<Set<string>>(
     new Set(SOURCES.map(s => s.id))
@@ -1293,12 +1421,70 @@ export default function Home() {
   // ── AI features state ──────────────────────────────────────────────────────
   const [tickerDrawerData, setTickerDrawerData] = useState<TickerDrawerData | null>(null);
   const [aiModalOpen,      setAiModalOpen]      = useState(false);
+  const [toastMessage,    setToastMessage]      = useState<string | null>(null);
 
   // Lock body scroll when mobile overlays are open
   useEffect(() => {
     document.body.style.overflow = (sidebarOpen || mobileNavOpen) ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [sidebarOpen, mobileNavOpen]);
+
+  // Restore shared state from URL parameter on mount
+  useEffect(() => {
+    const shareToken = searchParams.get('share');
+    if (shareToken) {
+      fetch(`/api/share/${shareToken}`)
+        .then(res => {
+          if (!res.ok) throw new Error('Share link not found or expired');
+          return res.json();
+        })
+        .then(data => {
+          // Restore lenses
+          if (data.lenses && Array.isArray(data.lenses)) {
+            setActiveLenses(new Set(data.lenses));
+          }
+          // Restore sources
+          if (data.sources && Array.isArray(data.sources)) {
+            setActiveSources(new Set(data.sources));
+          }
+          // Restore regions
+          if (data.regions && Array.isArray(data.regions)) {
+            setActiveRegions(new Set(data.regions));
+          }
+          // Restore search
+          if (data.search) {
+            setSearch(data.search);
+          }
+        })
+        .catch(err => {
+          console.error('Failed to restore shared state:', err);
+        });
+    }
+  }, [searchParams]);
+
+  // Create shareable link with current filter/lens state
+  const handleShare = useCallback(async () => {
+    try {
+      const res = await fetch('/api/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lenses: Array.from(activeLenses),
+          sources: Array.from(activeSources),
+          regions: Array.from(activeRegions),
+          search: search,
+        }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        await navigator.clipboard.writeText(data.url);
+        setToastMessage('Link copied to clipboard!');
+      }
+    } catch (err) {
+      console.error('Failed to create share link:', err);
+      setToastMessage('Failed to create share link');
+    }
+  }, [activeLenses, activeSources, activeRegions, search]);
   const [theme, setTheme]               = useState<Theme>('light');
   const [liveStatus, setLiveStatus]     = useState<'connecting' | 'live' | 'polling'>('connecting');
   const [focusedIdx, setFocusedIdx]     = useState<number>(-1);
@@ -2043,10 +2229,45 @@ export default function Home() {
     [visibleItems, marketData]
   );
 
+  // Fetch market impact data for clusters with market signals
+  const [enrichedClusters, setEnrichedClusters] = useState<Cluster[]>([]);
+  const [enriching, setEnriching] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      if (!clusters.length) return;
+      
+      setEnriching(true);
+      const enriched = await Promise.all(
+        clusters.map(async (cluster) => {
+          if (!cluster.hasMarketSignal) return cluster;
+          
+          const { marketImpact, brentWtiSpread } = await fetchMarketImpactForCluster(cluster);
+          return {
+            ...cluster,
+            marketImpact,
+            brentWtiSpread,
+          };
+        })
+      );
+      
+      if (mounted) {
+        setEnrichedClusters(enriched);
+        setEnriching(false);
+      }
+    })();
+    
+    return () => { mounted = false; };
+  }, [clusters]);
+
+  // Use enriched clusters when available, otherwise fall back to basic clusters
+  const displayClusters = enrichedClusters.length > 0 ? enrichedClusters : clusters;
+
   // ── Coverage map: how many sources cover same event ───────────────────────
   const coverageMap = useMemo(() => {
     const map = new Map<string, number>();
-    clusters.forEach(cluster => {
+    displayClusters.forEach(cluster => {
       const sources = new Set(cluster.items.map(i => i.sourceId));
       cluster.items.forEach(item => {
         const key = item.link || `${item.sourceId}::${item.title}`;
@@ -2054,13 +2275,13 @@ export default function Home() {
       });
     });
     return map;
-  }, [clusters]);
+  }, [displayClusters]);
 
   // ── Developing stories: cluster has 3+ items AND activity in last 2h ─────
   const developingSet = useMemo(() => {
     const TWO_HOURS = 2 * 3600_000;
     const set = new Set<string>();
-    clusters.forEach(cluster => {
+    displayClusters.forEach(cluster => {
       if (cluster.items.length < 3) return;
       const hasRecent = cluster.items.some(i =>
         Date.now() - new Date(i.pubDate).getTime() < TWO_HOURS
@@ -2069,14 +2290,14 @@ export default function Home() {
       cluster.items.forEach(i => set.add(i.link || `${i.sourceId}::${i.title}`));
     });
     return set;
-  }, [clusters]);
+  }, [displayClusters]);
 
   // ── Surprising consensus: Western + (China/Russia/Iranian) same cluster ───
   const surprisingSet = useMemo(() => {
     const WESTERN = new Set(['western']);
     const COUNTER  = new Set(['china', 'russia', 'iranian']);
     const set = new Set<string>();
-    clusters.forEach(cluster => {
+    displayClusters.forEach(cluster => {
       if (cluster.items.length < 2) return;
       const regions = new Set(cluster.items.map(i => i.region));
       const hasWest = [...regions].some(r => WESTERN.has(r));
@@ -2085,12 +2306,12 @@ export default function Home() {
       cluster.items.forEach(i => set.add(i.link || `${i.sourceId}::${i.title}`));
     });
     return set;
-  }, [clusters]);
+  }, [displayClusters]);
 
   // ── Cluster lead map: which items lead a multi-item cluster ──────────────
   const clusterLeadMap = useMemo(() => {
     const map = new Map<string, { clusterId: string; siblings: FeedItem[]; isLead: boolean }>();
-    clusters.forEach(cluster => {
+    displayClusters.forEach(cluster => {
       if (cluster.items.length < 2) return;
       cluster.items.forEach((item, idx) => {
         const key = item.link || `${item.sourceId}::${item.title}`;
@@ -2099,7 +2320,7 @@ export default function Home() {
       });
     });
     return map;
-  }, [clusters]);
+  }, [displayClusters]);
 
   // ── Filtered stream: only lead + standalone items (non-leads hidden until expanded) ──
   const streamItems = useMemo(() => {
@@ -2116,7 +2337,7 @@ export default function Home() {
   // ── Comparison map: per item key → sibling items in same cluster ──────────
   const comparisonMap = useMemo(() => {
     const map = new Map<string, CompItem[]>();
-    clusters.forEach(cluster => {
+    displayClusters.forEach(cluster => {
       if (cluster.items.length < 2) return;
       const compItems: CompItem[] = cluster.items.map(i => ({
         sourceName: i.sourceName,
@@ -2133,11 +2354,11 @@ export default function Home() {
       });
     });
     return map;
-  }, [clusters]);
+  }, [displayClusters]);
 
   // ── Brief clusters for daily briefing ─────────────────────────────────────
   const briefClusters = useMemo((): BriefCluster[] => {
-    return clusters.slice(0, 8).map(cluster => ({
+    return displayClusters.slice(0, 8).map(cluster => ({
       id: cluster.id,
       title: cluster.title,
       sourceCount: new Set(cluster.items.map(i => i.sourceId)).size,
@@ -2151,7 +2372,7 @@ export default function Home() {
         link: i.link,
       })),
     }));
-  }, [clusters]);
+  }, [displayClusters]);
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
@@ -2229,6 +2450,8 @@ export default function Home() {
               keyForItem={keyForItem}
               clusters={clusters}
               items={items}
+              onClusterDetail={setClusterDetail}
+              onShare={handleShare}
             />
 
             {/* ── Alert Profiles ─────────────────────────────────────────── */}
@@ -3110,7 +3333,10 @@ export default function Home() {
                           color: '#fff', background: 'rgba(241, 196, 15, 0.9)',
                           border: '1px solid rgba(241, 196, 15, 0.3)', padding: '2px 5px', borderRadius: 2,
                         }}>
-                          Market
+                          {cluster.marketImpact && cluster.marketImpact.length > 0
+                            ? `${cluster.marketImpact[0].name} ${cluster.marketImpact[0].changePercent > 0 ? '+' : ''}${cluster.marketImpact[0].changePercent.toFixed(1)}%`
+                            : 'Market'
+                          }
                         </span>
                       )}
                       {cluster.hasMissileSignal && (
@@ -3444,6 +3670,18 @@ export default function Home() {
         data={tickerDrawerData}
         onClose={() => setTickerDrawerData(null)}
       />
+      {clusterDetail && (
+        <ClusterDetailModal
+          cluster={clusterDetail}
+          onClose={() => setClusterDetail(null)}
+        />
+      )}
+      {toastMessage && (
+        <Toast
+          message={toastMessage}
+          onClose={() => setToastMessage(null)}
+        />
+      )}
       <AnalystBriefingModal
         isOpen={aiModalOpen}
         onClose={() => setAiModalOpen(false)}

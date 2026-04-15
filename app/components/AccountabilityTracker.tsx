@@ -11,6 +11,7 @@ import {
   accountabilityStatusLabel,
 } from '@/lib/accountability-data';
 import { LiveSituationStrip } from '@/app/components/LiveSituationStrip';
+import AccountabilityTimelineCalendar from '@/app/components/AccountabilityTimelineCalendar';
 import { LIVE_SITUATION_METRICS } from '@/lib/live-situation-metrics';
 
 const mono = 'var(--font-mono)';
@@ -105,6 +106,7 @@ export default function AccountabilityTracker() {
   const [collapsed, setCollapsed] = useState(true);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [filter, setFilter] = useState<AccountabilityFilterId>('all');
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const lastFocusRef = useRef<HTMLElement | null>(null);
 
@@ -283,7 +285,7 @@ export default function AccountabilityTracker() {
               </button>
             </div>
 
-            {/* Filter pills */}
+            {/* Filter pills with view toggle */}
             <div className="ftg-sheet-filters">
               {ACCOUNTABILITY_FILTER_IDS.map((id) => {
                 const active = filter === id;
@@ -298,11 +300,53 @@ export default function AccountabilityTracker() {
                   </button>
                 );
               })}
+              <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('list')}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: 4,
+                    border: '1px solid var(--border-light)',
+                    background: viewMode === 'list' ? 'var(--accent)' : 'var(--surface)',
+                    color: viewMode === 'list' ? '#fff' : 'var(--text-secondary)',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  List
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('calendar')}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: 4,
+                    border: '1px solid var(--border-light)',
+                    background: viewMode === 'calendar' ? 'var(--accent)' : 'var(--surface)',
+                    color: viewMode === 'calendar' ? '#fff' : 'var(--text-secondary)',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Calendar
+                </button>
+              </div>
             </div>
 
             {/* Events */}
             <div style={{ flex: 1, overflowY: 'auto', padding: '14px 16px calc(20px + env(safe-area-inset-bottom, 0px))' }}>
-              <AccountabilityEventCards events={sorted} />
+              {viewMode === 'list' ? (
+                <AccountabilityEventCards events={sorted} />
+              ) : (
+                <AccountabilityTimelineCalendar
+                  events={ACCOUNTABILITY_EVENTS}
+                  filter={filter}
+                  onEventClick={(ev) => window.open(ev.url, '_blank')}
+                />
+              )}
               <div style={{ marginTop: 20, padding: '12px 14px', borderRadius: 6, border: '1px dashed var(--border)', background: 'var(--surface-muted)' }}>
                 <p style={{ margin: 0, fontSize: 12, lineHeight: 1.5, color: 'var(--text-muted)' }}>
                   <strong style={{ color: 'var(--text-secondary)' }}>Methodology</strong> — Entries are manually curated. Status labels describe the document type or forum, not a legal conclusion.

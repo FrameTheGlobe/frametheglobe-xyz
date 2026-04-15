@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { PolymarketEntry, PolyOutcome } from '@/app/api/polymarket/route';
 import { useVisibilityPolling } from '@/lib/use-visibility-polling';
+import PolymarketHistoryChart from '@/app/components/PolymarketHistoryChart';
 
 // ── Keyframes injected once ────────────────────────────────────────────────
 const KEYFRAMES = `
@@ -99,7 +100,7 @@ function OutcomeRow({ o }: { o: PolyOutcome }) {
 }
 
 // ── Individual event card ─────────────────────────────────────────────────
-function EventCard({ ev }: { ev: PolymarketEntry }) {
+function EventCard({ ev, onHistoryClick }: { ev: PolymarketEntry; onHistoryClick?: () => void }) {
   const meta   = CAT_META[ev.category] ?? CAT_META.CONFLICT;
   const [hover, setHover] = useState(false);
   const isBig  = ev.isBinary || ev.outcomes.length === 1;
@@ -244,23 +245,46 @@ function EventCard({ ev }: { ev: PolymarketEntry }) {
         }}>
           {fmtVol(ev.volume)} vol · USDC
         </span>
-        <a
-          href={ev.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            fontFamily:    'var(--font-mono)',
-            fontSize:      9,
-            color:         meta.color,
-            textDecoration:'none',
-            opacity:       hover ? 1 : 0.5,
-            transition:    'opacity 0.15s',
-            fontWeight:    600,
-            letterSpacing: '0.04em',
-          }}
-        >
-          Polymarket ↗
-        </a>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {onHistoryClick && (
+            <button
+              onClick={(e) => { e.preventDefault(); onHistoryClick(); }}
+              style={{
+                fontFamily:    'var(--font-mono)',
+                fontSize:      9,
+                color:         meta.color,
+                background:    meta.bg,
+                border:        `1px solid ${meta.color}30`,
+                borderRadius:  3,
+                padding:       '2px 8px',
+                cursor:        'pointer',
+                opacity:       hover ? 1 : 0.6,
+                transition:    'opacity 0.15s',
+                fontWeight:    600,
+                letterSpacing: '0.04em',
+              }}
+            >
+              History
+            </button>
+          )}
+          <a
+            href={ev.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              fontFamily:    'var(--font-mono)',
+              fontSize:      9,
+              color:         meta.color,
+              textDecoration:'none',
+              opacity:       hover ? 1 : 0.5,
+              transition:    'opacity 0.15s',
+              fontWeight:    600,
+              letterSpacing: '0.04em',
+            }}
+          >
+            Polymarket ↗
+          </a>
+        </div>
       </div>
     </div>
   );
@@ -346,6 +370,7 @@ export default function PolymarketBoard() {
   const [collapsed, setCollapsed] = useState(false);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
   const [error,     setError]     = useState(false);
+  const [historyMarket, setHistoryMarket] = useState<PolymarketEntry | null>(null);
 
   const load = useCallback(async () => {
     setError(false);
@@ -533,7 +558,13 @@ export default function PolymarketBoard() {
                   gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
                   gap:                 12,
                 }}>
-                  {items.map(ev => <EventCard key={ev.eventId} ev={ev} />)}
+                  {items.map(ev => (
+                    <EventCard 
+                      key={ev.eventId} 
+                      ev={ev} 
+                      onHistoryClick={() => setHistoryMarket(ev)}
+                    />
+                  ))}
                 </div>
               </div>
             );
@@ -559,6 +590,15 @@ export default function PolymarketBoard() {
             </div>
           )}
         </div>
+      )}
+
+      {/* History modal */}
+      {historyMarket && (
+        <PolymarketHistoryChart
+          conditionId={historyMarket.eventId}
+          title={historyMarket.eventTitle}
+          onClose={() => setHistoryMarket(null)}
+        />
       )}
     </section>
   );
