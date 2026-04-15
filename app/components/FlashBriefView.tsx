@@ -73,6 +73,7 @@ export default function FlashBriefView({
             <div style={emptySubtitleStyle}>Scanning global intelligence networks...</div>
           </div>
         ) : (
+          rollingItems.map((item, idx) => (
             <div key={`${item.sourceId}-${idx}`} className="flash-item-card" style={itemCardStyle}>
               <div style={itemAccentLine} />
               <div style={itemContentStyle}>
