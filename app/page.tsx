@@ -820,7 +820,7 @@ function SidebarPanel({
   onShare
 }: SidebarPanelProps) {
   const [healthOpen, setHealthOpen] = useState(false);
-  const [sidebarTab, setSidebarTab] = useState<'network' | 'intel' | 'assets' | 'entities' | 'predictive' | 'anomalies' | 'workspaces' | 'layouts'>('network');
+  const [sidebarTab, setSidebarTab] = useState<'network' | 'intel' | 'assets' | 'entities' | 'predictive' | 'anomalies'>('network');
 
   const failedHealth  = sourceHealth.filter(h => !h.ok);
   const isAllHealthy  = sourceHealth.length > 0 && failedHealth.length === 0;
@@ -836,7 +836,7 @@ function SidebarPanel({
       border: '1px solid var(--border-light)',
       boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)'
     }}>
-      {(['network', 'intel', 'assets', 'entities', 'predictive', 'anomalies', 'workspaces', 'layouts'] as const).map(tab => {
+      {(['network', 'intel', 'assets', 'entities', 'predictive', 'anomalies'] as const).map(tab => {
         const active = sidebarTab === tab;
         const labels: Record<string, string> = {
           network: 'NET',
@@ -844,9 +844,7 @@ function SidebarPanel({
           assets: 'MARKETS',
           entities: 'ENTS',
           predictive: 'PRED',
-          anomalies: 'WARN',
-          workspaces: 'SAVE',
-          layouts: 'VIEW'
+          anomalies: 'WARN'
         };
         return (
           <button
@@ -887,32 +885,6 @@ function SidebarPanel({
   return (
     <div style={{ fontFamily: 'var(--font-mono)', minHeight: '100%' }}>
       {tabNav}
-      
-      {onShare && (
-        <button
-          onClick={onShare}
-          style={{
-            width: '100%',
-            padding: '8px 12px',
-            marginBottom: 12,
-            background: 'var(--accent)',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 6,
-            cursor: 'pointer',
-            fontFamily: 'var(--font-mono)',
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: '0.05em',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 6,
-          }}
-        >
-          🔗 Share Current View
-        </button>
-      )}
 
       {sidebarTab === 'network' && (
         <div style={{ animation: 'fadeInScale 0.2s ease forwards' }}>
@@ -1098,26 +1070,6 @@ function SidebarPanel({
         </div>
       )}
 
-      {sidebarTab === 'workspaces' && (
-        <div style={{ animation: 'fadeInScale 0.2s ease forwards' }}>
-          <WorkspacePanel
-            activeLenses={activeSources}
-            activeSources={activeSources}
-            activeRegions={activeSources}
-            onLoadWorkspace={(workspace) => {
-              // Apply workspace filters
-              onAllSources();
-              workspace.sources.forEach(s => onToggleSource(s));
-            }}
-          />
-        </div>
-      )}
-
-      {sidebarTab === 'layouts' && (
-        <div style={{ animation: 'fadeInScale 0.2s ease forwards' }}>
-          <DashboardLayoutPanel />
-        </div>
-      )}
     </div>
   );
 }
