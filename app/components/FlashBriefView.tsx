@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import { filterRollingFeed, getRelativeTime } from '@/lib/breaking-filter';
-import Sparkline from '@/app/components/Sparkline';
+import { titleToKeySet, jaccardSimilarity } from '@/lib/fetcher';
 import type { FeedItem } from '@/lib/fetcher';
 
 interface MarketData {
@@ -18,14 +18,53 @@ interface FlashBriefViewProps {
   items: FeedItem[];
 }
 
+interface ClusteredItem {
+  primary: FeedItem;
+  others: string[]; // names of other sources
+}
+
 export default function FlashBriefView({
   items,
 }: FlashBriefViewProps) {
   const [markets, setMarkets] = useState<MarketData[]>([]);
   const [loadingMarkets, setLoadingMarkets] = useState(true);
   
-  const rollingItems = useMemo(() => filterRollingFeed(items), [items]);
+  // AI Brief focus state
+  const [briefingUrl, setBriefingUrl] = useState<string | null>(null);
+  const [briefingText, setBriefingText] = useState<string | null>(null);
+  const [briefingLoading, setBriefingLoading] = useState(false);
 
+  // ── Data Processing ────────────────────────────────────────────────────────
+
+  // Apply narrative clustering
+  const rollingItems = useMemo(() => {
+    const raw = filterRollingFeed(items);
+    const clusters: ClusteredItem[] = [];
+
+    raw.forEach(item => {
+      const itemKeySet = titleToKeySet(item.title);
+      let found = false;
+
+      for (const cluster of clusters) {
+        const primaryKeySet = titleToKeySet(cluster.primary.title);
+        if (jaccardSimilarity(itemKeySet, primaryKeySet) > 0.45) {
+          if (!cluster.others.includes(item.sourceName) && cluster.primary.sourceName !== item.sourceName) {
+            cluster.others.push(item.sourceName);
+          }
+          found = true;
+          break;
+        }
+      }
+
+      if (!found) {
+        clusters.push({ primary: item, others: [] });
+      }
+    });
+
+    return clusters;
+  }, [items]);
+
+  // Market polling
   const fetchMarkets = useCallback(async () => {
     try {
       const res = await fetch('/api/market');
@@ -34,7 +73,7 @@ export default function FlashBriefView({
         setMarkets(data);
       }
     } catch (err) {
-      console.error('Flash view failed to fetch markets:', err);
+      console.error('Flash view markets error:', err);
     } finally {
       setLoadingMarkets(false);
     }
@@ -46,13 +85,48 @@ export default function FlashBriefView({
     return () => clearInterval(interval);
   }, [fetchMarkets]);
 
-  // Find specifically WTI and Brent from the dynamic market data
+  // AI Brief handler
+  const handleBrief = async (item: FeedItem) => {
+    if (briefingUrl === item.link) {
+      setBriefingUrl(null);
+      return;
+    }
+    setBriefingUrl(item.link);
+    setBriefingLoading(true);
+    setBriefingText(null);
+
+    try {
+      const res = await fetch('/api/article-brief', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          url: item.link,
+          title: item.title,
+          source: item.sourceName 
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setBriefingText(data.brief);
+      } else {
+        setBriefingText("Unable to generate brief for this signal.");
+      }
+    } catch (err) {
+      setBriefingText("Intel system timeout. Retry briefing later.");
+    } finally {
+      setBriefingLoading(false);
+    }
+  };
+
   const wti = markets.find(m => m.symbol.includes('WTI')) || markets.find(m => m.name.toLowerCase().includes('wti'));
   const brent = markets.find(m => m.symbol.includes('BRENT')) || markets.find(m => m.name.toLowerCase().includes('brent'));
 
+  // Detect if market is "pulsing" (significant change > 1.5%)
+  const marketsPulsing = (wti && Math.abs(wti.changePercent) > 1.5) || (brent && Math.abs(brent.changePercent) > 1.5);
+
   return (
     <div className="flash-brief-container" style={containerStyle}>
-      <div style={headerStyle}>
+      <header style={headerStyle}>
         <div style={eyebrowStyle}>
           <span className="live-dot" />
           FLASH INTEL — REALTIME ROLLING FEED
@@ -61,9 +135,9 @@ export default function FlashBriefView({
         <p style={subtitleStyle}>
           {rollingItems.length === 0
             ? 'Monitoring global feeds...'
-            : `${rollingItems.length} reports in the last 12 hours`}
+            : `${rollingItems.length} intelligence clusters active`}
         </p>
-      </div>
+      </header>
 
       <div className="flash-brief-stream" style={streamStyle}>
         {rollingItems.length === 0 ? (
@@ -73,33 +147,95 @@ export default function FlashBriefView({
             <div style={emptySubtitleStyle}>Scanning global intelligence networks...</div>
           </div>
         ) : (
-          rollingItems.map((item, idx) => (
-            <div key={`${item.sourceId}-${idx}`} className="flash-item-card" style={itemCardStyle}>
-              <div style={itemAccentLine} />
-              <div style={itemContentStyle}>
-                <div style={itemMetaStyle}>
-                  <span style={sourceBadgeStyle}>{item.sourceName || item.sourceId || 'INTEL_NODE'}</span>
-                  <span style={timeStyle}>{item.pubDate ? getRelativeTime(item.pubDate) : 'JUST NOW'}</span>
+          rollingItems.map((cluster, idx) => {
+            const item = cluster.primary;
+            const prevItem = rollingItems[idx - 1]?.primary;
+            
+            // Check for hour divider (Temporal Anchor)
+            let showDivider = false;
+            let dividerLabel = '';
+            if (item.pubDate) {
+              const date = new Date(item.pubDate);
+              const hour = date.getHours();
+              const prevHour = prevItem?.pubDate ? new Date(prevItem.pubDate).getHours() : -1;
+              if (hour !== prevHour) {
+                showDivider = true;
+                const diff = Date.now() - date.getTime();
+                const hrsAgo = Math.floor(diff / (1000 * 60 * 60));
+                dividerLabel = hrsAgo === 0 ? 'LATEST HOUR' : `${hrsAgo} HOUR${hrsAgo === 1 ? '' : 'S'} AGO`;
+              }
+            }
+
+            return (
+              <div key={`${item.sourceId}-${idx}`}>
+                {showDivider && (
+                  <div style={dividerStyle}>
+                    <div style={dividerLineStyle} />
+                    <span style={dividerLabelStyle}>{dividerLabel}</span>
+                    <div style={dividerLineStyle} />
+                  </div>
+                )}
+
+                <div className="flash-item-card" style={itemCardStyle}>
+                  <div style={itemAccentLine} />
+                  <div style={itemContentStyle}>
+                    <div style={itemMetaStyle}>
+                      <span style={sourceBadgeStyle}>{item.sourceName || 'INTEL'}</span>
+                      <span style={timeStyle}>{item.pubDate ? getRelativeTime(item.pubDate) : 'JUST NOW'}</span>
+                      
+                      {/* AI BRIEF BUTTON */}
+                      <button 
+                        onClick={() => handleBrief(item)}
+                        style={{
+                          ...briefButtonStyle,
+                          background: briefingUrl === item.link ? 'var(--accent)' : 'var(--surface-muted)',
+                          color: briefingUrl === item.link ? '#fff' : 'var(--text-muted)'
+                        }}
+                      >
+                        {briefingUrl === item.link && briefingLoading ? 'SYNCING...' : '⚡ BRIEF'}
+                      </button>
+                    </div>
+
+                    <a
+                      href={item.link || '#'}
+                      target={item.link ? "_blank" : "_self"}
+                      rel="noopener noreferrer"
+                      style={itemTitleStyle}
+                    >
+                      {item.title || 'Inbound Signal...'}
+                    </a>
+
+                    {/* CLUSTER FOOTER */}
+                    {cluster.others.length > 0 && (
+                      <div style={clusterStyle}>
+                        Signals from: {cluster.others.slice(0, 3).join(', ')}
+                        {cluster.others.length > 3 && ` +${cluster.others.length - 3} more sources`}
+                      </div>
+                    )}
+
+                    {/* AI BRIEFING CONTENT */}
+                    {briefingUrl === item.link && (
+                      <div style={briefContentStyle}>
+                        {briefingLoading ? (
+                          <div className="shimmer" style={{ height: 40, borderRadius: 4 }} />
+                        ) : (
+                          <p style={{ margin: 0 }}>{briefingText}</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <a
-                  href={item.link || '#'}
-                  target={item.link ? "_blank" : "_self"}
-                  rel="noopener noreferrer"
-                  style={itemTitleStyle}
-                >
-                  {item.title || 'Inbound Signal...'}
-                </a>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
       <style jsx>{`
         .flash-item-card:hover {
           transform: translateY(-2px);
-          border-color: var(--accent) !important;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
+          border-color: rgba(var(--accent-rgb), 0.3) !important;
+          box-shadow: 0 8px 16px rgba(0,0,0,0.06) !important;
         }
         @media (max-width: 640px) {
           .flash-market-bar-wrap {
@@ -113,11 +249,18 @@ export default function FlashBriefView({
             display: none !important;
           }
         }
+        @keyframes pulse-glow {
+          0%, 100% { box-shadow: 0 8px 32px rgba(0,0,0,0.12), inset 0 0 0 1px rgba(var(--accent-rgb), 0.1); }
+          50% { box-shadow: 0 8px 32px rgba(var(--accent-rgb), 0.25), inset 0 0 0 2px rgba(var(--accent-rgb), 0.3); }
+        }
       `}</style>
 
       {/* REPOSITIONED: Centered Sticky Bottom Bar for Markets */}
       <div className="flash-market-bar-wrap" style={marketBarWrapStyle}>
-        <div style={marketBarInnerStyle}>
+        <div style={{
+          ...marketBarInnerStyle,
+          animation: marketsPulsing ? 'pulse-glow 2s infinite ease-in-out' : 'none'
+        }}>
           <div style={marketLabelStyle}>LIVE CRUDE</div>
           
           <div style={marketGridStyle}>
@@ -197,14 +340,6 @@ const eyebrowStyle: React.CSSProperties = {
   marginBottom: 16,
 };
 
-const liveDotStyle: React.CSSProperties = {
-  width: 6,
-  height: 6,
-  borderRadius: '50%',
-  background: '#10b981',
-  boxShadow: '0 0 10px #10b981',
-};
-
 const titleStyle: React.CSSProperties = {
   fontSize: 32,
   fontWeight: 800,
@@ -273,6 +408,18 @@ const timeStyle: React.CSSProperties = {
   fontWeight: 600,
 };
 
+const briefButtonStyle: React.CSSProperties = {
+  marginLeft: 'auto',
+  border: 'none',
+  padding: '4px 8px',
+  borderRadius: 4,
+  fontFamily: 'var(--font-mono)',
+  fontSize: 9,
+  fontWeight: 800,
+  cursor: 'pointer',
+  transition: 'all 0.2s ease',
+};
+
 const itemTitleStyle: React.CSSProperties = {
   fontSize: 18,
   fontWeight: 600,
@@ -282,6 +429,48 @@ const itemTitleStyle: React.CSSProperties = {
   display: 'block',
   fontFamily: 'var(--font-display)',
   letterSpacing: '-0.01em',
+};
+
+const clusterStyle: React.CSSProperties = {
+  marginTop: 10,
+  fontSize: 10,
+  fontWeight: 700,
+  color: 'var(--text-muted)',
+  fontFamily: 'var(--font-mono)',
+  opacity: 0.8,
+};
+
+const briefContentStyle: React.CSSProperties = {
+  marginTop: 14,
+  padding: '12px 16px',
+  background: 'var(--surface-muted)',
+  borderRadius: 6,
+  borderLeft: '2px solid var(--accent)',
+  fontSize: 13,
+  lineHeight: 1.6,
+  color: 'var(--text-secondary)',
+};
+
+const dividerStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 16,
+  margin: '24px 0 16px',
+  opacity: 0.5,
+};
+
+const dividerLineStyle: React.CSSProperties = {
+  flex: 1,
+  height: 1,
+  background: 'var(--border)',
+};
+
+const dividerLabelStyle: React.CSSProperties = {
+  fontSize: 10,
+  fontWeight: 800,
+  letterSpacing: '0.12em',
+  color: 'var(--text-muted)',
+  fontFamily: 'var(--font-mono)',
 };
 
 const emptyStateStyle: React.CSSProperties = {
@@ -331,6 +520,7 @@ const marketBarInnerStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
+  transition: 'all 0.3s ease',
   boxShadow: '0 8px 32px rgba(0,0,0,0.12), inset 0 0 0 1px rgba(255,255,255,0.05)',
 };
 

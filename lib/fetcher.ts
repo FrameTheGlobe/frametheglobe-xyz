@@ -319,7 +319,7 @@ function computeNoveltyPenalty(item: FeedItem, allItems: FeedItem[]): number {
 }
 
 // Helper: Jaccard similarity (moved from page.tsx to share)
-function titleToKeySet(title: string): Set<string> {
+export function titleToKeySet(title: string): Set<string> {
   const CLUSTER_STOPWORDS = new Set([
     'a','an','the','and','or','but','in','on','at','to','for','of','with',
     'by','from','as','is','was','are','were','be','been','being','have','has',
@@ -342,7 +342,7 @@ function titleToKeySet(title: string): Set<string> {
   );
 }
 
-function jaccardSimilarity(a: Set<string>, b: Set<string>): number {
+export function jaccardSimilarity(a: Set<string>, b: Set<string>): number {
   if (a.size === 0 && b.size === 0) return 1;
   let intersection = 0;
   a.forEach(w => { if (b.has(w)) intersection++; });
