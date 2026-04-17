@@ -123,7 +123,7 @@ router.get('/', async (_req: Request, res: Response) => {
   const totalFlights     = flights.aircraft.length;
 
   return res
-    .set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=30')
+    .set('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=60')
     .json({
       ok: true,
       fetchedAt: new Date().toISOString(),

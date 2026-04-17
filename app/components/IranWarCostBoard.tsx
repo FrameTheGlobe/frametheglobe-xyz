@@ -203,10 +203,10 @@ export default function IranWarCostBoard() {
     fetchNews();
     fetchFlightsLocal();
   }, [fetchMetrics, fetchPrices, fetchNews, fetchFlightsLocal]);
-  useVisibilityPolling(fetchMetrics, 60_000);
-  useVisibilityPolling(fetchPrices, 60_000);
+  useVisibilityPolling(fetchMetrics, 120_000);
+  useVisibilityPolling(fetchPrices, 120_000);
   useVisibilityPolling(fetchNews, 120_000);
-  useVisibilityPolling(fetchFlightsLocal, 60_000);
+  useVisibilityPolling(fetchFlightsLocal, 120_000);
 
   const mono = 'var(--font-mono)';
   const accent = 'var(--accent)';

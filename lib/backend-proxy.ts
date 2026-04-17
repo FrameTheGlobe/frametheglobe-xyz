@@ -30,23 +30,54 @@ function forwardHeaders(req: NextRequest): HeadersInit {
 
 /**
  * Creates a GET proxy handler that forwards query string to the backend.
+ *
+ * COST OPTIMIZATION (v8.0.8): We now pass the backend's Cache-Control header
+ * through to Vercel's CDN edge. This means multiple concurrent users share one
+ * cached response at the edge rather than each generating a fresh Railway hit.
+ *
+ * Fallback s-maxage values per route type:
+ *   - market / prices / flights: 60s (data changes ~1min)
+ *   - news / theater:           120s (news pipeline refreshes ~2min)
+ *   - slow-changing endpoints:  300s (polymarket, metrics, AI intel)
  */
 export function proxyGet(backendPath: string) {
+  // Determine a sensible fallback TTL based on the endpoint path
+  function defaultCacheControl(path: string): string {
+    if (path.includes('market') || path.includes('flight') || path.includes('precious') || path.includes('agri')) {
+      return 'public, s-maxage=60, stale-while-revalidate=30';
+    }
+    if (path.includes('news') || path.includes('theater') || path.includes('live-feeds') || path.includes('rss')) {
+      return 'public, s-maxage=120, stale-while-revalidate=60';
+    }
+    if (path.includes('polymarket') || path.includes('oil-history') || path.includes('metrics') || path.includes('entities')) {
+      return 'public, s-maxage=300, stale-while-revalidate=120';
+    }
+    return 'public, s-maxage=60, stale-while-revalidate=30'; // safe default
+  }
+
   return async function GET(req: NextRequest) {
     const qs  = req.nextUrl.search; // includes '?' prefix
     const url = backendUrl(backendPath) + qs;
     try {
       const upstream = await fetch(url, {
         headers: forwardHeaders(req),
-        // Don't cache here — backend sets its own Cache-Control
+        // Use no-store here so Next.js fetch cache doesn't interfere;
+        // CDN caching is controlled by the Cache-Control response header below.
         cache: 'no-store',
       });
       const body = await upstream.text();
-      const res  = new NextResponse(body, {
+
+      // Prefer the backend's own Cache-Control; fall back to our tiered defaults.
+      const upstreamCacheControl = upstream.headers.get('cache-control');
+      const cacheControl = (upstreamCacheControl && upstreamCacheControl !== 'no-cache' && upstreamCacheControl !== 'no-store')
+        ? upstreamCacheControl
+        : defaultCacheControl(backendPath);
+
+      const res = new NextResponse(body, {
         status: upstream.status,
         headers: {
           'Content-Type': upstream.headers.get('content-type') ?? 'application/json',
-          'Cache-Control': upstream.headers.get('cache-control') ?? 'public, s-maxage=60',
+          'Cache-Control': cacheControl,
         },
       });
       return res;
