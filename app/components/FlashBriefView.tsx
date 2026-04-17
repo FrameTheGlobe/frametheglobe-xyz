@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, useEffect, useCallback } from 'react';
+import { useVisibilityPolling } from '@/lib/use-visibility-polling';
 import { filterRollingFeed, getRelativeTime } from '@/lib/breaking-filter';
 import { titleToKeySet, jaccardSimilarity } from '@/lib/fetcher';
 import type { FeedItem } from '@/lib/fetcher';
@@ -79,11 +80,8 @@ export default function FlashBriefView({
     }
   }, []);
 
-  useEffect(() => {
-    fetchMarkets();
-    const interval = setInterval(fetchMarkets, 60000);
-    return () => clearInterval(interval);
-  }, [fetchMarkets]);
+  useEffect(() => { fetchMarkets(); }, [fetchMarkets]);
+  useVisibilityPolling(fetchMarkets, 120_000);
 
   // AI Brief handler
   const handleBrief = async (item: FeedItem) => {
