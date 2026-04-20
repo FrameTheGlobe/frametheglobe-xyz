@@ -1472,6 +1472,25 @@ body {
   border-color: transparent !important;
 }
 
+.ftg-compact-toggle-btn {
+  position: relative;
+  font-family: var(--font-mono);
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  border-radius: var(--flat-radius-sm) !important;
+}
+
+.ftg-compact-toggle-btn.is-active {
+  background: var(--accent) !important;
+  color: #fff !important;
+  border-color: var(--accent) !important;
+}
+
+.ftg-compact-toggle-btn:not(.is-active):hover {
+  background: color-mix(in oklab, var(--accent) 8%, var(--surface-muted) 92%) !important;
+  color: var(--text-primary) !important;
+}
+
 /* Ensure active pills/buttons still clear but flat */
 .ftg-adaptive-density :is(
   .ftg-wpt-btn.is-active,

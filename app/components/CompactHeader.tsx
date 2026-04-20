@@ -71,7 +71,8 @@ export default function CompactHeader({
           <button
             onClick={() => onViewModeChange('flash')}
             title="Switch to Flash View"
-            className="ftg-compact-toggle-btn"
+            className={`ftg-compact-toggle-btn${viewMode === 'flash' ? ' is-active' : ''}`}
+            aria-pressed={viewMode === 'flash'}
             style={{
               padding: '6px 10px',
               border: 'none',
@@ -81,8 +82,8 @@ export default function CompactHeader({
               fontSize: 10,
               fontWeight: 800,
               letterSpacing: '0.03em',
-              background: viewMode === 'flash' ? 'var(--accent)' : 'transparent',
-              color: viewMode === 'flash' ? '#fff' : 'var(--text-secondary)',
+              background: 'transparent',
+              color: 'var(--text-secondary)',
               transition: 'all 0.2s ease',
             }}
           >
@@ -91,7 +92,8 @@ export default function CompactHeader({
           <button
             onClick={() => onViewModeChange('command')}
             title="Switch to Command Center"
-            className="ftg-compact-toggle-btn"
+            className={`ftg-compact-toggle-btn${viewMode === 'command' ? ' is-active' : ''}`}
+            aria-pressed={viewMode === 'command'}
             style={{
               padding: '6px 10px',
               border: 'none',
@@ -101,8 +103,8 @@ export default function CompactHeader({
               fontSize: 10,
               fontWeight: 800,
               letterSpacing: '0.03em',
-              background: viewMode === 'command' ? 'var(--accent)' : 'transparent',
-              color: viewMode === 'command' ? '#fff' : 'var(--text-secondary)',
+              background: 'transparent',
+              color: 'var(--text-secondary)',
               transition: 'all 0.2s ease',
             }}
           >
@@ -111,7 +113,8 @@ export default function CompactHeader({
           <button
             onClick={() => onViewModeChange('war-premium')}
             title="Switch to War Premium Dashboard"
-            className="ftg-compact-toggle-btn"
+            className={`ftg-compact-toggle-btn${viewMode === 'war-premium' ? ' is-active' : ''}`}
+            aria-pressed={viewMode === 'war-premium'}
             style={{
               padding: '6px 10px',
               border: 'none',
@@ -121,8 +124,8 @@ export default function CompactHeader({
               fontSize: 10,
               fontWeight: 800,
               letterSpacing: '0.03em',
-              background: viewMode === 'war-premium' ? 'var(--accent)' : 'transparent',
-              color: viewMode === 'war-premium' ? '#fff' : 'var(--text-secondary)',
+              background: 'transparent',
+              color: 'var(--text-secondary)',
               transition: 'all 0.2s ease',
             }}
           >
