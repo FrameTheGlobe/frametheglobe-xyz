@@ -1523,12 +1523,31 @@ body {
   .ftg-war-premium-view__chip,
   .ftg-war-premium-view__panel-chip,
   .ftg-wpb__filter,
+  .ftg-wpt-btn,
   .ftg-war-premium__toggle,
   .icon-link-ghost,
   .hud-action-btn-refined
 ) {
   background: var(--flat-surface-softer) !important;
   border-color: var(--flat-border-softer) !important;
+}
+
+/* Preserve selected-state contrast after flat overrides */
+.ftg-adaptive-density :is(
+  .ftg-compact-toggle-btn.is-active,
+  .ftg-wpt-btn.is-active,
+  .ftg-wpb__filter--active
+) {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: #fff !important;
+}
+
+.ftg-adaptive-density :is(
+  .ftg-wpt-btn:not(.is-active),
+  .ftg-wpb__filter:not(.ftg-wpb__filter--active)
+) {
+  color: var(--text-secondary) !important;
 }
 
 /* Normalize spacing rhythm for dense-but-clean readability */
