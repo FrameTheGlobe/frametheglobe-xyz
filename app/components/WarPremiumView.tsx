@@ -44,12 +44,10 @@ const PANEL_DEFS = [
 function StatsSparkline({
   series,
   color,
-  width = 220,
-  height = 60,
+  height = 46,
 }: {
   series: Array<{ t: string; v: number }>;
   color: string;
-  width?: number;
   height?: number;
 }) {
   if (series.length < 2) return null;
@@ -57,15 +55,25 @@ function StatsSparkline({
   const min = Math.min(...values);
   const max = Math.max(...values);
   const range = max - min || 1;
+  const width = 220;
   const xs = series.map((_, i) => (i / (series.length - 1)) * width);
   const ys = series.map((s) => height - ((s.v - min) / range) * height);
   const d = xs.map((x, i) => `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${ys[i].toFixed(1)}`).join(' ');
+  const area = `${d} L ${width} ${height} L 0 ${height} Z`;
   return (
-    <svg width={width} height={height} aria-hidden>
+    <svg viewBox={`0 0 ${width} ${height}`} width="100%" height={height} preserveAspectRatio="none" aria-hidden>
+      <path d={area} fill={color} opacity={0.09} />
       <path d={d} fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" />
       <circle cx={xs[xs.length - 1]} cy={ys[ys.length - 1]} r={3} fill={color} />
     </svg>
   );
+}
+
+function seriesVolatility(series: Array<{ t: string; v: number }>): number {
+  if (series.length < 2) return 0;
+  const avg = series.reduce((sum, p) => sum + p.v, 0) / series.length;
+  const variance = series.reduce((sum, p) => sum + (p.v - avg) ** 2, 0) / series.length;
+  return Math.sqrt(variance);
 }
 
 export default function WarPremiumView() {
@@ -359,7 +367,25 @@ export default function WarPremiumView() {
           <div className="ftg-war-premium-view__panel-grid">
             {PANEL_DEFS.map((panel) => (
               <article key={panel.id} className="ftg-war-premium-view__panel">
-                <h3>{panel.title}</h3>
+                <div className="ftg-war-premium-view__panel-head">
+                  <h3>{panel.title}</h3>
+                  <div className="ftg-war-premium-view__panel-head-chips">
+                    {panel.rows.slice(0, 3).map((id) => {
+                      const row = mergedRows[id];
+                      if (!row) return null;
+                      const sinceWar = percentChange(row.priceAtWarStart, row.priceCurrent);
+                      return (
+                        <span
+                          key={id}
+                          className="ftg-war-premium-view__panel-chip"
+                          style={{ color: deltaColor(row, row.priceAtWarStart, row.priceCurrent) }}
+                        >
+                          {row.label.split(' ')[0]} {formatSignedPct(sinceWar)}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
                 <div className="ftg-war-premium-view__panel-rows">
                   {panel.rows.map((id) => {
                     const row = mergedRows[id];
@@ -367,6 +393,8 @@ export default function WarPremiumView() {
                     const series = transformSeries(getWindowedSeries(row));
                     const color = deltaColor(row, row.priceAtWarStart, row.priceCurrent);
                     const sinceWar = percentChange(row.priceAtWarStart, row.priceCurrent);
+                    const baselineToCurrentRange = Math.abs((row.priceCurrent - row.priceBaseline) || 1);
+                    const volatility = Math.min(100, (seriesVolatility(series) / baselineToCurrentRange) * 100);
                     return (
                       <div key={id} className="ftg-war-premium-view__panel-row">
                         <div className="ftg-war-premium-view__panel-row-head">
@@ -378,6 +406,20 @@ export default function WarPremiumView() {
                             {row.unit.startsWith('USD') || row.unit === 'USD' ? '$' : ''}
                             {formatPrice(row.priceCurrent, row.unit)} · as of {row.currentAsOf}
                           </span>
+                        </div>
+                        <div className="ftg-war-premium-view__panel-row-metrics">
+                          <span>B {formatPrice(row.priceBaseline, row.unit)}</span>
+                          <span>W {formatPrice(row.priceAtWarStart, row.unit)}</span>
+                          <span>C {formatPrice(row.priceCurrent, row.unit)}</span>
+                        </div>
+                        <div className="ftg-war-premium-view__panel-row-bar">
+                          <div className="ftg-war-premium-view__panel-row-bar-fill" style={{ width: `${Math.max(8, Math.min(100, Math.abs(sinceWar)))}%`, background: color }} />
+                        </div>
+                        <div className="ftg-war-premium-view__panel-row-vol">
+                          <span>Volatility</span>
+                          <div className="ftg-war-premium-view__panel-row-vol-bar">
+                            <div style={{ width: `${Math.max(4, volatility)}%` }} />
+                          </div>
                         </div>
                         <StatsSparkline series={series} color={color} />
                       </div>
