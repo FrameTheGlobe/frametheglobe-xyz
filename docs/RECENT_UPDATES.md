@@ -130,5 +130,48 @@ Major UX/UI synchronization to version 8.0.5+.
 ### Accountability Tracker Maintenance
 - Ensured the `AccountabilityTracker` rail remains visible and accessible across both Flash and Command views for consistent visibility into Levant situation metrics.
 
+## 10) War Premium Board (v8.0.8)
+
+A new high-visibility widget that answers the question: *"how much have markets and households repriced since the Iran war began?"*
+
+### Anchor configuration
+- **War start**: `2026-02-28` (Iran war kinetic phase)
+- **Pre-war baseline**: `2025-11-28` (T−3 months, for visual timeline context)
+
+### Placement
+- **Compact sidebar card** (`app/components/WarPremiumCompact.tsx`) mounted in the left sidebar directly below `SidebarTheaterPulse`. Paired visually with the pulse: "what is happening now" (Theater Pulse) → "what it's cost the world" (War Premium).
+- **Full board** (`app/components/WarPremiumBoard.tsx`) opens inline under the compact card on "View full board" — no modal, no nav.
+
+### Row coverage (14 rows)
+- **Energy**: Brent, WTI, Natural Gas
+- **Metals**: Gold, Silver, Copper
+- **Agri**: CBOT Wheat, Urea (CF Industries proxy)
+- **Household (US retail)**: Gasoline, Diesel, Bread 1 lb
+- **Inflation**: US CPI Headline, US CPI Food at Home, FAO Food Price Index
+
+### Key UX
+- **Dual delta framing** per row: a big "Since war" Δ% is the hero number; "vs baseline Nov 28 2025" appears beneath for pre-war context. This reveals whether the price was already creeping before the war or whether the war itself bent the line.
+- **Timeline sparkline** per row spans `baseline → today` with a dashed red vertical tick at the war-start date, plus a red dot on the line at that point. The visual proof of "war premium" in one glance.
+- **Crisis-aware color**: each row declares a `crisisDirection` — oil/gold/food/etc. moving up is rendered in red (crisis), moves in the other direction render green (relief). Kept from being naive up=green, down=red.
+- **Hero card** in sidebar: spotlights **Brent** (markets), **US Gasoline** (households), **FAO Food Index** (global food). Each shows current price + Δ% since war + tiny sparkline with war tick.
+- **Asset class filter** in the full board (All / Energy / Metals / Agri / Household / Inflation).
+- **Expandable row detail**: click any row to reveal cited source URLs for each of the three anchor readings (baseline / war-start / current) plus a methodology note.
+
+### Data architecture
+- **Fallback baselines** in `lib/war-baselines.ts` remain for resilience if upstream feeds fail.
+- **Live history hydration**: backend now serves `GET /api/since-war-history` (Stooq daily closes for commodities) and `GET /api/household-prices` (FRED-backed weekly/monthly household + inflation series). Next.js proxies both routes.
+- **Runtime row overrides**: `WarPremiumCompact` and `WarPremiumBoard` override fallback `priceBaseline`, `priceAtWarStart`, `priceCurrent`, and `sparkline` from these live feeds.
+- **Commodity spot overlay** remains active from `/api/market`, `/api/precious-metals`, and `/api/agri-market` for fresher intraday current prices.
+
+### Still pending
+- Bookmarkable `/war-premium` page with its own open-graph card.
+- User-selectable secondary anchors (e.g. "compare against 6 months before"), FX/rates/equities rows.
+- `scripts/refresh-baselines.mjs` maintainer tool that pulls suggested anchor closes from Yahoo and emits a diff against `war-baselines.ts`.
+
+### Files touched
+- New: `lib/war-baselines.ts`, `app/components/WarPremiumCompact.tsx`, `app/components/WarPremiumBoard.tsx`
+- Edited: `app/page.tsx` (sidebar mount), `app/globals.css` (+≈430 lines), `app/components/CompactHeader.tsx` (version string), `package.json` (8.0.7 → 8.0.8), `README.md`, `backend/src/index.ts`, `backend/src/routes/precious-metals.ts`, `backend/src/routes/agri-market.ts`
+- Added: `backend/src/routes/since-war-history.ts`, `backend/src/routes/household-prices.ts`, `app/api/since-war-history/route.ts`, `app/api/household-prices/route.ts`
+
 ---
 *All v8.0.x updates were verified against the production build environment and optimized for mobile-first thumb reach.*

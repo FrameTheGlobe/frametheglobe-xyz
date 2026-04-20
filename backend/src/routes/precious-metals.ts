@@ -26,15 +26,17 @@ const CACHE_TTL = 60 * 1000;
 const NAME_MAP: Record<string, string> = {
   'GC.F':   'Gold (Futures)',     'SI.F':   'Silver (Futures)',
   'PL.F':   'Platinum (Futures)', 'PA.F':   'Palladium (Futures)',
+  'HG.F':   'Copper (Futures)',
   'GLD.US': 'Gold (GLD ETF)',     'SLV.US': 'Silver (SLV ETF)',
 };
 const UNIT_MAP: Record<string, string> = {
   'GC.F': 'USD/troy oz', 'SI.F': 'USD/troy oz', 'PL.F': 'USD/troy oz',
-  'PA.F': 'USD/troy oz', 'GLD.US': 'USD/share', 'SLV.US': 'USD/share',
+  'PA.F': 'USD/troy oz', 'HG.F': 'USD/lb', 'GLD.US': 'USD/share', 'SLV.US': 'USD/share',
 };
 
 const YAHOO_PAIRS: [string, string][] = [
   ['GC=F', 'GC.F'], ['SI=F', 'SI.F'], ['PL=F', 'PL.F'], ['PA=F', 'PA.F'],
+  ['HG=F', 'HG.F'],
   ['GLD', 'GLD.US'], ['SLV', 'SLV.US'],
 ];
 
@@ -85,7 +87,7 @@ async function fetchStooqBatch(): Promise<MetalQuote[]> {
   const controller = new AbortController();
   const timeout    = setTimeout(() => controller.abort(), 8_000);
   try {
-    const symbols = 'gc.f+si.f+pl.f+pa.f+gld.us+slv.us';
+    const symbols = 'gc.f+si.f+pl.f+pa.f+hg.f+gld.us+slv.us';
     const fetched = await fetch(`https://stooq.com/q/l/?s=${symbols}&f=sd2t2ohlcv&h&e=json`, {
       signal:  controller.signal,
       headers: { 'User-Agent': 'Mozilla/5.0 Chrome/120.0.0.0', 'Accept': 'application/json' },
@@ -125,13 +127,13 @@ router.get('/', async (_req: Request, res: Response) => {
     for (const row of yahooRows) {
       if (row) bySym.set(row.symbol, row);
     }
-    if (bySym.size < 6) {
+    if (bySym.size < 7) {
       const stooq = await fetchStooqBatch();
       for (const row of stooq) {
         if (!bySym.has(row.symbol)) bySym.set(row.symbol, row);
       }
     }
-    const order: string[] = ['GC.F', 'SI.F', 'PL.F', 'PA.F', 'GLD.US', 'SLV.US'];
+    const order: string[] = ['GC.F', 'SI.F', 'PL.F', 'PA.F', 'HG.F', 'GLD.US', 'SLV.US'];
     const mapped = order.flatMap(s => {
       const q = bySym.get(s);
       return q && q.price > 0 ? [q] : [];

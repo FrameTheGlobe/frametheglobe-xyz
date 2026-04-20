@@ -36,6 +36,8 @@ import polymarketHistoryRouter from './routes/polymarket-history.js';
 import shareRouter           from './routes/share.js';
 import entitiesRouter        from './routes/entities.js';
 import flightPathsRouter     from './routes/flight-paths.js';
+import sinceWarHistoryRouter from './routes/since-war-history.js';
+import householdPricesRouter from './routes/household-prices.js';
 
 const app  = express();
 const PORT = process.env.PORT ?? 4000;
@@ -95,6 +97,8 @@ app.use('/api/polymarket-history', polymarketHistoryRouter);
 app.use('/api/share',             shareRouter);
 app.use('/api/entities',          entitiesRouter);
 app.use('/api/flight-paths',      flightPathsRouter);
+app.use('/api/since-war-history', sinceWarHistoryRouter);
+app.use('/api/household-prices',  householdPricesRouter);
 
 // ── 404 fallback ─────────────────────────────────────────────────────────────
 app.use((_req, res) => {

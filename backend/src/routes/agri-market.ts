@@ -16,13 +16,14 @@ const CACHE_TTL = 60 * 1000;
 const NAME_MAP: Record<string, string> = {
   'CF.US':   'CF Industries (Urea)',
   'MOS.US':  'Mosaic Co. (Potash)',
+  'ZW.F':    'Wheat (CBOT Futures)',
   'WEAT.US': 'Wheat (WEAT ETF)',
   'CORN.US': 'Corn (CORN ETF)',
   'SOYB.US': 'Soybeans (SOYB ETF)',
   'NG.F':    'Natural Gas',
 };
 const UNIT_MAP: Record<string, string> = {
-  'CF.US':   'USD/share', 'MOS.US':  'USD/share', 'WEAT.US': 'USD/share',
+  'CF.US':   'USD/share', 'MOS.US':  'USD/share', 'ZW.F': 'USD/bu', 'WEAT.US': 'USD/share',
   'CORN.US': 'USD/share', 'SOYB.US': 'USD/share', 'NG.F':    'USD/MMBtu',
 };
 
@@ -34,7 +35,7 @@ router.get('/', async (_req: Request, res: Response) => {
   const controller = new AbortController();
   const timeout    = setTimeout(() => controller.abort(), 8_000);
   try {
-    const symbols = 'cf.us+mos.us+weat.us+corn.us+soyb.us+ng.f';
+    const symbols = 'cf.us+mos.us+zw.f+weat.us+corn.us+soyb.us+ng.f';
     const url     = `https://stooq.com/q/l/?s=${symbols}&f=sd2t2ohlcv&h&e=json`;
     const fetched = await fetch(url, {
       signal: controller.signal,

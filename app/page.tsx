@@ -10,6 +10,7 @@ import { SOURCE_TRUST } from '@/lib/fetcher';
 import TopStorylines   from './components/TopStorylines';
 import BreakingTicker      from './components/BreakingTicker';
 import AccountabilityTracker from './components/AccountabilityTracker';
+import WarPremiumCompact    from './components/WarPremiumCompact';
 import RapidResponse   from './components/RapidResponse';
 import MacroWatch     from './components/MacroWatch';
 import OilTicker      from './components/OilTicker';
@@ -2435,6 +2436,7 @@ export default function Home() {
           </button>
           <div style={{ position: 'sticky', top: 80, display: 'flex', flexDirection: 'column', gap: 14 }}>
             {!loading && <SidebarTheaterPulse items={items} clusters={clusters} />}
+            <WarPremiumCompact />
             <SidebarPanel
               search={search}
               onSearch={setSearch}

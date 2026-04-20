@@ -1,6 +1,6 @@
 # FrameTheGlobe Geopolitical Intelligence Hub
 
-**Version:** 8.0.5 — *Dynamic HUD + Flash Overhaul (v8.x)*  
+**Version:** 8.0.8 — *War Premium Board Live Feeds (v8.0.8)*  
 **Mission:** Real-time news aggregation and intelligence monitoring for the Iran War Theater, South Asia, and the Global Pivot.  
 **Production URL:** [frametheglobe.xyz](https://frametheglobe.xyz)
 
@@ -73,6 +73,11 @@ Refer to `TECHNICAL_SPEC.md` for full split-stack details and endpoint routing.
   - Unified CompactHeader with Flash/Command toggle.
   - Flash view redesigned as a 12h realtime rolling intelligence stream.
   - Centered glassmorphic bottom bar for dynamic WTI/Brent crude data.
+- **War Premium Board v8.0.8**:
+  - Sidebar hero card tracking commodities, household prices, and inflation since the Iran war kinetic phase began (Feb 28, 2026).
+  - Dual delta framing: "since war" (primary) + "vs baseline Nov 28 2025" (pre-war context).
+  - Per-row timeline sparkline with a dashed red tick at war start.
+  - Baseline/war-start/current/sparkline hydration from `/api/since-war-history` and `/api/household-prices`; commodity rows continue live-overlay from `/api/market`, `/api/precious-metals`, `/api/agri-market`.
 
 For full implementation details, see [`docs/RECENT_UPDATES.md`](docs/RECENT_UPDATES.md).
 
