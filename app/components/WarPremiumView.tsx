@@ -45,10 +45,12 @@ function StatsSparkline({
   series,
   color,
   height = 46,
+  mode,
 }: {
   series: Array<{ t: string; v: number }>;
   color: string;
   height?: number;
+  mode: ChartMode;
 }) {
   if (series.length < 2) return null;
   const values = series.map((s) => s.v);
@@ -60,9 +62,29 @@ function StatsSparkline({
   const ys = series.map((s) => height - ((s.v - min) / range) * height);
   const d = xs.map((x, i) => `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${ys[i].toFixed(1)}`).join(' ');
   const area = `${d} L ${width} ${height} L 0 ${height} Z`;
+  const zeroY = height - ((0 - min) / range) * height;
+
+  if (mode === 'zscore') {
+    const barW = width / series.length;
+    return (
+      <svg viewBox={`0 0 ${width} ${height}`} width="100%" height={height} preserveAspectRatio="none" aria-hidden>
+        <line x1={0} y1={Math.max(0, Math.min(height, zeroY))} x2={width} y2={Math.max(0, Math.min(height, zeroY))} stroke="var(--border-light)" strokeDasharray="2 2" />
+        {series.map((p, i) => {
+          const x = i * barW + barW * 0.15;
+          const y = ys[i];
+          const y0 = Math.max(0, Math.min(height, zeroY));
+          const top = Math.min(y, y0);
+          const h = Math.abs(y - y0);
+          return <rect key={`${p.t}-${i}`} x={x} y={top} width={barW * 0.7} height={Math.max(1.5, h)} fill={color} opacity={0.6} rx={1} />;
+        })}
+      </svg>
+    );
+  }
+
   return (
     <svg viewBox={`0 0 ${width} ${height}`} width="100%" height={height} preserveAspectRatio="none" aria-hidden>
-      <path d={area} fill={color} opacity={0.09} />
+      {mode === 'pct' && <line x1={0} y1={Math.max(0, Math.min(height, zeroY))} x2={width} y2={Math.max(0, Math.min(height, zeroY))} stroke="var(--border-light)" strokeDasharray="2 2" />}
+      <path d={area} fill={color} opacity={mode === 'price' ? 0.11 : 0.07} />
       <path d={d} fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" />
       <circle cx={xs[xs.length - 1]} cy={ys[ys.length - 1]} r={3} fill={color} />
     </svg>
@@ -88,6 +110,7 @@ export default function WarPremiumView() {
   const [grocerySpend, setGrocerySpend] = useState(950);
   const [alertThreshold, setAlertThreshold] = useState(20);
   const [lastAlert, setLastAlert] = useState<string | null>(null);
+  const [feedUpdatedAt, setFeedUpdatedAt] = useState<string | null>(null);
 
   const fetchLive = useCallback(async () => {
     const endpoints = new Set<string>();
@@ -127,6 +150,7 @@ export default function WarPremiumView() {
           const res = await fetch(endpoint);
           if (!res.ok) return;
           const payload = await res.json();
+          if (payload?.generatedAt) setFeedUpdatedAt(payload.generatedAt);
           const rows = Array.isArray(payload?.rows) ? payload.rows : [];
           for (const row of rows) {
             if (!row?.id || !Array.isArray(row.sparkline)) continue;
@@ -217,6 +241,18 @@ export default function WarPremiumView() {
       { label: 'Agri Stress', value: `${formatSignedPct((delta('wheat') + delta('corn') + delta('soybeans') + delta('urea')) / 4)}`, sub: 'Staples + fertilizer' },
       { label: 'Risk Regime', value: `${formatSignedPct((delta('vix') + delta('gold') + delta('dollar-index')) / 3)}`, sub: 'Vol + safe havens' },
     ];
+  }, [mergedRows]);
+
+  const topMovers = useMemo(() => {
+    return Object.values(mergedRows)
+      .map((row) => ({
+        id: row.id,
+        label: row.label,
+        sinceWar: percentChange(row.priceAtWarStart, row.priceCurrent),
+        row,
+      }))
+      .sort((a, b) => Math.abs(b.sinceWar) - Math.abs(a.sinceWar))
+      .slice(0, 6);
   }, [mergedRows]);
 
   const budgetImpact = useMemo(() => {
@@ -339,8 +375,13 @@ export default function WarPremiumView() {
       </div>
 
       {lastAlert && <div className="ftg-war-premium-view__alert">{lastAlert}</div>}
+      {feedUpdatedAt && (
+        <div className="ftg-war-premium-view__feed-status">
+          Live feeds updated: {new Date(feedUpdatedAt).toLocaleString()}
+        </div>
+      )}
 
-      {view !== 'board' && (
+      {view === 'overview' && (
         <>
           <div className="ftg-war-premium-view__analytics-grid">
             <div className="ftg-war-premium-view__analytic-card">
@@ -364,6 +405,26 @@ export default function WarPremiumView() {
             </div>
           </div>
 
+          <div className="ftg-war-premium-view__movers">
+            <h3>Top Movers Since War</h3>
+            <div className="ftg-war-premium-view__movers-grid">
+              {topMovers.map(({ id, label, sinceWar, row }) => (
+                <div key={id} className="ftg-war-premium-view__mover">
+                  <span>{label}</span>
+                  <span style={{ color: deltaColor(row, row.priceAtWarStart, row.priceCurrent) }}>{formatSignedPct(sinceWar)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="ftg-war-premium-view__board">
+            <WarPremiumBoard livePrices={livePrices} liveRows={liveRows} />
+          </div>
+        </>
+      )}
+
+      {view === 'panels' && (
+        <>
           <div className="ftg-war-premium-view__panel-grid">
             {PANEL_DEFS.map((panel) => (
               <article key={panel.id} className="ftg-war-premium-view__panel">
@@ -406,6 +467,7 @@ export default function WarPremiumView() {
                             {row.unit.startsWith('USD') || row.unit === 'USD' ? '$' : ''}
                             {formatPrice(row.priceCurrent, row.unit)} · as of {row.currentAsOf}
                           </span>
+                          <span className="ftg-war-premium-view__mode-pill">{chartMode === 'pct' ? 'Mode: %Δ from range start' : chartMode === 'zscore' ? 'Mode: standardized stress' : 'Mode: raw price/index'}</span>
                         </div>
                         <div className="ftg-war-premium-view__panel-row-metrics">
                           <span>B {formatPrice(row.priceBaseline, row.unit)}</span>
@@ -421,7 +483,7 @@ export default function WarPremiumView() {
                             <div style={{ width: `${Math.max(4, volatility)}%` }} />
                           </div>
                         </div>
-                        <StatsSparkline series={series} color={color} />
+                        <StatsSparkline series={series} color={color} mode={chartMode} />
                       </div>
                     );
                   })}
@@ -432,7 +494,7 @@ export default function WarPremiumView() {
         </>
       )}
 
-      {(view === 'board' || view === 'overview') && (
+      {view === 'board' && (
         <div className="ftg-war-premium-view__board">
           <WarPremiumBoard livePrices={livePrices} liveRows={liveRows} />
         </div>

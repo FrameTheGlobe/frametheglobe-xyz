@@ -68,6 +68,14 @@ function sampleSeries(series: SeriesPoint[], maxPoints = 40): SeriesPoint[] {
   return out;
 }
 
+function normalizePointValue(rowId: string, raw: number): number {
+  // Stooq grain futures often come in cents/bushel while UI expects USD/bu.
+  if ((rowId === 'wheat' || rowId === 'corn' || rowId === 'soybeans') && raw > 100) {
+    return raw / 100;
+  }
+  return raw;
+}
+
 async function fetchStooqHistory(symbol: string): Promise<SeriesPoint[]> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 12_000);
@@ -106,7 +114,8 @@ router.get('/', async (_req: Request, res: Response) => {
   try {
     const rows = await Promise.all(
       ROWS.map(async (row): Promise<RowPayload | null> => {
-        const series = await fetchStooqHistory(row.symbol);
+        const seriesRaw = await fetchStooqHistory(row.symbol);
+        const series = seriesRaw.map((p) => ({ ...p, v: normalizePointValue(row.id, p.v) }));
         if (series.length < 2) return null;
         const baseline = nearestOnOrBefore(series, BASELINE) ?? series[0];
         const war = nearestOnOrBefore(series, WAR_START) ?? baseline;
