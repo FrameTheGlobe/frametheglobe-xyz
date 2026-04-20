@@ -40,7 +40,7 @@ export default function CompactHeader({
           <span className="ftg-beta-badge">BETA</span>
         </h1>
         <span className="ftg-compact-meta">
-          v8.0.9 · {storyCount.toLocaleString()} stories · {sourceCount} sources
+          v8.1.0 · {storyCount.toLocaleString()} stories · {sourceCount} sources
         </span>
         <div className="ftg-compact-live">
           <span

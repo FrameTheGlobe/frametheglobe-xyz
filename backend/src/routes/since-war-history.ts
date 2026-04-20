@@ -34,6 +34,8 @@ const ROWS: RowConfig[] = [
   { id: 'silver', source: 'stooq', symbol: 'si.f', unit: 'USD/oz' },
   { id: 'copper', source: 'stooq', symbol: 'hg.f', unit: 'USD/lb' },
   { id: 'wheat', source: 'stooq', symbol: 'zw.f', unit: 'USD/bu' },
+  { id: 'corn', source: 'stooq', symbol: 'zc.f', unit: 'USD/bu' },
+  { id: 'soybeans', source: 'stooq', symbol: 'zs.f', unit: 'USD/bu' },
   { id: 'urea', source: 'stooq', symbol: 'cf.us', unit: 'USD/share' },
 ];
 
