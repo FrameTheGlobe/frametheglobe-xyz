@@ -1355,6 +1355,227 @@ body {
   }
 }
 
+/* ══════════════════════════════════════════════════════
+   FLAT UI MODERNIZATION (GLOBAL)
+   Purpose: remove legacy raised/3D feel and align to modern flat UI
+══════════════════════════════════════════════════════ */
+
+:root {
+  --flat-radius-sm: 8px;
+  --flat-radius-md: 10px;
+  --flat-radius-lg: 12px;
+  --flat-shadow-none: none;
+  --flat-border-soft: color-mix(in oklab, var(--border) 72%, transparent 28%);
+  --flat-border-softer: color-mix(in oklab, var(--border) 56%, transparent 44%);
+  --flat-surface-soft: color-mix(in oklab, var(--surface) 96%, var(--bg) 4%);
+  --flat-surface-softer: color-mix(in oklab, var(--surface) 92%, var(--bg) 8%);
+  --flat-gap-xs: 6px;
+  --flat-gap-sm: 8px;
+  --flat-gap-md: 10px;
+  --flat-gap-lg: 12px;
+}
+
+[data-theme="dark"] {
+  --flat-shadow-none: none;
+  --flat-border-soft: color-mix(in oklab, var(--border) 68%, transparent 32%);
+  --flat-border-softer: color-mix(in oklab, var(--border) 52%, transparent 48%);
+  --flat-surface-soft: color-mix(in oklab, var(--surface) 95%, var(--bg) 5%);
+  --flat-surface-softer: color-mix(in oklab, var(--surface) 90%, var(--bg) 10%);
+}
+
+/* Flatten global elevation tokens so existing components inherit */
+:root,
+[data-theme="dark"] {
+  --shadow-sm: 0 0 0 rgba(0, 0, 0, 0);
+  --shadow-md: 0 0 0 rgba(0, 0, 0, 0);
+}
+
+/* Shared flat surfaces across the app */
+.ftg-adaptive-density :is(
+  .ftg-focus-block,
+  .ftg-widgets-section,
+  .sidebar-col,
+  .intel-column,
+  .widget-hd,
+  .ftg-war-premium-view__hero,
+  .ftg-war-premium-view__board,
+  .ftg-war-premium-view__toolbar,
+  .ftg-war-premium-view__analytic-card,
+  .ftg-war-premium-view__panel,
+  .ftg-war-premium-view__movers,
+  .ftg-wpb-row,
+  .ftg-war-premium,
+  .hud-panel,
+  .macro-watch,
+  .rapid-response,
+  .top-storylines
+) {
+  box-shadow: var(--flat-shadow-none) !important;
+  background-image: none !important;
+  border-color: var(--flat-border-soft) !important;
+  border-radius: var(--flat-radius-lg) !important;
+}
+
+/* Shared flat controls/buttons/pills/chips */
+.ftg-adaptive-density :is(
+  button,
+  .hud-action-btn-refined,
+  .icon-link-ghost,
+  .ftg-wpt-btn,
+  .ftg-compact-toggle button,
+  .ftg-war-premium-view__panel-chip,
+  .ftg-war-premium-view__mover,
+  .ftg-wpb__filter,
+  .ftg-war-premium__toggle
+) {
+  box-shadow: none !important;
+  text-shadow: none !important;
+  background-image: none !important;
+  border-width: 1px !important;
+  border-style: solid !important;
+  border-color: var(--flat-border-softer) !important;
+  border-radius: var(--flat-radius-md) !important;
+  transform: none !important;
+}
+
+.ftg-adaptive-density :is(
+  button:hover,
+  .hud-action-btn-refined:hover,
+  .icon-link-ghost:hover,
+  .ftg-wpt-btn:hover,
+  .ftg-compact-toggle button:hover
+) {
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.ftg-adaptive-density :is(
+  button:focus-visible,
+  .hud-action-btn-refined:focus-visible,
+  .icon-link-ghost:focus-visible,
+  .ftg-wpt-btn:focus-visible
+) {
+  outline: 2px solid color-mix(in oklab, var(--accent) 40%, transparent 60%);
+  outline-offset: 1px;
+}
+
+/* Make top nav controls read as modern segmented controls */
+.ftg-compact-toggle {
+  border-radius: var(--flat-radius-md) !important;
+  box-shadow: none !important;
+  background: var(--flat-surface-softer) !important;
+  border-color: var(--flat-border-softer) !important;
+}
+
+.ftg-compact-toggle button {
+  background: transparent !important;
+  border-color: transparent !important;
+}
+
+/* Ensure active pills/buttons still clear but flat */
+.ftg-adaptive-density :is(
+  .ftg-wpt-btn.is-active,
+  .ftg-wpb__filter--active,
+  .ftg-war-premium__toggle[aria-expanded="true"]
+) {
+  box-shadow: none !important;
+}
+
+/* Premium flat refinement: softer card chrome + spacing cadence */
+.ftg-adaptive-density :is(
+  .ftg-war-premium-view__hero,
+  .ftg-war-premium-view__toolbar,
+  .ftg-war-premium-view__analytic-card,
+  .ftg-war-premium-view__panel,
+  .ftg-war-premium-view__movers,
+  .ftg-war-premium-view__board,
+  .ftg-wpb-row,
+  .ftg-war-premium,
+  .sidebar-col,
+  .intel-column
+) {
+  background: var(--flat-surface-soft) !important;
+  border-color: var(--flat-border-soft) !important;
+}
+
+.ftg-adaptive-density :is(
+  .ftg-war-premium-view__panel-row,
+  .ftg-war-premium-view__mover,
+  .ftg-war-premium-view__chip,
+  .ftg-war-premium-view__panel-chip,
+  .ftg-wpb__filter,
+  .ftg-war-premium__toggle,
+  .icon-link-ghost,
+  .hud-action-btn-refined
+) {
+  background: var(--flat-surface-softer) !important;
+  border-color: var(--flat-border-softer) !important;
+}
+
+/* Normalize spacing rhythm for dense-but-clean readability */
+.ftg-war-premium-view {
+  gap: var(--flat-gap-lg) !important;
+}
+
+.ftg-war-premium-view__toolbar,
+.ftg-war-premium-view__analytics-grid,
+.ftg-war-premium-view__panel-grid,
+.ftg-war-premium-view__panel-rows,
+.ftg-war-premium-view__chips {
+  gap: var(--flat-gap-md) !important;
+}
+
+.ftg-war-premium-view__panel-row,
+.ftg-war-premium-view__mover,
+.ftg-war-premium-view__chip {
+  padding: 8px 9px !important;
+}
+
+.ftg-war-premium-view__panel h3,
+.ftg-war-premium-view__movers h3,
+.ftg-war-premium-view__analytic-card h3 {
+  letter-spacing: 0.03em !important;
+}
+
+/* Mobile: keep controls flat and dense with modern touch sizing */
+@media (max-width: 820px) {
+  .ftg-adaptive-density :is(
+    button,
+    .hud-action-btn-refined,
+    .icon-link-ghost,
+    .ftg-wpt-btn,
+    .ftg-compact-toggle button
+  ) {
+    min-height: 40px;
+    border-radius: var(--flat-radius-sm) !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .ftg-adaptive-density :is(
+    .ftg-war-premium-view__hero,
+    .ftg-war-premium-view__toolbar,
+    .ftg-war-premium-view__analytic-card,
+    .ftg-war-premium-view__panel,
+    .ftg-war-premium-view__movers,
+    .ftg-war-premium-view__board
+  ) {
+    border-radius: var(--flat-radius-md) !important;
+    box-shadow: none !important;
+  }
+
+  .ftg-war-premium-view {
+    gap: var(--flat-gap-md) !important;
+  }
+
+  .ftg-war-premium-view__toolbar,
+  .ftg-war-premium-view__analytics-grid,
+  .ftg-war-premium-view__panel-grid,
+  .ftg-war-premium-view__panel-rows {
+    gap: var(--flat-gap-sm) !important;
+  }
+}
+
 .hud-scanline {
   position: absolute;
   top: 0; left: 0; right: 0;
