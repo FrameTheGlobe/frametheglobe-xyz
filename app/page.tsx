@@ -10,7 +10,7 @@ import { SOURCE_TRUST } from '@/lib/fetcher';
 import TopStorylines   from './components/TopStorylines';
 import BreakingTicker      from './components/BreakingTicker';
 import AccountabilityTracker from './components/AccountabilityTracker';
-import WarPremiumCompact    from './components/WarPremiumCompact';
+import WarPremiumView       from './components/WarPremiumView';
 import RapidResponse   from './components/RapidResponse';
 import MacroWatch     from './components/MacroWatch';
 import OilTicker      from './components/OilTicker';
@@ -38,7 +38,7 @@ import type { TickerDrawerData } from './contexts/AIAnalysisContext';
 const MapView = dynamic(() => import('./components/MapView'), { ssr: false });
 
 // ── View Mode Type ───────────────────────────────────────────────────────────
-type AppViewMode = 'command' | 'flash';
+type AppViewMode = 'command' | 'flash' | 'war-premium';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type FeedItem = {
@@ -1409,7 +1409,7 @@ export default function Home() {
   const [appViewMode, setAppViewMode] = useState<AppViewMode>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('ftg_view_mode') as AppViewMode;
-      return saved === 'flash' ? 'flash' : 'command';
+      return saved === 'flash' || saved === 'war-premium' ? saved : 'command';
     }
     return 'command';
   });
@@ -2420,6 +2420,8 @@ export default function Home() {
         <FlashBriefView
           items={items}
         />
+      ) : appViewMode === 'war-premium' ? (
+        <WarPremiumView />
       ) : (
         <div className="page-layout">
 
@@ -2436,7 +2438,6 @@ export default function Home() {
           </button>
           <div style={{ position: 'sticky', top: 80, display: 'flex', flexDirection: 'column', gap: 14 }}>
             {!loading && <SidebarTheaterPulse items={items} clusters={clusters} />}
-            <WarPremiumCompact />
             <SidebarPanel
               search={search}
               onSearch={setSearch}

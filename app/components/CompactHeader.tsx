@@ -12,8 +12,8 @@ interface CompactHeaderProps {
   onThemeToggle:  () => void;
   onRefresh:      () => void;
   onBriefing:     () => void;
-  viewMode?:      'command' | 'flash';
-  onViewModeChange?: (mode: 'command' | 'flash') => void;
+  viewMode?:      'command' | 'flash' | 'war-premium';
+  onViewModeChange?: (mode: 'command' | 'flash' | 'war-premium') => void;
 }
 
 export default function CompactHeader({ 
@@ -40,7 +40,7 @@ export default function CompactHeader({
           <span className="ftg-beta-badge">BETA</span>
         </h1>
         <span className="ftg-compact-meta">
-          v8.0.8 · {storyCount.toLocaleString()} stories · {sourceCount} sources
+          v8.0.9 · {storyCount.toLocaleString()} stories · {sourceCount} sources
         </span>
         <div className="ftg-compact-live">
           <span
@@ -71,8 +71,9 @@ export default function CompactHeader({
           <button
             onClick={() => onViewModeChange('flash')}
             title="Switch to Flash View"
+            className="ftg-compact-toggle-btn"
             style={{
-              padding: '6px 12px',
+              padding: '6px 10px',
               border: 'none',
               borderRadius: 4,
               cursor: 'pointer',
@@ -90,8 +91,9 @@ export default function CompactHeader({
           <button
             onClick={() => onViewModeChange('command')}
             title="Switch to Command Center"
+            className="ftg-compact-toggle-btn"
             style={{
-              padding: '6px 12px',
+              padding: '6px 10px',
               border: 'none',
               borderRadius: 4,
               cursor: 'pointer',
@@ -105,6 +107,26 @@ export default function CompactHeader({
             }}
           >
             ● COMMAND
+          </button>
+          <button
+            onClick={() => onViewModeChange('war-premium')}
+            title="Switch to War Premium Dashboard"
+            className="ftg-compact-toggle-btn"
+            style={{
+              padding: '6px 10px',
+              border: 'none',
+              borderRadius: 4,
+              cursor: 'pointer',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 10,
+              fontWeight: 800,
+              letterSpacing: '0.03em',
+              background: viewMode === 'war-premium' ? 'var(--accent)' : 'transparent',
+              color: viewMode === 'war-premium' ? '#fff' : 'var(--text-secondary)',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            ◆ WAR PREMIUM
           </button>
         </div>
       )}
